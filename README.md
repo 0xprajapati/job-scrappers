@@ -4,6 +4,8 @@ Scrapers collect healthcare job listings from external portals and write them in
 
 **Goal:** scrape jobs from each portal → write rows matching [`job_samples.csv`](./job_samples.csv) → save under `jobs_csv/<DD-MM-YYYY>/<site_name>.csv`.
 
+<!-- Add  -->
+
 ## Folder layout
 
 ```
