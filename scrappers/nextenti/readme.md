@@ -1,0 +1,80 @@
+# nextenti.ai scraper
+
+Scrapes healthcare job listings from [nextenti.ai](https://nextenti.ai/search-jobs)
+and writes them to the shared HealthCareers.club import schema.
+
+## Data source
+
+nextenti.ai is a client-rendered React SPA (the HTML is an empty `<div id="root">`),
+so there is nothing to parse in the page markup. Jobs come from a JSON
+microservice API that needs a short-lived **anonymous** bearer token the site
+hands out with no credentials:
+
+1. `GET https://authenticator.nextenti.ai/token`
+   → `{"data": {"userId": "...", "accessToken": "gAAAA…"}}` (Fernet token)
+2. `POST https://job-maintenance.nextenti.ai/api/search?page=<N>`
+   - headers: `Authorization: Bearer <accessToken>`, `userId: <userId>`
+   - body: `{}` (an empty filter object returns all jobs)
+   - → `{"data": [ …30 jobs… ], "totalCount": 792}`
+
+Pagination is a **fixed 30 jobs/page** (`size` is ignored); results are sorted
+**newest-first by `postDate`**, so incremental runs stop as soon as they reach
+jobs older than the watermark. Each job exposes: `jobId`, `jobTitle`,
+`organizationName`, `city`, `country`, `salaryRange` ("66000 - 83000"),
+`salaryType` (Monthly/Annual/None), `experience` ("2 - 5 years"), `jobType`,
+`profession`, `postDate` (YYYY-MM-DD), `jobDescription`, `organizationLogo`,
+`verifiedOrganization`. There is no per-job apply link, so `application_url` is
+reconstructed as the site's public detail URL (`/jobs/<slug>--<jobId>`), which
+resolves (200) because the SPA reads the trailing job id.
+
+`robots.txt` allows `/search-jobs` (only auth/candidate/corporate pages are
+disallowed).
+
+## Filtering & classification (per ../../instructions/master-scraper-spec.md)
+
+- **No salary filter** — salaries are captured, never filtered on. Blank /
+  undisclosed salaries stay blank.
+- **Healthcare**: nextenti is a healthcare board, so all jobs are kept. Each is
+  mapped to the club `category` enum using the source `profession` field first
+  (authoritative), falling back to the title only when `profession` is generic
+  ("Others"/blank). Doctor/Nurse/Pharmacist professions map directly; allied
+  and non-clinical roles (physiotherapy, technician, HR, finance, engineering,
+  admin, sales…) map to `non_clinical`. Jobs that resolve to `non_clinical` by
+  pure default are flagged in `needs_review.csv`.
+- **company_type**: `pharma` for pharma/CRO/lab/diagnostics names, else `hospital`.
+- **Time window**: first run keeps the last 30 days (`INITIAL_WINDOW_DAYS`);
+  later runs keep only jobs newer than the newest stored `postDate` minus
+  `WATERMARK_GRACE_DAYS` (2), stopping pagination early on the first fully-old
+  page.
+
+## Usage
+
+```bash
+pip install -r requirements.txt
+
+# unit tests (parsers, classifier, cutoff)
+python test_filters.py
+
+# small test run: first 2 pages
+python scraper.py --max-pages 2
+
+# full run (first time: last 30 days; after that: only new jobs)
+python scraper.py
+```
+
+Options: `--output PATH` (rich CSV, default `nextenti_jobs.csv`),
+`--max-pages N`, `--run-date DD-MM-YYYY` (jobs_csv folder, default today),
+`--verbose`. Tunables at the top of `scraper.py`: `INITIAL_WINDOW_DAYS`,
+`WATERMARK_GRACE_DAYS`, `REQUEST_DELAY_SECONDS`, `MAX_RETRIES`.
+
+## Outputs
+
+- `nextenti_jobs.csv` — rich cumulative store (dedup key `job_id`), the source
+  of truth for the incremental watermark. Not committed as a deliverable.
+- `../../jobs_csv/<DD-MM-YYYY>/nextenti.csv` — the same jobs in the shared
+  `job_samples.csv` schema, the actual HealthCareers.club deliverable.
+- `needs_review.csv` — jobs whose category fell back to `non_clinical` by
+  default, for keyword-list tuning.
+
+A run prints a summary: scanned, excluded-old, needs_review, new, duplicates.
+Re-running the same day adds 0 new rows (idempotent).
