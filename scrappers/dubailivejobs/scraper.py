@@ -264,6 +264,10 @@ def _request(session, url, params=None, as_json=True):
             if resp.status_code in (429, 500, 502, 503, 504):
                 last_error = "HTTP {}".format(resp.status_code)
                 continue
+            # WP returns 400 for a page past the last one — a normal stop
+            # condition, not a retryable error.
+            if 400 <= resp.status_code < 500:
+                return None
             resp.raise_for_status()
             return resp.json() if as_json else resp.text
         except (requests.RequestException, json.JSONDecodeError) as exc:
@@ -386,9 +390,11 @@ def main(argv=None):
                         help="rich cumulative CSV path (default: %(default)s)")
     parser.add_argument("--max-pages", type=int, default=None, metavar="N",
                         help="stop after N REST pages (for test runs)")
-    parser.add_argument("--no-details", action="store_true",
-                        help="skip per-post JSON-LD fetches (no salary_raw / "
-                             "employment type / expiry; faster)")
+    parser.add_argument("--details", action="store_true",
+                        help="fetch each NEW post's HTML for its JobPosting "
+                             "JSON-LD (raw AED salary, employment type, expiry). "
+                             "Off by default: only ~1/3 of posts carry it and "
+                             "AED salary can't map to the club INR/USD schema.")
     parser.add_argument("--run-date", default=date.today().strftime("%d-%m-%Y"),
                         help="jobs_csv/<DD-MM-YYYY>/ folder (default: today)")
     parser.add_argument("--verbose", action="store_true", help="debug logging")
@@ -439,18 +445,20 @@ def main(argv=None):
             if row["post_id"] in known_ids:
                 counters["duplicates"] += 1
                 continue
-            if not args.no_details:
+            if args.details:
                 detail = fetch_post_detail(session, row["job_url"])
                 if detail:
                     row.update(detail)
                 else:
-                    counters["detail_failed"] += 1
+                    counters["detail_failed"] += 1  # post carries no JobPosting
             known_ids.add(row["post_id"])
             new_rows.append(row)
             counters["new"] += 1
 
         if page_all_old and posts:
             log.info("Page %d entirely older than %s — stopping", page, cutoff)
+            break
+        if len(posts) < PER_PAGE:  # short page = last page (avoids a 400 probe)
             break
         page += 1
 
@@ -484,8 +492,8 @@ def main(argv=None):
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New posts added:       {:>5,}".format(counters["new"]))
     print("Duplicates skipped:    {:>5,}".format(counters["duplicates"]))
-    if not args.no_details:
-        print("Detail fetch failures: {:>5,}".format(counters["detail_failed"]))
+    if args.details:
+        print("Posts w/o JobPosting:  {:>5,}".format(counters["detail_failed"]))
 
 
 if __name__ == "__main__":
