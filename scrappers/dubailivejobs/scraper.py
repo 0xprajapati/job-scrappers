@@ -193,7 +193,9 @@ def extract_job_posting(page_html):
             continue
         nodes = data.get("@graph", [data]) if isinstance(data, dict) else data
         for node in (nodes if isinstance(nodes, list) else [nodes]):
-            if isinstance(node, dict) and node.get("@type") == "JobPosting":
+            types = node.get("@type") if isinstance(node, dict) else None
+            types = types if isinstance(types, list) else [types]
+            if "JobPosting" in types:
                 return node
     return {}
 
