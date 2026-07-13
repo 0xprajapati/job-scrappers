@@ -19,13 +19,26 @@ hands out with no credentials:
 
 Pagination is a **fixed 30 jobs/page** (`size` is ignored); results are sorted
 **newest-first by `postDate`**, so incremental runs stop as soon as they reach
-jobs older than the watermark. Each job exposes: `jobId`, `jobTitle`,
+jobs older than the watermark. Each listing job exposes: `jobId`, `jobTitle`,
 `organizationName`, `city`, `country`, `salaryRange` ("66000 - 83000"),
 `salaryType` (Monthly/Annual/None), `experience` ("2 - 5 years"), `jobType`,
 `profession`, `postDate` (YYYY-MM-DD), `jobDescription`, `organizationLogo`,
 `verifiedOrganization`. There is no per-job apply link, so `application_url` is
 reconstructed as the site's public detail URL (`/jobs/<slug>--<jobId>`), which
 resolves (200) because the SPA reads the trailing job id.
+
+**The listing truncates `jobDescription` to 250 characters.** To get the full
+text, the scraper also calls the detail endpoint for each NEW job:
+
+    GET https://job-maintenance.nextenti.ai/job-details?jobId=<jobId>
+        (same anonymous Bearer + userId headers)
+
+which returns the complete description (plus cleaner integer
+`experienceMin`/`experienceMax`). This is **on by default**; pass
+`--no-details` to skip it and keep the fast 250-char preview. Because details
+are fetched only for jobs not already stored, the first run makes ~1 extra
+request per job (~10 min for 30 days of jobs) but daily incremental runs add
+only a handful.
 
 `robots.txt` allows `/search-jobs` (only auth/candidate/corporate pages are
 disallowed).

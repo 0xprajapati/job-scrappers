@@ -60,6 +60,9 @@ SITE_BASE = "https://nextenti.ai"
 ROBOTS_URL = SITE_BASE + "/robots.txt"
 TOKEN_URL = "https://authenticator.nextenti.ai/token"
 SEARCH_URL = "https://job-maintenance.nextenti.ai/api/search"
+# The listing endpoint truncates jobDescription to 250 chars; the detail
+# endpoint returns the full text (and cleaner experienceMin/Max integers).
+DETAIL_URL = "https://job-maintenance.nextenti.ai/job-details"
 SEARCH_PAGE_URL = "https://nextenti.ai/search-jobs"  # the crawl target robots-wise
 
 USER_AGENT = (
@@ -316,6 +319,16 @@ def search_page(session, token, user_id, page):
     return (data.get("data") or [], data.get("totalCount"))
 
 
+def get_job_detail(session, token, user_id, job_id):
+    """Fetch the full job-detail record (untruncated description), or None."""
+    headers = {"Authorization": "Bearer " + token, "userId": user_id}
+    data = _request(session, "GET", "{}?jobId={}".format(DETAIL_URL, job_id),
+                    headers=headers)
+    if not data:
+        return None
+    return data.get("data") or None
+
+
 # ----------------------------------------------------------------------------
 # Row building
 # ----------------------------------------------------------------------------
@@ -355,6 +368,24 @@ def job_to_rich_row(job):
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "needs_review": needs_review,
     }
+
+
+def apply_detail(row, detail):
+    """Overlay full-description detail-endpoint fields onto a listing row.
+
+    The listing truncates jobDescription to 250 chars; the detail record has
+    the full text plus cleaner integer experience bounds. Only non-empty
+    detail values override (the listing stays the fallback).
+    """
+    full_desc = re.sub(r"\s+", " ", detail.get("jobDescription") or "").strip()
+    if len(full_desc) > len(row.get("description") or ""):
+        row["description"] = full_desc[:DESCRIPTION_MAX_CHARS]
+    exp_min, exp_max = detail.get("experienceMin"), detail.get("experienceMax")
+    if exp_min is not None:
+        row["experience_min_years"] = int(exp_min)
+    if exp_max is not None:
+        row["experience_max_years"] = int(exp_max)
+    return row
 
 
 def _int_str(value):
@@ -441,6 +472,9 @@ def main(argv=None):
                         help="rich cumulative CSV path (default: %(default)s)")
     parser.add_argument("--max-pages", type=int, default=None, metavar="N",
                         help="stop after N pages (for test runs)")
+    parser.add_argument("--no-details", action="store_true",
+                        help="skip per-job detail fetches; keep the listing's "
+                             "250-char truncated description (faster)")
     parser.add_argument("--run-date", default=date.today().strftime("%d-%m-%Y"),
                         help="jobs_csv/<DD-MM-YYYY>/ folder (default: today)")
     parser.add_argument("--verbose", action="store_true", help="debug logging")
@@ -463,7 +497,7 @@ def main(argv=None):
     log.info("Obtained anonymous token (userId %s...)", user_id[:8])
 
     counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0}
+                "new": 0, "duplicates": 0, "detail_failed": 0}
     new_rows, review_log = [], []
     page, total = 0, None
 
@@ -501,6 +535,14 @@ def main(argv=None):
             if row["job_id"] in known_ids:
                 counters["duplicates"] += 1
                 continue
+            # Full description (+ cleaner experience) for NEW jobs only, so
+            # daily incremental runs stay cheap.
+            if not args.no_details:
+                detail = get_job_detail(session, token, user_id, row["job_id"])
+                if detail:
+                    apply_detail(row, detail)
+                else:
+                    counters["detail_failed"] += 1
             known_ids.add(row["job_id"])
             new_rows.append(row)
             counters["new"] += 1
@@ -542,6 +584,8 @@ def main(argv=None):
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))
     print("Duplicates skipped:    {:>5,}".format(counters["duplicates"]))
+    if not args.no_details:
+        print("Detail fetch failures: {:>5,}".format(counters["detail_failed"]))
 
 
 if __name__ == "__main__":
