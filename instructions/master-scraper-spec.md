@@ -53,7 +53,7 @@ not disclosing one.
 ## 4. Time window & daily incremental scraping
 
 - **First run** (no existing CSV): keep only jobs posted within the last
-  `INITIAL_WINDOW_DAYS = 30` days.
+  `INITIAL_WINDOW_DAYS = 10` days.
 - **Every later run**: keep only jobs newer than the **watermark** = the
   newest `posted_date` already in the CSV, minus `WATERMARK_GRACE_DAYS = 2`
   days of overlap (protects against late-appearing posts; dedup absorbs the
