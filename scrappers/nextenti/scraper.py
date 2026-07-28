@@ -571,9 +571,13 @@ def main(argv=None):
         log.info("No new jobs; %s left unchanged", args.output)
 
     # ---- always (re)write the club-schema CSV for this run date ----
+    rich_csv_path = Path(args.output).resolve()
     if len(combined):
         target, n = write_club_csv(combined, args.run_date)
         log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
+        club_csv_path = target.resolve()
+    else:
+        club_csv_path = None
 
     if review_log:
         pd.DataFrame(review_log).to_csv("needs_review.csv", index=False)
@@ -586,6 +590,9 @@ def main(argv=None):
     print("Duplicates skipped:    {:>5,}".format(counters["duplicates"]))
     if not args.no_details:
         print("Detail fetch failures: {:>5,}".format(counters["detail_failed"]))
+    print("Rich CSV stored at:    {}".format(rich_csv_path.as_uri()))
+    if club_csv_path is not None:
+        print("Club CSV stored at:    {}".format(club_csv_path.as_uri()))
 
 
 if __name__ == "__main__":
