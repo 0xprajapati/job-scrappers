@@ -14,6 +14,7 @@ from datetime import date
 import pandas as pd
 
 from himalayas_scraper import (
+    DESCRIPTION_MAX_CHARS,
     WATERMARK_GRACE_DAYS,
     classify_category,
     classify_company_type,
@@ -26,6 +27,7 @@ from himalayas_scraper import (
     parse_salary,
     rich_row_to_club_row,
     strip_html,
+    truncate_description,
 )
 
 
@@ -336,6 +338,39 @@ class TestStripHtml(unittest.TestCase):
         self.assertEqual(strip_html(None), "")
 
 
+class TestTruncateDescription(unittest.TestCase):
+    """A real 9,868-char description must survive intact."""
+
+    def test_cap_is_above_the_real_maximum(self):
+        # live sample: max 9,868 plain-text chars, median ~3,859
+        self.assertGreaterEqual(DESCRIPTION_MAX_CHARS, 10_000)
+
+    def test_typical_description_is_untouched(self):
+        text = "word " * 1000          # 5,000 chars — was truncated at 3,000
+        self.assertEqual(truncate_description(text), text)
+
+    def test_longest_observed_description_is_untouched(self):
+        text = "x" * 9868
+        self.assertEqual(truncate_description(text), text)
+
+    def test_over_limit_is_marked(self):
+        out = truncate_description("word " * 100, limit=50)
+        self.assertTrue(out.endswith("…"))
+        self.assertLessEqual(len(out), 51)
+
+    def test_truncation_respects_word_boundary(self):
+        out = truncate_description("alpha beta gamma delta", limit=14)
+        self.assertEqual(out, "alpha beta…")   # not "alpha beta gam…"
+
+    def test_no_word_boundary_still_truncates(self):
+        # a single unbroken token must not collapse to just "…"
+        out = truncate_description("x" * 100, limit=10)
+        self.assertEqual(out, "x" * 10 + "…")
+
+    def test_empty(self):
+        self.assertEqual(truncate_description(None), "")
+
+
 class TestCutoff(unittest.TestCase):
     """Master spec §4."""
 
@@ -354,6 +389,17 @@ class TestCutoff(unittest.TestCase):
         # newest (07-25) minus WATERMARK_GRACE_DAYS
         self.assertEqual(compute_cutoff(df), "2026-07-23")
         self.assertEqual(WATERMARK_GRACE_DAYS, 2)
+
+    def test_since_overrides_the_watermark(self):
+        # a re-run must be able to re-walk the full window despite a
+        # populated CSV, or drift-missed jobs can never be recovered
+        df = pd.DataFrame({"posted_date": ["2026-07-28", "2026-07-29"]})
+        self.assertEqual(compute_cutoff(df, since="2026-07-22"), "2026-07-22")
+
+    def test_since_overrides_initial_window_too(self):
+        self.assertEqual(
+            compute_cutoff(None, today=date(2026, 7, 29), since="2026-07-01"),
+            "2026-07-01")
 
     def test_unparseable_dates_ignored(self):
         df = pd.DataFrame({"posted_date": ["not-a-date", "2026-07-25"]})

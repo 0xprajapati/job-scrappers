@@ -555,6 +555,11 @@ def main(argv=None):
                         help="compact card-JSON capture file(s)")
     parser.add_argument("--from-html", nargs="+", default=[], metavar="PATH",
                         help="saved SERP .html file(s) or a directory of them")
+    parser.add_argument("--descriptions", metavar="FILE",
+                        help="JSON {jobkey: full_description} captured from the "
+                             "SERP right pane (&vjk=<jobkey>, an allowed URL); "
+                             "replaces the snippet descriptions of matching "
+                             "rows in the rich CSV and rewrites the club CSV")
     parser.add_argument("--output", default=RICH_CSV,
                         help="rich cumulative CSV path (default: %(default)s)")
     parser.add_argument("--window-days", type=int, default=INITIAL_WINDOW_DAYS,
@@ -570,7 +575,7 @@ def main(argv=None):
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 
-    if not args.from_json and not args.from_html:
+    if not args.from_json and not args.from_html and not args.descriptions:
         parser.error(
             "Indeed answers HTTP 403 to every scripted client, so there is "
             "nothing to fetch directly. Capture search pages in a browser "
@@ -646,6 +651,17 @@ def main(argv=None):
     else:
         combined = existing_df if existing_df is not None else pd.DataFrame(columns=RICH_COLUMNS)
         log.info("No new jobs; %s left unchanged", args.output)
+
+    # ---- merge full descriptions captured from the SERP right pane ----
+    if args.descriptions and len(combined):
+        with open(args.descriptions, encoding="utf-8") as fh:
+            full_desc = json.load(fh)
+        mask = combined["job_id"].isin(full_desc)
+        combined.loc[mask, "description"] = combined.loc[mask, "job_id"].map(
+            lambda k: full_desc[k][:DESCRIPTION_MAX_CHARS].strip())
+        combined.to_csv(args.output, index=False)
+        log.info("Merged %d full descriptions into %s (%d rows matched)",
+                 len(full_desc), args.output, int(mask.sum()))
 
     # ---- always (re)write the club-schema CSV for this run date ----
     if len(combined):

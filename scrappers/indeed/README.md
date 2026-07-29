@@ -36,9 +36,8 @@ Per card: `jobkey`, `title`, `company`, `companyRating`,
 `salarySnippet.text` + `extractedSalary {min,max,type}` (INR; `-1` = open
 range; type `MONTHLY|YEARLY|HOURLY|DAILY|WEEKLY`), `pubDate` (epoch **ms**,
 pinned ~05:00 UTC — take the UTC date, don't localize to IST),
-`formattedRelativeTime`, `snippet` (short HTML description — full
-descriptions live on robots-disallowed `viewjob` pages, so the snippet is
-the description).
+`formattedRelativeTime`, `snippet` (a ~160-char teaser — see "Full
+descriptions" below for how to get the real description compliantly).
 
 ## Queries (breadth instead of pagination)
 
@@ -88,6 +87,36 @@ Option B — save pages (`Cmd+S` → HTML) into a folder, then:
 ```bash
 python indeed_scraper.py --from-html ./saved_pages/
 ```
+
+## Full descriptions (the `vjk` technique)
+
+The SERP card `snippet` is a ~160-char teaser. Full descriptions live on
+`/viewjob?jk=` pages, which robots.txt forbids — but the **search page URL
+`/jobs?q=...&l=Remote&vjk=<jobkey>` is an allowed path** and renders the
+selected job's complete description in its right-hand pane
+(`#jobDescriptionText`). So: one allowed SERP load per job, extract in the
+browser console:
+
+```js
+sessionStorage.setItem("vj_" + new URL(location.href).searchParams.get("vjk"),
+  document.querySelector("#jobDescriptionText").innerText
+    .replace(/\n{3,}/g, "\n\n").trim().slice(0, 3000));
+```
+
+Collect all `vj_*` sessionStorage keys into a `{jobkey: text}` JSON file
+(sessionStorage survives same-origin navigations), then merge:
+
+```bash
+python indeed_scraper.py --descriptions captures/<date>-descriptions.json
+```
+
+This rewrites the matching rows' `description` in the rich CSV and
+regenerates the club CSV.
+
+**Rate limit (learned 2026-07-29):** ~50 rapid back-to-back SERP loads
+triggered a Cloudflare Turnstile ("Verify you are human") interstitial.
+Pace the vjk loads a few seconds apart, and if the checkbox appears a human
+must click it — do not automate that.
 
 ## Filtering & mapping
 

@@ -122,7 +122,11 @@ MAX_RETRIES = 4
 BACKOFF_BASE_SECONDS = 3.0
 MAX_EMPTY_PAGES = 3
 MAX_OFFSET = 40_000            # hard stop; the archive is ~95k jobs deep
-DESCRIPTION_MAX_CHARS = 3_000
+# Safety valve against a pathological row, NOT a content budget. Real
+# descriptions run 600-9,900 plain-text chars (median ~3,900), so this never
+# fires in practice — an earlier 3,000 cap silently truncated 84% of rows
+# mid-word. Raise rather than lower if the feed ever grows longer posts.
+DESCRIPTION_MAX_CHARS = 20_000
 
 # Every listing on himalayas.app is remote — that is the whole premise of the
 # board — so the club job_type enum value is always "remote" (the enum cannot
@@ -242,6 +246,24 @@ def strip_html(text):
     text = _TAG_RE.sub("", text)
     text = html_lib.unescape(text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def truncate_description(text, limit=DESCRIPTION_MAX_CHARS):
+    """Cap a description at `limit` chars on a word boundary.
+
+    Truncation is marked with a trailing "…" so a shortened description is
+    never mistaken for a complete one, and never cuts mid-word.
+    """
+    text = text or ""
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    spaced = cut.rsplit(" ", 1)[0]
+    # Prefer the word boundary; fall back to the hard cut only when the text
+    # is one pathological unbroken token and backing off would lose most of it.
+    if len(spaced) >= limit * 0.5:
+        cut = spaced
+    return cut.rstrip() + "…"
 
 
 def job_id_from_guid(guid):
@@ -437,7 +459,17 @@ def classify_company_type(name):
 # Time window
 # ----------------------------------------------------------------------------
 
-def compute_cutoff(existing_df, today=None):
+def compute_cutoff(existing_df, today=None, since=None):
+    """Watermark cutoff, or an explicit `since` override.
+
+    `since` exists because a single offset-paginated pass over this feed is
+    NOT complete (see the README's "Feed drift" section): the list mutates
+    while we walk it. Re-running the full window against an existing CSV is
+    how missed jobs are recovered, and the watermark would otherwise clamp
+    the re-run to the last day or two.
+    """
+    if since:
+        return since
     if existing_df is not None and "posted_date" in existing_df.columns:
         dates = pd.to_datetime(existing_df["posted_date"], errors="coerce").dropna()
         if not dates.empty:
@@ -550,7 +582,7 @@ def job_to_rich_row(job, signal=""):
         "timezones": "; ".join(timezones),
         "posted_date": epoch_to_date(job.get("pubDate")),
         "expires_date": epoch_to_date(job.get("expiryDate")),
-        "description": description[:DESCRIPTION_MAX_CHARS],
+        "description": truncate_description(description),
         "job_url": url,
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "needs_review": needs_review,
@@ -681,6 +713,12 @@ def main(argv=None):
                         help="stop after N new jobs (for test runs)")
     parser.add_argument("--run-date", default=date.today().strftime("%d-%m-%Y"),
                         help="jobs_csv/<DD-MM-YYYY>/ folder (default: today)")
+    parser.add_argument("--since", metavar="YYYY-MM-DD", default=None,
+                        help="override the watermark and keep every job posted "
+                             "on/after this date. Use to re-run the full window "
+                             "against an existing CSV — a single pass over this "
+                             "feed is not complete (see README: Feed drift); "
+                             "unioning passes is how misses are recovered")
     parser.add_argument("--reclassify", action="store_true",
                         help="re-apply the category classifier to the stored "
                              "CSV and rewrite the outputs; makes no network "
@@ -700,12 +738,15 @@ def main(argv=None):
 
     existing_df = load_existing(args.output)
     known_ids = set(existing_df["job_id"].dropna()) if existing_df is not None else set()
-    cutoff = compute_cutoff(existing_df)
-    log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
-             len(known_ids), cutoff)
+    cutoff = compute_cutoff(existing_df, since=args.since)
+    log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s%s",
+             len(known_ids), cutoff, " (--since override)" if args.since else "")
 
     counters = {"scanned": 0, "excluded_non_healthcare": 0, "excluded_old": 0,
-                "needs_review": 0, "new": 0, "duplicates": 0}
+                "needs_review": 0, "new": 0, "duplicates": 0, "refetched": 0}
+    # Jobs already stored before this run, so an id seen that ISN'T in here is
+    # a job the shifting feed served us twice — the drift signal.
+    preexisting_ids = set(known_ids)
     new_rows, review_log = [], []
     offset, page_no, total, empty_pages, stop = 0, 0, None, 0, False
 
@@ -753,7 +794,11 @@ def main(argv=None):
                 job_id = job_id_from_guid(
                     job.get("guid") or job.get("applicationLink"))
                 if job_id in known_ids:
-                    counters["duplicates"] += 1
+                    if job_id in preexisting_ids:
+                        counters["duplicates"] += 1
+                    else:
+                        # served to us a second time within this same run
+                        counters["refetched"] += 1
                     continue
 
                 row = job_to_rich_row(job, signal)
@@ -819,6 +864,12 @@ def main(argv=None):
     print("Flagged needs_review:      {:>6,}".format(counters["needs_review"]))
     print("New jobs added:            {:>6,}".format(counters["new"]))
     print("Duplicates skipped:        {:>6,}".format(counters["duplicates"]))
+    print("Re-served within this run: {:>6,}".format(counters["refetched"]))
+    if counters["refetched"] > counters["scanned"] * 0.02:
+        print("\n  NOTE: the feed shifted under us — {:,} of {:,} scanned slots"
+              "\n  were re-reads, so this pass is INCOMPLETE. Re-run with"
+              "\n  --since {} to union another pass.".format(
+                  counters["refetched"], counters["scanned"], cutoff))
 
 
 if __name__ == "__main__":

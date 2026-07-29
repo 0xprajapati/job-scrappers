@@ -153,6 +153,7 @@ empty numerics.
 | `min_experience` / `max_experience` | — | always empty. The feed exposes `seniority` (Senior / Mid-level / …), which is a level, not a number of years — converting it would be inventing data |
 | `posted_at` / `expires_at` | `pubDate` / `expiryDate` | unix epoch seconds → `YYYY-MM-DD` (UTC) |
 | `application_url` | `applicationLink` | the himalayas job page, which links out to the employer's ATS |
+| `description` | `description` | HTML stripped to plain text. Stored **in full** — real descriptions run 600–9,900 chars (median ~3,900). `DESCRIPTION_MAX_CHARS` (20,000) is a safety valve against a pathological row, not a content budget, and never fires in practice; if it ever does, the text is cut on a word boundary and marked with a trailing `…` so a shortened description can't be mistaken for a complete one |
 
 ## Usage
 
@@ -168,6 +169,7 @@ Options:
 | `--max-pages N` | stop after N API pages — test runs |
 | `--limit N` | stop after N new jobs — test runs |
 | `--run-date DD-MM-YYYY` | target `jobs_csv/<date>/` folder (default: today) |
+| `--since YYYY-MM-DD` | override the watermark and re-walk the full window against an existing CSV. This is how drift-missed jobs are recovered — see **Feed drift** above |
 | `--reclassify` | re-apply the classifier to the stored CSV and rewrite the outputs — **no network requests**. `category`/`needs_review` are pure functions of the job title, so tuning the keyword lists never requires re-crawling |
 | `--verbose` | debug logging |
 
@@ -184,6 +186,46 @@ python test_filters.py
 - `../../jobs_csv/<DD-MM-YYYY>/himalayas.csv` — the same jobs in the shared
   22-column HealthCareers.club schema.
 - `needs_review.csv` — healthcare jobs whose category couldn't be classified.
+
+## Feed drift — a single pass is NOT complete
+
+**This is the most important limitation of this scraper.** The API paginates by
+`offset` into a list that mutates while you walk it, and exposes no cursor
+(`before=`, `since=`, `page_token=` — none exist; every parameter is ignored).
+Over a multi-hour crawl:
+
+- jobs posted **during** the crawl shift everything down → you read entries you
+  already read (counted as `Re-served within this run`);
+- jobs expiring or being pulled shift entries up → **you skip them silently**.
+
+Measured across two full passes of the same 7-day window on 2026-07-29:
+
+| | jobs |
+|---|---|
+| Pass 1 (75 min) | 3,835 |
+| Pass 2 (170 min) | 2,684 — with 1,275 slots wasted on re-reads |
+| Found only by pass 2 | 103 |
+| Found only by pass 1 | 1,254 |
+| **Union** | **3,938** |
+
+The longer pass lost far more ground, because exposure to churn scales with
+crawl duration. `totalCount` moved 94,738 → 94,324 over the same afternoon
+while new jobs were also arriving, so the list churns in both directions.
+
+**Do not treat one run's output as the complete window.** Recovery is by
+unioning passes — dedup on `job_id` makes this safe and idempotent:
+
+```bash
+python himalayas_scraper.py --since 2026-07-22
+```
+
+The run summary flags this automatically: if more than 2% of scanned slots were
+re-reads, it prints a NOTE telling you the pass is incomplete and giving you
+the exact `--since` command to union another.
+
+The intended daily cadence converges naturally — each day's run overlaps the
+previous by `WATERMARK_GRACE_DAYS`, so a job missed on one day is usually
+picked up the next. `--since` is the tool for forcing convergence now.
 
 ## Time window & idempotency
 
