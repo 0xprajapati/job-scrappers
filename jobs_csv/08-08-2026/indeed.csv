@@ -1,5 +1,5 @@
-source,job_id,title,company,company_rating,location,salary_raw,salary_min,salary_max,salary_currency,salary_period,employment_types,work_mode,benefits,category,company_type,search_query,posted_date,relative_time,description,job_url,scraped_at
-indeed,7c38b4c7de1d1a01,Medical Writer (Doctors / Medical Specialists),AmplifyEase,,Remote,"₹15,000 - ₹50,000 a month",15000,50000,INR,per_month,Part-time,remote,Work from home,non_clinical,hospital,doctor,2026-07-15,14 days ago,"We are a technology company developing AI-powered solutions for businesses across multiple industries, including healthcare. We are looking for qualified medical professionals to help create accurate, well-researched, and high-quality medical content for healthcare-related projects.
+country_name,country_code,country_dial_code,city_name,company_name,company_type,company_logo,company_about,title,description,job_type,category,application_url,posted_at,min_experience,max_experience,min_salary,max_salary,salary_period,salary_currency,is_active,expires_at
+India,IN,+91,Remote,AmplifyEase,hospital,,,Medical Writer (Doctors / Medical Specialists),"We are a technology company developing AI-powered solutions for businesses across multiple industries, including healthcare. We are looking for qualified medical professionals to help create accurate, well-researched, and high-quality medical content for healthcare-related projects.
 Responsibilities
 
  Research and write clear, evidence-based medical content.
@@ -46,16 +46,16 @@ Experience:
 
  post-qualification clinical: 1 year (Preferred)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=7c38b4c7de1d1a01,2026-07-29T09:29:15Z
-indeed,e75c9a30757ef9b0,"Consulting Pediatrician, Telemedicine",NeoKids Pro,,Remote,Not Disclosed,,,,,Part-time,remote,,doctors,hospital,doctor,2026-07-27,1 day ago,"NeoKidsPro is building a telemedicine network of consulting doctors across India. We are inviting pediatricians to join us and offer online consultations to patients through our platform.
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=7c38b4c7de1d1a01,2026-07-15,,,15000,50000,per_month,INR,true,
+India,IN,+91,Remote,NeoKids Pro,hospital,,,"Consulting Pediatrician, Telemedicine","NeoKidsPro is building a telemedicine network of consulting doctors across India. We are inviting pediatricians to join us and offer online consultations to patients through our platform.
 NeoKidsPro is a telemedicine and healthcare platform built to make quality care easier to reach. We connect patients with a growing network of doctors and specialists for online consultations, so that good care does not depend on where someone lives.
 As a Consulting Pediatrician with NeoKidsPro, you will conduct online consultations with patients through our platform, at times that work with your existing schedule. This is a remote, part-time opportunity designed to fit alongside your current practice.
 What you will do:
 Conduct scheduled online consultations with patients. Review patient history and provide guidance based on the consultation. Coordinate follow ups where needed. Maintain accurate and professional consultation records.
 How to apply:
 Interested doctors can apply by completing the NeoKidsPro Doctor Onboarding Form with their professional details. Once submitted, our team will review the application, and eligible applicants will be contacted regarding verification, onboarding, and next steps.
-Work Location: Remote",https://in.indeed.com/viewjob?jk=e75c9a30757ef9b0,2026-07-29T09:29:15Z
-indeed,e4de4223fcc24092,General Practitioner,MyRx,,"Bhubaneswar, Odisha","₹20,000 - ₹40,000 a month",20000,40000,INR,per_month,Full-time|Part-time,remote,Work from home|Flexible schedule,doctors,hospital,doctor,2026-07-20,9 days ago,"Job Title: Doctor – Prescription Validation
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=e75c9a30757ef9b0,2026-07-27,,,,,,,true,
+India,IN,+91,Bhubaneswar,MyRx,hospital,,,General Practitioner,"Job Title: Doctor – Prescription Validation
 Location: Remote (Work From Home)
 Department: Telemedicine
 Role Overview:
@@ -111,8 +111,8 @@ Shift availability:
  Night Shift (Required)
  Overnight Shift (Required)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=e4de4223fcc24092,2026-07-29T09:29:15Z
-indeed,bf36af94f236015b,Medical Reviewer(MBBS/MD),IT Futurista,,Remote,"₹10,00,000 - ₹12,00,000 a year",1000000,1200000,INR,per_annum,Full-time,remote,,doctors,hospital,doctor,2026-07-08,20 days ago,"Job Title: Medical Reviewer
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=e4de4223fcc24092,2026-07-20,,,20000,40000,per_month,INR,true,
+India,IN,+91,Remote,IT Futurista,hospital,,,Medical Reviewer(MBBS/MD),"Job Title: Medical Reviewer
 Location: Remote
 Shift Timing: Pacific Time Zone (US Hours)11pm-8 am
 Job Summary:
@@ -153,8 +153,8 @@ Shift availability:
 
  Overnight Shift (Required)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=bf36af94f236015b,2026-07-29T09:29:15Z
-indeed,1c151989acc260c5,International Medical Value Travel Facilitator (MVTF) – Specialist Doctors (Remote),TRAVYACHT VOYAGE TRAVEL,,Remote,"₹12,441.55 - ₹45,985.33 a month",12442,45985,INR,per_month,Part-time|Full-time,remote,,non_clinical,hospital,doctor,2026-07-13,15 days ago,"Send Us your CV On Our Official Whatsapp :- +91 9315708593
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=bf36af94f236015b,2026-07-08,,,1000000,1200000,per_annum,INR,true,
+India,IN,+91,Remote,TRAVYACHT VOYAGE TRAVEL,hospital,,,International Medical Value Travel Facilitator (MVTF) – Specialist Doctors (Remote),"Send Us your CV On Our Official Whatsapp :- +91 9315708593
 International Medical Value Travel Facilitator (MVTF) – Specialist Doctors (Remote)
 Company: TRAVYACHT MEDICARE – A Division of TRAVYACHT GROUP
 Job Type: Partnership | Consultant | Referral-Based | Remote
@@ -229,8 +229,8 @@ Key Responsibilities
 
 Eligibility
 
- MD / MS / MBBS / Specialist Physician or equivalen",https://in.indeed.com/viewjob?jk=1c151989acc260c5,2026-07-29T09:29:15Z
-indeed,72809e189edf3be1,Senior Online Consultation Doctor – MD Ayurveda,ReaserachAyu,,Remote,"₹40,000 - ₹60,000 a month",40000,60000,INR,per_month,Freelance|Part-time|Full-time,remote,,doctors,hospital,doctor,2026-07-20,9 days ago,"Role- Senior Clinical Consultant (Ayurveda)
+ MD / MS / MBBS / Specialist Physician or equivalen",remote,non_clinical,https://in.indeed.com/viewjob?jk=1c151989acc260c5,2026-07-13,,,12442,45985,per_month,INR,true,
+India,IN,+91,Remote,ReaserachAyu,hospital,,,Senior Online Consultation Doctor – MD Ayurveda,"Role- Senior Clinical Consultant (Ayurveda)
 About ResearchAyu
 ResearchAyu was founded with a strong mission to find cures for incurable diseases.
 We focus on serious and incurable conditions through in-depth research and evidence based treatments, supported by clinical studies, trials, and measurable patient outcomes. Our research has delivered key breakthroughs, including regeneration of knee cartilage and spinal discs, and promising results in normalizing antibody levels in autoimmune conditions like RA and ANA.
@@ -257,8 +257,8 @@ Mentorship & Clinical Leadership
 ● Provide ongoing clinical leadership and practical guidance to strengthen medical quality
 Clinical Quality & Outcomes
 ● Monitor treatment effectiveness and support improvement in patient outcomes
-● Encourage a disciplined, protocol-oriented, and patient",https://in.indeed.com/viewjob?jk=72809e189edf3be1,2026-07-29T09:29:15Z
-indeed,e77c6a1819c85685,Medical Coder,MedCoded,,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,hospital,medical coder,2026-07-09,19 days ago,"Are you detail-oriented and passionate about healthcare? If you excel at interpreting and coding medical records, we have the ideal opportunity for you!
+● Encourage a disciplined, protocol-oriented, and patient",remote,doctors,https://in.indeed.com/viewjob?jk=72809e189edf3be1,2026-07-20,,,40000,60000,per_month,INR,true,
+India,IN,+91,Remote,MedCoded,hospital,,,Medical Coder,"Are you detail-oriented and passionate about healthcare? If you excel at interpreting and coding medical records, we have the ideal opportunity for you!
 Position: Medical Coder
 Location: RemoteType: Full-TimeSalary: Competitive, Based on Experience
 About Us: MedCoded is a top healthcare provider committed to delivering exceptional care. We value innovation, excellence, and compassion, and our team of professionals works together to positively impact our patients' lives.
@@ -281,8 +281,8 @@ Qualifications:
  Able to work independently and collaboratively
 
 How to Apply:
-Interested candidates are invited to apply online.",https://in.indeed.com/viewjob?jk=e77c6a1819c85685,2026-07-29T09:29:15Z
-indeed,d8a972850876353c,Senior Medical Coder,U me tech healthcare IT solutions,,Remote,"₹20,000 - ₹25,000 a month",20000,25000,INR,per_month,Full-time,remote,,non_clinical,hospital,medical coder,2026-07-05,23 days ago,"We're Hiring! – Certified Senior Medical Coders (HCC)Location: Remote mode (Free lance)
+Interested candidates are invited to apply online.",remote,non_clinical,https://in.indeed.com/viewjob?jk=e77c6a1819c85685,2026-07-09,,,,,,,true,
+India,IN,+91,Remote,U me tech healthcare IT solutions,hospital,,,Senior Medical Coder,"We're Hiring! – Certified Senior Medical Coders (HCC)Location: Remote mode (Free lance)
 CPC Certified Medical coders (Freshers not accepted)
 Job description:
 As a Senior Medical Coder, you will play a crucial role in ensuring the accuracy and integrity of our home healthcare data. Your primary responsibility will be to review medical records and assign appropriate codes for diagnoses and procedures. You will work closely with healthcare providers to guarantee compliance with all coding guidelines and regulations.
@@ -313,8 +313,8 @@ Interview location : Online interview mode
 Apply Now with your updated resume and certification details.
 Job Type: Full-time
 Pay: ₹20,000.00 - ₹25,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=d8a972850876353c,2026-07-29T09:29:15Z
-indeed,8e43517529986a41,SPE-Claims HC,Cognizant,3.8,"Bengaluru, Karnataka",Not Disclosed,,,,,Full-time,remote,Health insurance|Work from home,non_clinical,hospital,medical coder,2026-07-14,14 days ago,"Job Summary
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=d8a972850876353c,2026-07-05,,,20000,25000,per_month,INR,true,
+India,IN,+91,Bengaluru,Cognizant,hospital,,,SPE-Claims HC,"Job Summary
 
  This role supports health care claims operations by configuring and validating claim processing on Xcelys Claims Medical and QNXT Claims Medical platforms ensuring accurate adjudication for medical claims. The specialist uses strong domain knowledge in claims and medical benefits to improve cycle time reduce errors and support a high quality member and provider experience while working remotely during day shifts.
 
@@ -348,8 +348,8 @@ indeed,8e43517529986a41,SPE-Claims HC,Cognizant,3.8,"Bengaluru, Karnataka",Not D
 
  Qualifications
 
- Apply practical experience in medical c",https://in.indeed.com/viewjob?jk=8e43517529986a41,2026-07-29T09:29:15Z
-indeed,4363bbf9148a6645,Healthcare Support Representative,XO Health Inc.,,"Bengaluru, Karnataka","₹5,00,000 - ₹15,00,000 a year",500000,1500000,INR,per_annum,,remote,Health insurance,non_clinical,hospital,medical coder,2026-07-20,9 days ago,"XO Health believes healthcare is fixable. Become part of the community changing the face of the industry.
+ Apply practical experience in medical c",remote,non_clinical,https://in.indeed.com/viewjob?jk=8e43517529986a41,2026-07-14,,,,,,,true,
+India,IN,+91,Bengaluru,XO Health Inc.,hospital,,,Healthcare Support Representative,"XO Health believes healthcare is fixable. Become part of the community changing the face of the industry.
  XO Health is the first health plan designed by and for self-insured employers that delivers a more unified health experience for everyone – from those who receive care, to those who deliver it, to those who pay for it.
  We are growing a multi-disciplinary team of diverse and digitally empowered employees ready to rebuild trust in healthcare through comprehensive and unified transformation.
 
@@ -371,8 +371,8 @@ indeed,4363bbf9148a6645,Healthcare Support Representative,XO Health Inc.,,"Benga
 
 Claims Processing, Adjudication & Resolution
 
- Process, research, and adjudicate institutional and professional me",https://in.indeed.com/viewjob?jk=4363bbf9148a6645,2026-07-29T09:29:15Z
-indeed,88d439bc2fc81caf,Prior Authorization Specialist Remote (IN),Snapscale,,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,hospital,medical coder,2026-07-28,Just posted,"The Prior Auth specialist would be responsible for managing end-to-end prior authorizations, including reviewing clinical documentation, identifying the correct ICD and CPT codes, submitting requests through payer portals, tracking pending cases, following up proactively, handling denials and appeals when needed, and coordinating closely with schedulers and providers to prevent delays in care.
+ Process, research, and adjudicate institutional and professional me",remote,non_clinical,https://in.indeed.com/viewjob?jk=4363bbf9148a6645,2026-07-20,,,500000,1500000,per_annum,INR,true,
+India,IN,+91,Remote,Snapscale,hospital,,,Prior Authorization Specialist Remote (IN),"The Prior Auth specialist would be responsible for managing end-to-end prior authorizations, including reviewing clinical documentation, identifying the correct ICD and CPT codes, submitting requests through payer portals, tracking pending cases, following up proactively, handling denials and appeals when needed, and coordinating closely with schedulers and providers to prevent delays in care.
 
 Key Responsibilities :
 
@@ -392,8 +392,8 @@ Minimal coding experience (mostly submission)
 Experience reviewing clinical documentation for completeness and accuracy
 Experience submitting authorizations through payer portals and following up proactively
 Ability to manage pending cases, track metrics, and stay highly organized
-Experience handling denials and preparing appeals with supporting documentation",https://in.indeed.com/viewjob?jk=88d439bc2fc81caf,2026-07-29T09:29:15Z
-indeed,32dc2a1ae7f0d41e,Medical coding trainer,Ekalasaala,,Remote,Not Disclosed,,,,,Part-time,remote,Work from home,non_clinical,hospital,medical coder,2026-07-23,5 days ago,"Position: Medical Coding Trainer
+Experience handling denials and preparing appeals with supporting documentation",remote,non_clinical,https://in.indeed.com/viewjob?jk=88d439bc2fc81caf,2026-07-28,,,,,,,true,
+India,IN,+91,Remote,Ekalasaala,hospital,,,Medical coding trainer,"Position: Medical Coding Trainer
 Experience: Minimum 1+ Years
 Job Type: Part-Time
 Work Mode: Work From Home (Online)
@@ -463,8 +463,8 @@ Language:
  Telugu (Required)
  English (Required)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=32dc2a1ae7f0d41e,2026-07-29T09:29:15Z
-indeed,bbbdf99893a163a8,Part-Time Medical Coding Trainer,SkillDzire Technologies Pvt Ltd,,Remote,Not Disclosed,,,,,Part-time,remote,Work from home|Health insurance,non_clinical,hospital,medical coder,2026-07-20,8 days ago,"Job Title: Part-Time Medical Coding TrainerAbout the Role
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=32dc2a1ae7f0d41e,2026-07-23,,,,,,,true,
+India,IN,+91,Remote,SkillDzire Technologies Pvt Ltd,hospital,,,Part-Time Medical Coding Trainer,"Job Title: Part-Time Medical Coding TrainerAbout the Role
 SkillDzire is looking for an experienced Medical Coding Trainer to deliver engaging online training sessions for students and aspiring healthcare professionals. The trainer will be responsible for teaching industry-relevant medical coding concepts, preparing learners for certifications and careers, and providing practical knowledge through real-world case studies.
 Key Responsibilities
 
@@ -502,8 +502,8 @@ Benefits:
 
  Work from home
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=bbbdf99893a163a8,2026-07-29T09:29:15Z
-indeed,66cdc7ee822d4ac1,ERS Mapping Specialist Experienced,"Ventra Health, Inc.",3.3,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,hospital,medical coder,2026-07-16,12 days ago,"About Us:
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=bbbdf99893a163a8,2026-07-20,,,,,,,true,
+India,IN,+91,Remote,"Ventra Health, Inc.",hospital,,,ERS Mapping Specialist Experienced,"About Us:
 
  Ventra is a leading business solutions provider for facility-based physicians practicing anesthesia, emergency medicine, hospital medicine, pathology, and radiology. Focused on Revenue Cycle Management, Ventra partners with private practices, hospitals, health systems, and ambulatory surgery centers to deliver transparent and data-driven solutions that solve the most complex revenue and reimbursement issues, enabling clinicians to focus on providing outstanding care to their patients and communities.
 
@@ -536,8 +536,8 @@ indeed,66cdc7ee822d4ac1,ERS Mapping Specialist Experienced,"Ventra Health, Inc."
  Experience with ERA/835 remittance processing or electronic payment posting preferred
  Knowledge of medical terminology and coding concepts required
  Familiarity with third-party payer billing and reimbursement processes required
- Knowledge, Skills, an",https://in.indeed.com/viewjob?jk=66cdc7ee822d4ac1,2026-07-29T09:29:15Z
-indeed,2051f8311108d0fa,Paediatric Physiotherapist,child development centre,,Remote,"₹5,000 - ₹10,000 a week",5000,10000,INR,per_week,Contractual / Temporary|Part-time,remote,Flexible schedule,non_clinical,hospital,physiotherapist,2026-07-09,19 days ago,"Pediatric Physiotherapist – Clinical Content & Protocol Development
+ Knowledge, Skills, an",remote,non_clinical,https://in.indeed.com/viewjob?jk=66cdc7ee822d4ac1,2026-07-16,,,,,,,true,
+India,IN,+91,Remote,child development centre,hospital,,,Paediatric Physiotherapist,"Pediatric Physiotherapist – Clinical Content & Protocol Development
 We are looking for a passionate Pediatric Physiotherapist who is interested not only in clinical practice but also in designing standardized, evidence-based clinical pathways
 The Pediatric Physiotherapist will work closely with the Developmental Pediatrician, Occupational Therapists, Speech-Language Pathologists, Clinical Psychologists, and the technology team to develop comprehensive physiotherapy workflows, protocols, clinical algorithms, and digital documentation systems for the online CDC.
 This is a unique opportunity to contribute to building one of the first tech enabled pediatric rehabilitation platforms focused on standardizing care while maintaining individualized, family-centered intervention.
@@ -546,8 +546,8 @@ Benefits:
 
  Flexible schedule
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=2051f8311108d0fa,2026-07-29T09:29:15Z
-indeed,b18de8e67ebe9ea8,Wellness excutive,Radiant wellness Co,,Remote,"₹15,000 - ₹20,000 a month",15000,20000,INR,per_month,Permanent|Part-time|Full-time|Fresher,remote,Work from home|Flexible schedule,non_clinical,hospital,physiotherapist,2026-07-07,21 days ago,"Job role : Wellness excutive
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=2051f8311108d0fa,2026-07-09,,,,,,,true,
+India,IN,+91,Remote,Radiant wellness Co,hospital,,,Wellness excutive,"Job role : Wellness excutive
 // Client Associate/ prospecting
 //Health advising
 // Team co-ordination
@@ -559,8 +559,8 @@ Benefits:
  Flexible schedule
  Work from home
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=b18de8e67ebe9ea8,2026-07-29T09:29:15Z
-indeed,78712943d9aa75c9,Assistant Nurse / Registered Nurse – Germany Opportunities,walsons healthcare,,Remote,"₹1,00,000 - ₹2,00,000 a month",100000,200000,INR,per_month,Full-time|Permanent,remote,Health insurance,nurses,hospital,nurse,2026-07-24,4 days ago,"Nurse (Assistant Nurse / Registered Nurse) – GermanyLocation: Germany (Multiple Locations)Job Type: Full-Time
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=b18de8e67ebe9ea8,2026-07-07,,,15000,20000,per_month,INR,true,
+India,IN,+91,Remote,walsons healthcare,hospital,,,Assistant Nurse / Registered Nurse – Germany Opportunities,"Nurse (Assistant Nurse / Registered Nurse) – GermanyLocation: Germany (Multiple Locations)Job Type: Full-Time
 Job Overview
 we are hiring Assistant Nurses and Registered Nurses for leading healthcare facilities across Germany. We welcome both freshers and experienced nursing professionals who are looking to build an international career with comprehensive support throughout the Germany migration and recognition process.
 Eligibility
@@ -600,8 +600,8 @@ How to Apply
 Interested candidates can apply through Indeed or send us a direct message to learn more and reserve their seat for the upcoming A1 batch.
 Start your international nursing career in Germany with Us
 Pay: ₹100,000.00 - ₹200,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=78712943d9aa75c9,2026-07-29T09:29:15Z
-indeed,17ee77ba5153d0d2,Assistant Manager,Vaighai Agro Products Limted,,Remote,"₹16,256.31 - ₹34,373.25 a week",16256,34373,INR,per_week,Part-time,remote,Health insurance|Commuter assistance|Flexible schedule|Paid sick time|Provident Fund|Life insurance,non_clinical,hospital,nurse,2026-07-21,7 days ago,".M.A .B.ed l.l.b
+Work Location: Remote",remote,nurses,https://in.indeed.com/viewjob?jk=78712943d9aa75c9,2026-07-24,,,100000,200000,per_month,INR,true,
+India,IN,+91,Remote,Vaighai Agro Products Limted,hospital,,,Assistant Manager,".M.A .B.ed l.l.b
 .teaching
 . Office
 . manager
@@ -616,8 +616,8 @@ Benefits:
  Paid sick time
  Provident Fund
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=17ee77ba5153d0d2,2026-07-29T09:29:15Z
-indeed,e692a24ae5af344c,Home Care Nurse,Apollo knowledge Ventures Limited,,"Kolkata, West Bengal","₹12,227.60 - ₹40,000.00 a month",12228,40000,INR,per_month,Full-time,remote,Flexible schedule,nurses,hospital,nurse,2026-07-05,23 days ago,"Apollo Health Resources is a part of the renowned Apollo Hospitals Group. We recruit CEOs, Doctors, Nurses, paramedics, allied and admin professionals at leading healthcare institutes around the world. Our Recruitment centers are present in Delhi, Hyderabad, Chennai & Kottayam.
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=17ee77ba5153d0d2,2026-07-21,,,,,,,true,
+India,IN,+91,Kolkata,Apollo knowledge Ventures Limited,hospital,,,Home Care Nurse,"Apollo Health Resources is a part of the renowned Apollo Hospitals Group. We recruit CEOs, Doctors, Nurses, paramedics, allied and admin professionals at leading healthcare institutes around the world. Our Recruitment centers are present in Delhi, Hyderabad, Chennai & Kottayam.
 Role & responsibilities
 We are hiring homecare nurses in Mumbai
 Qualification : GNM / Bsc/ANM
@@ -631,8 +631,8 @@ Benefits:
 
  Flexible schedule
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=e692a24ae5af344c,2026-07-29T09:29:15Z
-indeed,827d1152c05d6a7a,Diabetologist,Fitelo,,Remote,"₹30,000 - ₹55,000 a month",30000,55000,INR,per_month,Part-time,remote,Work from home,doctors,hospital,physician,2026-07-27,1 day ago,"Role: DiabetologistJob Type: Full-timeLocation: Work From Home (Remote – India)
+Work Location: Remote",remote,nurses,https://in.indeed.com/viewjob?jk=e692a24ae5af344c,2026-07-05,,,12228,40000,per_month,INR,true,
+India,IN,+91,Remote,Fitelo,hospital,,,Diabetologist,"Role: DiabetologistJob Type: Full-timeLocation: Work From Home (Remote – India)
 About Fitelo:
 Curaa is a fast-growing digital health platform focused on weight loss, diabetes reversal, and lifestyle management. The company combines doctors, nutritionists, and fitness experts to deliver personalized, app-based transformation programs. With a data-driven and outcome-focused approach, Fitelo helps clients achieve sustainable fat loss and improved metabolic health.
 About the role:
@@ -658,8 +658,8 @@ Application Question(s):
 
  Have you completed your MD?
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=827d1152c05d6a7a,2026-07-29T09:29:15Z
-indeed,fc32d79c19c02e3e,"Dir, Medical Safety",IQVIA,3.7,"Bengaluru, Karnataka",Not Disclosed,,,,,Full-time,remote,Work from home,non_clinical,pharma,clinical research,2026-07-03,26 days ago,"Bengaluru, India | Full time | Home-based | R1554933
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=827d1152c05d6a7a,2026-07-27,,,30000,55000,per_month,INR,true,
+India,IN,+91,Bengaluru,IQVIA,pharma,,,"Dir, Medical Safety","Bengaluru, India | Full time | Home-based | R1554933
 
  Provide medical expertise on pharmacovigilance services to all Quinties divisions as requested. The Director, Medical Safety participates in all aspects of Medical Safety's involvement on assigned trials and stand-alone safety projects with appropriate oversight from management or more senior medical safety directors. The Director, Medical Safety also provides global project leadership on projects requiring multiple medical safety advisors and mentorship to junior medical safety staff. The Director, Medical Safety assists in the implementation of department missions, goals and objectives, oversight of operations, development of policies and procedures and standards for the department.
  IQVIA is a leading global provider of clinical research services, commercial insights and healthcare intelligence to the life sciences and healthcare industries. We create intelligent connections to accelerate the development and commercialization of innovative medical treatments to help improve patient outcomes and population health worldwide.
@@ -670,8 +670,8 @@ indeed,fc32d79c19c02e3e,"Dir, Medical Safety",IQVIA,3.7,"Bengaluru, Karnataka",N
  You'll work remotely, with the flexibility to do your best work from home. Supported by collaborative tools and a global team, you'll stay connected while enjoying the autonomy and balance that comes with a fully remote role.
 
  Culture
- Culture at IQVIA is built on a shared belief: that when people are empowered with better data, smarter technology and deeper expertise, they can change what's possible for patients. Across every team and every corner of the globe, you'll find colleagues who genuinely care — about the mission and about each other. That's what makes this a place where people tend to stay, grow and do the best work of their careers.",https://in.indeed.com/viewjob?jk=fc32d79c19c02e3e,2026-07-29T09:29:15Z
-indeed,2d46a471f5fe41ef,Medical Reviewer,ProductLife Group,,Remote,Not Disclosed,,,,,Permanent|Contractual / Temporary,remote,,non_clinical,hospital,clinical research,2026-07-20,8 days ago,"ProductLife Group is looking for Medical Reviewers having minimum 5 years of experience in Pharmacovigilance Medical Reviewing.
+ Culture at IQVIA is built on a shared belief: that when people are empowered with better data, smarter technology and deeper expertise, they can change what's possible for patients. Across every team and every corner of the globe, you'll find colleagues who genuinely care — about the mission and about each other. That's what makes this a place where people tend to stay, grow and do the best work of their careers.",remote,non_clinical,https://in.indeed.com/viewjob?jk=fc32d79c19c02e3e,2026-07-03,,,,,,,true,
+India,IN,+91,Remote,ProductLife Group,hospital,,,Medical Reviewer,"ProductLife Group is looking for Medical Reviewers having minimum 5 years of experience in Pharmacovigilance Medical Reviewing.
 Responsibilities:
 
 Clinical Phase:
@@ -721,8 +721,8 @@ Additional experience and/or skills:
  Reliable
  Strong organisation skills
  Punctual
- Database experience",https://in.indeed.com/viewjob?jk=2d46a471f5fe41ef,2026-07-29T09:29:15Z
-indeed,f08ea7189ff5893b,Assoc Medical Safety Dir,IQVIA,3.7,"Bengaluru, Karnataka",Not Disclosed,,,,,Full-time,remote,Work from home,non_clinical,pharma,clinical research,2026-06-29,29 days ago,"Bengaluru, India | Full time | Home-based | R1552764
+ Database experience",remote,non_clinical,https://in.indeed.com/viewjob?jk=2d46a471f5fe41ef,2026-07-20,,,,,,,true,
+India,IN,+91,Bengaluru,IQVIA,pharma,,,Assoc Medical Safety Dir,"Bengaluru, India | Full time | Home-based | R1552764
 
  Job Overview
  Provide medical expertise on pharmacovigilance services to divisions as requested. The Associate Medical Safety Director participates in all aspects of Medical Safety's involvement on assigned trials and stand alone safety projects with appropriate oversight from management or more senior medical safety directors.
@@ -754,8 +754,8 @@ indeed,f08ea7189ff5893b,Assoc Medical Safety Dir,IQVIA,3.7,"Bengaluru, Karnataka
 
  Qualifications
 
- Other A medical degree from an",https://in.indeed.com/viewjob?jk=f08ea7189ff5893b,2026-07-29T09:29:15Z
-indeed,dee587ac2ad75669,Central Report Reviewer,Syneos - Clinical and Corporate - Prod,3.6,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,pharma,clinical research,2026-06-29,29 days ago,"Central Report Reviewer
+ Other A medical degree from an",remote,non_clinical,https://in.indeed.com/viewjob?jk=f08ea7189ff5893b,2026-06-29,,,,,,,true,
+India,IN,+91,Remote,Syneos - Clinical and Corporate - Prod,pharma,,,Central Report Reviewer,"Central Report Reviewer
 
  Syneos Health® is a leading fully-integrated life sciences services organization built to accelerate customer success. We partner with innovators at every point across the drug development and commercialization continuum, helping them navigate complexity, anticipate change and accelerate progress.
 
@@ -770,8 +770,8 @@ indeed,dee587ac2ad75669,Central Report Reviewer,Syneos - Clinical and Corporate 
  May support development of annotated visit reports such as PSV, SIV, IMV, COV & SCAN
  Reviews the content and quality of site and central monitoring documentation (site monitoring calls, site visit reports, site letters, central monitoring reports and pertinent correspondence), to ensure they represent site management activities and conduct and that they appropriately convey any risks to protocol/GCP compliance, trial conduct, patient safety or data integrity. Document requested revisions and approvals in CTMS. Ensures these deliverables are provided according to company and/or sponsor specifications, including delivery deadlines.
 
- Assesses factors that might affect subject/patient's safety and clinical data integrity at an investigator/physician site such as protocol deviation/violations/special Sponsor's requirements and pharmacovigilance issues documented in the report",https://in.indeed.com/viewjob?jk=dee587ac2ad75669,2026-07-29T09:29:15Z
-indeed,0e0ebcef762af4fd,Clinical Pharmacologist,Radiate E Services Pvt Ltd,3,Remote,"₹12,748.17 - ₹66,409.55 a month",12748,66410,INR,per_month,Full-time,remote,,pharmacists,hospital,clinical research,2026-07-28,Just posted,"Research and Trials: Design, execute, and analyze phase-specific clinical trials to test new drug safety and effectiveness.
+ Assesses factors that might affect subject/patient's safety and clinical data integrity at an investigator/physician site such as protocol deviation/violations/special Sponsor's requirements and pharmacovigilance issues documented in the report",remote,non_clinical,https://in.indeed.com/viewjob?jk=dee587ac2ad75669,2026-06-29,,,,,,,true,
+India,IN,+91,Remote,Radiate E Services Pvt Ltd,hospital,,,Clinical Pharmacologist,"Research and Trials: Design, execute, and analyze phase-specific clinical trials to test new drug safety and effectiveness.
 Dosing and Safety: Determine proper human dosage, evaluate drug interactions, and track adverse reactions.
 Patient Care: Provide complex therapy consultations and manage severe drug toxicities or poisoning in hospital settings.
 Policy and Regulation: Help create hospital medication guidelines and review drug data for regulatory approval.
@@ -781,8 +781,8 @@ Application Question(s):
  Are you MD or PHD In Pharmacology ?
  is your MD or PHD in Medical or Clial or Human Pharmacology ?
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=0e0ebcef762af4fd,2026-07-29T09:29:15Z
-indeed,292445cd153d8ad4,Freelance – Delphi Study Cardio-Renal & Metabolic Disease (Clinical Research Expert),Guires Solutions Private Limited,,Remote,"From ₹10,000 a month",10000,,INR,per_month,Part-time|Freelance|Volunteer|Contractual / Temporary,remote,,non_clinical,hospital,medical writer,2026-07-09,19 days ago,"We are seeking an experienced clinical research professional to support a Delphi consensus-based research study and provide end-to-end thesis development assistance.
+Work Location: Remote",remote,pharmacists,https://in.indeed.com/viewjob?jk=0e0ebcef762af4fd,2026-07-28,,,12748,66410,per_month,INR,true,
+India,IN,+91,Remote,Guires Solutions Private Limited,hospital,,,Freelance – Delphi Study Cardio-Renal & Metabolic Disease (Clinical Research Expert),"We are seeking an experienced clinical research professional to support a Delphi consensus-based research study and provide end-to-end thesis development assistance.
 The study focuses on cardio-renal risk prevention interventions in adults with:
 
  Type 2 Diabetes Mellitus (T2DM)
@@ -850,8 +850,8 @@ Ideal candidates will have:
 Contact : Gray 9566133822
 Job Types: Part-time, Freelance, Volunteer
 Pay: From ₹10,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=292445cd153d8ad4,2026-07-29T09:29:15Z
-indeed,7099d72b90d9efbd,Medical Research Student,Pinnacle Montessori,,Remote,Not Disclosed,,,,,Full-time|Part-time,remote,,non_clinical,hospital,medical writer,2026-07-27,1 day ago,"Overview
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=292445cd153d8ad4,2026-07-09,,,10000,10000,per_month,INR,true,
+India,IN,+91,Remote,Pinnacle Montessori,hospital,,,Medical Research Student,"Overview
  We are seeking a talented and detail-oriented Medical Research Student to join our dynamic team. The ideal candidate must have a passion for crafting engaging content and the ability to adapt their writing style to meet various project requirements. This role involves producing high-quality written materials that effectively communicate our message and resonate with our audience.
 Duties
  - Conduct thorough research to gather information and insights relevant to medical research and writing.
@@ -885,8 +885,8 @@ Experience:
  Writing Research Articles using AI Tools: 1 year (Required)
  Journalism: 1 year (Required)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=7099d72b90d9efbd,2026-07-29T09:29:15Z
-indeed,d7d1cc43897aac38,Research Associate III - Evidence Synthesis,Thermo Fisher Scientific,3.4,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,pharma,medical writer,2026-07-10,18 days ago,"Work Schedule Standard (Mon-Fri)
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=7099d72b90d9efbd,2026-07-27,,,,,,,true,
+India,IN,+91,Remote,Thermo Fisher Scientific,pharma,,,Research Associate III - Evidence Synthesis,"Work Schedule Standard (Mon-Fri)
 
  Environmental Conditions Office
 
@@ -936,8 +936,8 @@ indeed,d7d1cc43897aac38,Research Associate III - Evidence Synthesis,Thermo Fishe
 
  PhD in health sciences, economics, biology, natural sciences or a related field with some related experience; MSc. with significant related experience, or Bachelors with extensive relevant experience.
 
- Proven experience in systematic literature review method",https://in.indeed.com/viewjob?jk=d7d1cc43897aac38,2026-07-29T09:29:15Z
-indeed,37264ff6b05788d1,Online Medical Transcription Faculty (Remote) – Kerala Candidates Only,EDORA EDUCATION,,Remote,₹100.57 - ₹410.35 an hour,101,410,INR,per_hour,Part-time,remote,Work from home|Flexible schedule,non_clinical,hospital,medical writer,2026-07-20,9 days ago,"Edora Education is looking for an experienced Online Medical Transcription Faculty to train students through live online sessions. We are seeking passionate professionals with strong subject knowledge and excellent teaching skills.
+ Proven experience in systematic literature review method",remote,non_clinical,https://in.indeed.com/viewjob?jk=d7d1cc43897aac38,2026-07-10,,,,,,,true,
+India,IN,+91,Remote,EDORA EDUCATION,hospital,,,Online Medical Transcription Faculty (Remote) – Kerala Candidates Only,"Edora Education is looking for an experienced Online Medical Transcription Faculty to train students through live online sessions. We are seeking passionate professionals with strong subject knowledge and excellent teaching skills.
 Responsibilities
 
  Conduct live online Medical Transcription classes.
@@ -976,8 +976,8 @@ Benefits:
  Flexible schedule
  Work from home
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=37264ff6b05788d1,2026-07-29T09:29:15Z
-indeed,870072828a4960a6,Part Time Clinical Pschyologist,Refill Health Pvt . Ltd,,Remote,"₹20,000 a month",20000,20000,INR,per_month,Part-time,remote,,non_clinical,hospital,psychologist,2026-07-17,11 days ago,"About Refill Health
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=37264ff6b05788d1,2026-07-20,,,,,,,true,
+India,IN,+91,Remote,Refill Health Pvt . Ltd,hospital,,,Part Time Clinical Pschyologist,"About Refill Health
 Refill Health is a mental health and emotional well-being platform committed to making quality psychological care accessible, personalized, and evidence-based. We provide therapy, psychological assessments, corporate wellness programs, and digital mental health solutions to support individuals and organizations in improving their mental well-being. Our mission is to empower people to lead healthier, happier, and more resilient lives through compassionate and evidence-based care.
 Key Responsibilities
 
@@ -1017,8 +1017,8 @@ Experience
  Experience in psychological assessment, diagnosis, and evidence-based psychotherapy is required.
  Prior experience in hospitals, mental health clinics, rehabilitation centers, or teletherapy platforms is preferred.
 
-Pay: ₹20,000.00 per month",https://in.indeed.com/viewjob?jk=870072828a4960a6,2026-07-29T09:29:15Z
-indeed,357a358fea5d7f4e,Medical Writer (India),ProductLife Group,,Remote,Not Disclosed,,,,,Permanent|Contractual / Temporary,remote,,non_clinical,hospital,pharmacovigilance,2026-07-13,15 days ago,"We are seeking an experienced Medical Writer to join our Pharmacovigilance and Medical Writing team.
+Pay: ₹20,000.00 per month",remote,non_clinical,https://in.indeed.com/viewjob?jk=870072828a4960a6,2026-07-17,,,20000,20000,per_month,INR,true,
+India,IN,+91,Remote,ProductLife Group,hospital,,,Medical Writer (India),"We are seeking an experienced Medical Writer to join our Pharmacovigilance and Medical Writing team.
 
  The successful candidate will be responsible for preparing and reviewing complex regulatory and safety documents, ensuring compliance with global regulatory requirements and company SOPs. This role requires strong scientific expertise, analytical thinking, and the ability to provide medical writing leadership on complex projects.
 
@@ -1122,8 +1122,8 @@ Strong understanding of:
 
  Aggregate safety reporting
 
- Ability to analyze and interpret complex scientific and clinical informa",https://in.indeed.com/viewjob?jk=357a358fea5d7f4e,2026-07-29T09:29:15Z
-indeed,d6680b5a8809a33c,"Lead Clinical Data Manager (Remote, Full Time)",Fresh Prints,,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,hospital,pharmacovigilance,2026-07-28,Just posted,"About Frontier
+ Ability to analyze and interpret complex scientific and clinical informa",remote,non_clinical,https://in.indeed.com/viewjob?jk=357a358fea5d7f4e,2026-07-13,,,,,,,true,
+India,IN,+91,Remote,Fresh Prints,hospital,,,"Lead Clinical Data Manager (Remote, Full Time)","About Frontier
 Frontier is a subsidiary of Fresh Prints. Fresh Prints is a New York-based, fast-growing, fully remote, 150-person company with most of our team based in India and the Philippines. A few years ago, Fresh Prints began helping other fast-growing companies build their teams. We got so good at it that we spun out a new company to focus exclusively on that — and called it Frontier.
 At Frontier, we help companies grow full-time, cross-functional teams abroad. We hire the smartest people and place them into the best companies. In three years, we've never lost a client. If you're interested in a Frontier role and you apply and are accepted, we'll screen you through assessments and interviews and aim to get you an interview for a full-time job within the month.
 Think of us as your personal talent agent — and good luck with the application!
@@ -1141,8 +1141,8 @@ Clinical Data Management Leadership
  Lead all sponsor-side data management activities for Phase 2/3 clinical trials in rare disease and neonatology.
  Develop and execute data management strategies aligned with clinical development, regulatory, and submission timelines.
  Act as the primary point of contact for all data management deliverables across internal teams and external partners.
- Provide oversight of data management activities conducted by CROs and other vendors within a fully outsourced op",https://in.indeed.com/viewjob?jk=d6680b5a8809a33c,2026-07-29T09:29:15Z
-indeed,1fcc3c7420aa6b8f,Clinical Dietician,Central Care foundation,,Remote,"From ₹11,060.07 a month",11060,,INR,per_month,Freelance,remote,Cell phone reimbursement|Flexible schedule,non_clinical,hospital,dietitian,2026-07-13,15 days ago,"Job Title: Clinical DietitianJob Summary
+ Provide oversight of data management activities conducted by CROs and other vendors within a fully outsourced op",remote,non_clinical,https://in.indeed.com/viewjob?jk=d6680b5a8809a33c,2026-07-28,,,,,,,true,
+India,IN,+91,Remote,Central Care foundation,hospital,,,Clinical Dietician,"Job Title: Clinical DietitianJob Summary
 We are seeking a dedicated and knowledgeable Clinical Dietitian to join our healthcare team. In this role, you will be responsible for assessing the nutritional needs of our patients, developing customized therapeutic diet plans, and providing medical nutrition therapy (MNT). You will work closely with a multidisciplinary medical team (physicians, nurses, and specialists) to integrate proper nutrition into overall patient care plans, aiding in recovery and managing chronic illnesses.
 Key Responsibilities and Duties
 
@@ -1166,8 +1166,8 @@ Key Skills & Competencies
  Excellent active listening, counseling, and empathetic communication skills to connect with diverse patient populations.
  Strong analytical and problem-solving abilities to interpret laboratory data and design targeted therapeutic diets.
  Proficiency with Electronic Health Records (EHR) software and medical documentation.
- Ability to work both independently and collaborat",https://in.indeed.com/viewjob?jk=1fcc3c7420aa6b8f,2026-07-29T09:29:15Z
-indeed,23ab8890d9d59dbe,Clinical Nutritionist / Dietician,ZYLA Health,,Remote,"₹18,000 - ₹22,000 a month",18000,22000,INR,per_month,Full-time,remote,Leave encashment|Paid sick time|Paid time off|Work from home,non_clinical,hospital,dietitian,2026-07-29,Just posted,"We are seeking a dedicated Clinical Nutritionist to join our growing care team. The role involves regular interaction with patients through telephonic and video consultations, providing counseling to encourage lifestyle changes, and developing personalized nutrition plans tailored to individual needs.
+ Ability to work both independently and collaborat",remote,non_clinical,https://in.indeed.com/viewjob?jk=1fcc3c7420aa6b8f,2026-07-13,,,11060,11060,per_month,INR,true,
+India,IN,+91,Remote,ZYLA Health,hospital,,,Clinical Nutritionist / Dietician,"We are seeking a dedicated Clinical Nutritionist to join our growing care team. The role involves regular interaction with patients through telephonic and video consultations, providing counseling to encourage lifestyle changes, and developing personalized nutrition plans tailored to individual needs.
 How you will make an impact:
 
  Interacting with patients regularly via telephonic or video calls.
@@ -1206,8 +1206,8 @@ Language:
 
  English and Hindi (Required)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=23ab8890d9d59dbe,2026-07-29T09:29:15Z
-indeed,be6f826e92aa93b7,Online Nutritionist,Doctor Rekha Ayurveda,,Remote,"₹15,000 - ₹24,999 a month",15000,24999,INR,per_month,Full-time,remote,Work from home|Provident Fund,non_clinical,hospital,dietitian,2026-07-24,4 days ago,"Job Title: Online NutritionistLocation: RemoteCompany: Doctor Rekha Ayurveda
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=23ab8890d9d59dbe,2026-07-29,,,18000,22000,per_month,INR,true,
+India,IN,+91,Remote,Doctor Rekha Ayurveda,hospital,,,Online Nutritionist,"Job Title: Online NutritionistLocation: RemoteCompany: Doctor Rekha Ayurveda
 Position Overview:
 Doctor Rekha Ayurveda is seeking an Online Nutritionist for our organization. This role involves creating and making changes to diet plans based on patient progress and feedback, overseeing patient progress, collaborating with team doctors and other nutritionists, etc.
 Qualifications:
@@ -1249,8 +1249,8 @@ Language:
 
  English (Required)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=be6f826e92aa93b7,2026-07-29T09:29:15Z
-indeed,4b19c69f3393d046,Fitness Coach/ Nutritionist,Trainedbykartik,,Remote,"₹25,000 - ₹35,000 a month",25000,35000,INR,per_month,Full-time,remote,,non_clinical,hospital,dietitian,2026-07-09,19 days ago,"Job Title: Fitness Coach / Nutritionist (Remote)
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=be6f826e92aa93b7,2026-07-24,,,15000,24999,per_month,INR,true,
+India,IN,+91,Remote,Trainedbykartik,hospital,,,Fitness Coach/ Nutritionist,"Job Title: Fitness Coach / Nutritionist (Remote)
 Job Type: Full-Time (Remote)
 Salary: ₹25,000 – ₹35,000 per month
 Job Description: We are looking for a certified Fitness Coach/Nutritionist to help clients achieve their fitness and health goals through personalized workout and nutrition plans.
@@ -1270,8 +1270,8 @@ Comfortable working remotely
 Quick response time on WhatsApp
 Apply Now: Immediate joining preferred.
 Pay: ₹25,000.00 - ₹35,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=4b19c69f3393d046,2026-07-29T09:29:15Z
-indeed,777c79ff6adf9000,Sales Dietitian,No Guilt Fitness Pvt Ltd ( Fitelo),,Remote,"₹18,000 - ₹24,000 a month",18000,24000,INR,per_month,Full-time,remote,,non_clinical,hospital,dietitian,2026-07-01,27 days ago,"Role: Sales DietitianJob Type: Full-Time (Remote)Location: RemoteSalary: ₹18,000 – ₹24,000 per month
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=4b19c69f3393d046,2026-07-09,,,25000,35000,per_month,INR,true,
+India,IN,+91,Remote,No Guilt Fitness Pvt Ltd ( Fitelo),hospital,,,Sales Dietitian,"Role: Sales DietitianJob Type: Full-Time (Remote)Location: RemoteSalary: ₹18,000 – ₹24,000 per month
 About Fitty
 Fitty is a health and wellness platform committed to helping individuals achieve their weight management and lifestyle goals through science-backed nutrition solutions and innovative healthcare products. We are building a customer-centric team that combines nutrition expertise with consultative selling to deliver the best possible experience.
 About the Role
@@ -1304,8 +1304,8 @@ Preferred Experience
  Freshers with excellent communication skills, strong product knowledge, and a keen interest in sales are encouraged to apply.
 
 Pay: ₹18,000.00 - ₹24,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=777c79ff6adf9000,2026-07-29T09:29:15Z
-indeed,3c47a83f57b20d1d,Pharmacist- (Prescription Digitization & Verification),Gud Medicare solution Pvt Ltd,,"Gurugram, Haryana","₹15,000 - ₹20,000 a month",15000,20000,INR,per_month,Full-time,remote,Work from home|Cell phone reimbursement|Commuter assistance|Flexible schedule|Health insurance|Internet reimbursement|Leave encashment|Paid sick time|Paid time off|Provident Fund|Life insurance,pharmacists,hospital,pharmacist,2026-07-13,15 days ago,"We are looking for a detail-orientated pharmacist to support our digital healthcare operations. The role involves accurate prescription digitisation, clinical data entry, validation, and customer order verification while maintaining high standards of quality, compliance, and turnaround time.
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=777c79ff6adf9000,2026-07-01,,,18000,24000,per_month,INR,true,
+India,IN,+91,Gurugram,Gud Medicare solution Pvt Ltd,hospital,,,Pharmacist- (Prescription Digitization & Verification),"We are looking for a detail-orientated pharmacist to support our digital healthcare operations. The role involves accurate prescription digitisation, clinical data entry, validation, and customer order verification while maintaining high standards of quality, compliance, and turnaround time.
 Key Responsibilities
 ● Convert handwritten prescriptions into accurate digital format within defined timelines.
 ● Capture complete prescription details including patient vitals, symptoms, diagnosis, and investigations (lab tests, radiology, ultrasound, X-ray, MRI, CT scan, etc.).
@@ -1341,8 +1341,8 @@ Benefits:
  Provident Fund
  Work from home
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=3c47a83f57b20d1d,2026-07-29T09:29:15Z
-indeed,c439bc13490c875a,PHARMACY TUTOR,Mediclue International Academy,,Remote,"₹25,000.00 - ₹40,023.31 a month",25000,40023,INR,per_month,Part-time,remote,,pharmacists,hospital,pharmacist,2026-07-17,11 days ago,"Urgently Hiring: Pharmacy Prometric Tutor (DHA / DOH / MOH / Gulf Licensing Exams)
+Work Location: Remote",remote,pharmacists,https://in.indeed.com/viewjob?jk=3c47a83f57b20d1d,2026-07-13,,,15000,20000,per_month,INR,true,
+India,IN,+91,Remote,Mediclue International Academy,hospital,,,PHARMACY TUTOR,"Urgently Hiring: Pharmacy Prometric Tutor (DHA / DOH / MOH / Gulf Licensing Exams)
 We are looking for an experienced Pharmacy Prometric Tutor to train candidates preparing for Gulf licensing examinations.
 Position
 Pharmacy Prometric Trainer / Tutor
@@ -1391,8 +1391,8 @@ Location
 
 Interested candidates with experience in Pharmacy Prometric coaching for Gulf licensing examinations are invited to send their CV along with details of their teaching experience and exam qualifications.
 Pay: ₹25,000.00 - ₹40,023.31 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=c439bc13490c875a,2026-07-29T09:29:15Z
-indeed,5c5912e5f1f681e1,Regulatory Affairs Consultant,Parexel,3.6,Remote,Not Disclosed,,,,,,remote,,non_clinical,pharma,pharmacist,2026-06-30,28 days ago,"A Consultant must have an understanding of the organization's consulting models and methodologies, as well as, good knowledge of what services PC provides. A consultant must have strong technical skills and may be developing specialist knowledge of a particular subject and/ or market. A Consultant ensures the timely performance of work within a project scope to the quality expectations of PC and the client. When serving as a Project Lead or Work Stream Lead, a Consultant assures the work of the entire team or work stream is delivered on time and that it meets client's and PC's quality expectations.
+Work Location: Remote",remote,pharmacists,https://in.indeed.com/viewjob?jk=c439bc13490c875a,2026-07-17,,,25000,40023,per_month,INR,true,
+India,IN,+91,Remote,Parexel,pharma,,,Regulatory Affairs Consultant,"A Consultant must have an understanding of the organization's consulting models and methodologies, as well as, good knowledge of what services PC provides. A consultant must have strong technical skills and may be developing specialist knowledge of a particular subject and/ or market. A Consultant ensures the timely performance of work within a project scope to the quality expectations of PC and the client. When serving as a Project Lead or Work Stream Lead, a Consultant assures the work of the entire team or work stream is delivered on time and that it meets client's and PC's quality expectations.
 
  Key Responsibilities
 
@@ -1418,8 +1418,8 @@ indeed,5c5912e5f1f681e1,Regulatory Affairs Consultant,Parexel,3.6,Remote,Not Dis
 
  B.Sc. / M.Sc. / B. Pharmacy / M. Pharmacy
 
- #LI-REMOTE",https://in.indeed.com/viewjob?jk=5c5912e5f1f681e1,2026-07-29T09:29:15Z
-indeed,f0cbccaa829191d0,Senior Regulatory Affairs Associate,Parexel,3.6,Remote,Not Disclosed,,,,,,remote,,non_clinical,pharma,pharmacist,2026-06-30,28 days ago,"A Senior Associate must have an understanding of the organization's basic consulting models and methodologies, as well as basic knowledge of what services PC provides. A Senior Associate must be technically competent and continually developing the skills as defined in the key accountabilities section of this document. A Senior Associate, under the general direction of a Project Lead and/or Technical SME, takes responsibility for ensuring that client work is performed, and delivered on time, meeting the quality expectations of PC and the client. A Senior Associate may act in a client facing role with support from line management. When serving as a Project Lead or Work Stream Lead, a Senior Associate assures the work of the entire team or work stream is delivered on time and that it meets client's and PC's quality expectations.
+ #LI-REMOTE",remote,non_clinical,https://in.indeed.com/viewjob?jk=5c5912e5f1f681e1,2026-06-30,,,,,,,true,
+India,IN,+91,Remote,Parexel,pharma,,,Senior Regulatory Affairs Associate,"A Senior Associate must have an understanding of the organization's basic consulting models and methodologies, as well as basic knowledge of what services PC provides. A Senior Associate must be technically competent and continually developing the skills as defined in the key accountabilities section of this document. A Senior Associate, under the general direction of a Project Lead and/or Technical SME, takes responsibility for ensuring that client work is performed, and delivered on time, meeting the quality expectations of PC and the client. A Senior Associate may act in a client facing role with support from line management. When serving as a Project Lead or Work Stream Lead, a Senior Associate assures the work of the entire team or work stream is delivered on time and that it meets client's and PC's quality expectations.
  Key Responsibilities
 
  Support global regulatory lifecycle management activities across EU, US, and international markets
@@ -1444,8 +1444,8 @@ indeed,f0cbccaa829191d0,Senior Regulatory Affairs Associate,Parexel,3.6,Remote,N
 
  B.Sc. / M.Sc. / B. Pharmacy / M. Pharmacy
 
- #LI-REMOTE",https://in.indeed.com/viewjob?jk=f0cbccaa829191d0,2026-07-29T09:29:15Z
-indeed,b97a69fae198e47a,Patient Support (Online Assistance),Isha Health Solutions,,Remote,"₹15,000 - ₹20,000 a month",15000,20000,INR,per_month,Full-time,remote,,non_clinical,hospital,healthcare,2026-07-20,9 days ago,"Support all aspects of the online consultation process, including front desk activities such as scheduling appointments and answering patient queries
+ #LI-REMOTE",remote,non_clinical,https://in.indeed.com/viewjob?jk=f0cbccaa829191d0,2026-06-30,,,,,,,true,
+India,IN,+91,Remote,Isha Health Solutions,hospital,,,Patient Support (Online Assistance),"Support all aspects of the online consultation process, including front desk activities such as scheduling appointments and answering patient queries
  Receive and perform patient calls (approximately 70 calls per day)
  Respond to emails
  Accurately book, reschedule, and cancel online consultation appointments
@@ -1461,8 +1461,8 @@ indeed,b97a69fae198e47a,Patient Support (Online Assistance),Isha Health Solution
 
 Interested candidates - Pls mail your resume to get an interview scheduled.
 Pay: ₹15,000.00 - ₹20,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=b97a69fae198e47a,2026-07-29T09:29:15Z
-indeed,0ecd3c4005f7a9a6,Clinical Coordinator (Remote-Night Shift),ZYLA Health,,Remote,"₹18,000 - ₹22,000 a month",18000,22000,INR,per_month,Permanent|Full-time|Fresher,remote,Flexible schedule|Leave encashment|Paid sick time|Paid time off|Provident Fund|Work from home,non_clinical,hospital,healthcare,2026-07-21,8 days ago,"About Zyla :
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=b97a69fae198e47a,2026-07-20,,,15000,20000,per_month,INR,true,
+India,IN,+91,Remote,ZYLA Health,hospital,,,Clinical Coordinator (Remote-Night Shift),"About Zyla :
 Zyla Health is India’s highest-rated personalized care management platform focused on improving health outcomes. Zyla enables care at scale for insurers and employers through its human-assisted AI on the 24x7 conversational Zyla app (consistently rated 4.7+). Some of our clients include Aditya Birla, Max Life, Care Insurance, HDFC Ergo, IBM, Godrej, Jindal Steels, DHL, Tata Steel, AstraZeneca, Pfizer.
 We are looking for people who:
 
@@ -1505,8 +1505,8 @@ Application Question(s):
  Can you arrange laptop and Internet by yourself?
  This is a night shift job opportunity. Are you comfortable with working night shifts?
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=0ecd3c4005f7a9a6,2026-07-29T09:29:15Z
-indeed,1d8fdac0363185b5,Professional Listener,Clarity- We Heal Pvt Ltd,,Remote,"₹20,000 - ₹50,000 a month",20000,50000,INR,per_month,Part-time,remote,,non_clinical,hospital,healthcare,2026-07-14,14 days ago,"Clarity is looking for empathetic, patient, and compassionate individuals to join our team as Professional Listeners. In this role, you will provide emotional support by engaging users in meaningful conversations, offering a safe and non-judgmental space where they feel heard and understood.
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=0ecd3c4005f7a9a6,2026-07-21,,,18000,22000,per_month,INR,true,
+India,IN,+91,Remote,Clarity- We Heal Pvt Ltd,hospital,,,Professional Listener,"Clarity is looking for empathetic, patient, and compassionate individuals to join our team as Professional Listeners. In this role, you will provide emotional support by engaging users in meaningful conversations, offering a safe and non-judgmental space where they feel heard and understood.
 We are looking for individuals who:
 
  Have good communication skills in English and knows any of these Language - Tamil/ Telegu/ Malayalam/ Kannada.
@@ -1522,8 +1522,8 @@ Key Responsibilities
 
 Please note: This is not a therapy or counselling role. The position focuses solely on emotional support and active listening.
 Pay: ₹20,000.00 - ₹50,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=1d8fdac0363185b5,2026-07-29T09:29:15Z
-indeed,cd5a3fad885e6b8a,Healthcare Content Editor,Content-Whale Private Limited,,Remote,"₹25,000 - ₹35,000 a month",25000,35000,INR,per_month,Full-time|Permanent,remote,Work from home|Health insurance|Paid sick time|Provident Fund,non_clinical,hospital,healthcare,2026-07-22,6 days ago,"About Content Whale -
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=1d8fdac0363185b5,2026-07-14,,,20000,50000,per_month,INR,true,
+India,IN,+91,Remote,Content-Whale Private Limited,hospital,,,Healthcare Content Editor,"About Content Whale -
 Welcome to Content Whale, where we redefine the content industry. With exemplary SEO content fused with captivating visuals, we help businesses become content accelerated entities. Experience the power of our professional approach and unleash your true potential. Join us on the journey to content excellence.
 Job Location -WFH (Work from Home Opportunity)
 Job Type - Full Time Employee
@@ -1561,8 +1561,8 @@ Benefits:
  Paid sick time
  Provident Fund
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=cd5a3fad885e6b8a,2026-07-29T09:29:15Z
-indeed,b6f32a08f560f1b2,Healthcare SaaS QA Specialist,Medinex Australia Pty Ltd,,Remote,"₹25,600 a month",25600,25600,INR,per_month,Part-time,remote,Work from home,non_clinical,hospital,healthcare,2026-07-14,14 days ago,"Join Medinex Australia and help build the future of healthcare technology.
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=cd5a3fad885e6b8a,2026-07-22,,,25000,35000,per_month,INR,true,
+India,IN,+91,Remote,Medinex Australia Pty Ltd,hospital,,,Healthcare SaaS QA Specialist,"Join Medinex Australia and help build the future of healthcare technology.
 Medinex is an Australian Healthcare SaaS platform designed for NDIS, Home Care, SIL, Community Care and Aged Care providers. Our platform helps providers manage participants, employees, rostering, compliance, clinical documentation, payroll, invoicing and operations—all from a single system.
 We are looking for a detail-oriented Healthcare SaaS QA Specialist to continuously test our platform, identify issues before release, and ensure our customers receive a reliable, intuitive and high-quality product.
 This role is ideal for someone who enjoys exploring software, thinking like an end user, and improving product quality—not just finding bugs.
@@ -1626,8 +1626,8 @@ Why Join Medinex?
 
  Be part of a fast-growing Australian Healthcare SaaS company.
  Work on innovative AI-powered healthcare technology.
- Contribute directly to features used by NDIS and age",https://in.indeed.com/viewjob?jk=b6f32a08f560f1b2,2026-07-29T09:29:15Z
-indeed,2b1387b6252171ef,Patient Care Assistant,Nayan Tarit health services private limited,,Remote,"From ₹21,000 a month",21000,,INR,per_month,Fresher|Freelance|Contractual / Temporary|Permanent|Part-time|Full-time,remote,Commuter assistance|Flexible schedule|Food provided,non_clinical,hospital,healthcare,2026-07-09,19 days ago,"Job Title: GDA / Nursing Attendant / Caregiver – Home Care
+ Contribute directly to features used by NDIS and age",remote,non_clinical,https://in.indeed.com/viewjob?jk=b6f32a08f560f1b2,2026-07-14,,,25600,25600,per_month,INR,true,
+India,IN,+91,Remote,Nayan Tarit health services private limited,hospital,,,Patient Care Assistant,"Job Title: GDA / Nursing Attendant / Caregiver – Home Care
 Location: DelhiSalary: Up to ₹21,000 per monthShift: 12 Hours / 24 Hours (Home care)
 We are hiring GDA, Nursing Attendants, and Caregivers for home healthcare services in Delhi.
 Responsibilities:
@@ -1656,8 +1656,8 @@ Benefits:
  Flexible schedule
  Food provided
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=2b1387b6252171ef,2026-07-29T09:29:15Z
-indeed,fb674a383219a359,Tele Consultant - Telugu,DoctorC,4.8,Remote,"₹55,000 a month",55000,55000,INR,per_month,Full-time,remote,Work from home,non_clinical,hospital,telemedicine,2026-07-27,1 day ago,"Telemedicine Consultant - TELUGU
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=2b1387b6252171ef,2026-07-09,,,21000,21000,per_month,INR,true,
+India,IN,+91,Remote,DoctorC,hospital,,,Tele Consultant - Telugu,"Telemedicine Consultant - TELUGU
 Job Type: Remote
 Location: Anywhere (valid medical license required)
 What You'll Do:
@@ -1682,8 +1682,8 @@ Benefits:
 
  Work from home
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=fb674a383219a359,2026-07-29T09:29:15Z
-indeed,8b8a6fe32cabc816,Endocrinologist,No Guilt Fitness Pvt Ltd ( Fitelo),,Remote,"₹30,000 - ₹60,000 a month",30000,60000,INR,per_month,Part-time,remote,,doctors,hospital,telemedicine,2026-07-27,2 days ago,"About Fitelo:
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=fb674a383219a359,2026-07-27,,,55000,55000,per_month,INR,true,
+India,IN,+91,Remote,No Guilt Fitness Pvt Ltd ( Fitelo),hospital,,,Endocrinologist,"About Fitelo:
 Ezweight is a fast-growing digital health platform focused on weight loss, diabetes reversal, and lifestyle management. The company combines doctors, nutritionists, and fitness experts to deliver personalized, app-based transformation programs. With a data-driven and outcome-focused approach, Fitelo helps clients achieve sustainable fat loss and improved metabolic health.
 About the Role:
 We are looking for an experienced and patient-focused Endocrinologist to conduct tele-consultations and guide patients dealing with obesity, diabetes, PCOS, thyroid disorders, and other hormonal and metabolic conditions. In this role, you will assess patients' eligibility for GLP-1 therapies and endocrine treatment protocols, prescribe personalized treatment plans, and collaborate with nutrition and care teams to ensure improved health outcomes.
@@ -1705,8 +1705,8 @@ Qualifications:
 ● DM / DNB Endocrinology or MD Internal Medicine with relevant endocrinology experience.
 ● 1–3 years of relevant clinical experience.
 Pay: ₹30,000.00 - ₹60,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=8b8a6fe32cabc816,2026-07-29T09:29:15Z
-indeed,cace29df92b0bf4d,Psychiatrist,1Rx,,Remote,"₹30,000 - ₹50,000 a month",30000,50000,INR,per_month,Full-time|Fresher|Part-time,remote,Work from home|Flexible schedule,doctors,hospital,telemedicine,2026-07-14,14 days ago,"Job Title: Psychiatrist – Teleconsultation
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=8b8a6fe32cabc816,2026-07-27,,,30000,60000,per_month,INR,true,
+India,IN,+91,Remote,1Rx,hospital,,,Psychiatrist,"Job Title: Psychiatrist – Teleconsultation
 Employment Type: Consultant / Freelance
 Mode of Work: Remote (Work From Home)
 Role Overview
@@ -1751,8 +1751,8 @@ Benefits:
 
  Flexible schedule
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=cace29df92b0bf4d,2026-07-29T09:29:15Z
-indeed,de4a29a89307e5c3,Consultant Dermatologist (Teleconsultation & AI Validation),Hiring2026,,Remote,"₹60,000 - ₹80,000 a month",60000,80000,INR,per_month,Full-time,remote,Work from home,doctors,hospital,telemedicine,2026-07-23,5 days ago,"Position: Consultant Dermatologist
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=cace29df92b0bf4d,2026-07-14,,,30000,50000,per_month,INR,true,
+India,IN,+91,Remote,Hiring2026,hospital,,,Consultant Dermatologist (Teleconsultation & AI Validation),"Position: Consultant Dermatologist
 Employment Type: Full-time (Remote)
 Location: Work From Home (Anywhere in India)
 
@@ -1826,8 +1826,8 @@ If you are passionate about Dermatology, telemedicine, and contributing to the f
 
 Pay: ₹60,000.00 - ₹80,000.00 per month
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=de4a29a89307e5c3,2026-07-29T09:29:15Z
-indeed,f5708f3bea12d312,"RCM Specialist – Billing, Payment Posting & Denials",PerceptGo,,Remote,"₹25,000 - ₹35,000 a month",25000,35000,INR,per_month,Permanent,remote,Work from home,non_clinical,hospital,medical billing,2026-07-20,8 days ago,"RCM Specialist – Billing, Payment Posting, Denials & Reporting
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=de4a29a89307e5c3,2026-07-23,,,60000,80000,per_month,INR,true,
+India,IN,+91,Remote,PerceptGo,hospital,,,"RCM Specialist – Billing, Payment Posting & Denials","RCM Specialist – Billing, Payment Posting, Denials & Reporting
 
 Remote | Full-Time
 Healthcare Revenue Cycle Management / Medical Billing
@@ -1873,8 +1873,8 @@ Must be reliable, organized, and able to meet daily and weekly productivity expe
 
 Preferred Qualifications
 
-Experience with multi",https://in.indeed.com/viewjob?jk=f5708f3bea12d312,2026-07-29T09:29:15Z
-indeed,d689c25f14d00b14,Medical Virtual Assistant – Gastroenterology Practice (California),Octopus Tech Solutions,3.5,Remote,"₹25,000 - ₹35,000 a month",25000,35000,INR,per_month,Permanent|Full-time,remote,,non_clinical,hospital,medical billing,2026-07-18,10 days ago,"Key Responsibilities
+Experience with multi",remote,non_clinical,https://in.indeed.com/viewjob?jk=f5708f3bea12d312,2026-07-20,,,25000,35000,per_month,INR,true,
+India,IN,+91,Remote,Octopus Tech Solutions,hospital,,,Medical Virtual Assistant – Gastroenterology Practice (California),"Key Responsibilities
 
 Schedule patient appointments with hospitals and surgery centers.
 Coordinate procedures and maintain scheduling calendars.
@@ -1909,8 +1909,8 @@ Strong work ethic and attention to detail.
 
 Pay: ₹25,000.00 - ₹35,000.00 per month
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=d689c25f14d00b14,2026-07-29T09:29:15Z
-indeed,1ee5e57bb930a1cb,Prior Authorization & Medical Benefits Specialist (Buy and Bill),Squad Health,,Remote,"₹70,000 - ₹99,000 a month",70000,99000,INR,per_month,Full-time,remote,Health insurance,non_clinical,hospital,medical coder,2026-07-29,Just posted,"Prior Authorization & Medical Benefits Specialist (Buy and Bill)
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=d689c25f14d00b14,2026-07-18,,,25000,35000,per_month,INR,true,
+India,IN,+91,Remote,Squad Health,hospital,,,Prior Authorization & Medical Benefits Specialist (Buy and Bill),"Prior Authorization & Medical Benefits Specialist (Buy and Bill)
 
 Pay: ₹70,000.00 - ₹105,000.00 per month
 
@@ -1958,8 +1958,8 @@ Direct experience supporting GI, Dermatology, Rheumatology, Allergy, Oncology, o
 Strong understanding of US insurance plans (Commercial, Medicare, Medicaid)
 Experience reviewing EMR/EHR clinical documentation
 Strong attention to detail and structured documentation habits
-Fluent English (written and verbal)",https://in.indeed.com/viewjob?jk=1ee5e57bb930a1cb,2026-07-30T09:24:37Z
-indeed,79613d817077591c,Licensing Trainers - Nurses,Leedz Academy,,Remote,"₹15,000 - ₹20,000 a month",15000,20000,INR,per_month,Full-time,remote,Flexible schedule,non_clinical,hospital,nurse,2026-07-29,Just posted,"We are looking for a skilled and passionate Medical Licensing Exam Trainer – Nurses to join our dynamic team. This position is ideal for professionals experienced in coaching nurses for licensing exams such as MOH-Kuwait, DHA, HAAD, and Saudi/ Oman/ Qatar Prometric.
+Fluent English (written and verbal)",remote,non_clinical,https://in.indeed.com/viewjob?jk=1ee5e57bb930a1cb,2026-07-29,,,70000,99000,per_month,INR,true,
+India,IN,+91,Remote,Leedz Academy,hospital,,,Licensing Trainers - Nurses,"We are looking for a skilled and passionate Medical Licensing Exam Trainer – Nurses to join our dynamic team. This position is ideal for professionals experienced in coaching nurses for licensing exams such as MOH-Kuwait, DHA, HAAD, and Saudi/ Oman/ Qatar Prometric.
 
 This is a full-time online role with flexible working hours, perfect for candidates who are committed to helping working professionals crack international nursing exams.
 
@@ -1991,8 +1991,8 @@ Language:
 
 Malayalam (Required)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=79613d817077591c,2026-07-30T09:24:37Z
-indeed,e34549bd46d7bcc0,Counseling Psychologist,Iskra Counselling Centre,,Remote,"₹20,000 - ₹45,000 a month",20000,45000,INR,per_month,Part-time|Freelance|Full-time,remote,,non_clinical,hospital,psychologist,2026-07-30,Just posted,"About the Role
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=79613d817077591c,2026-07-29,,,15000,20000,per_month,INR,true,
+India,IN,+91,Remote,Iskra Counselling Centre,hospital,,,Counseling Psychologist,"About the Role
 
 We are seeking a compassionate, qualified, and experienced Psychologist to join our team. The successful candidate will provide psychological assessments, counselling, and evidence-based interventions to individuals experiencing emotional, behavioural, developmental, or mental health concerns.
 
@@ -2041,8 +2041,8 @@ Experience working with children, adolescents, adults, couples, or families.
 What We Offer
 
 A supportive and professional work environment.
-Opportunities for training and continued professional development.",https://in.indeed.com/viewjob?jk=e34549bd46d7bcc0,2026-07-30T09:24:37Z
-indeed,a0bdfd9994ac688b,Psychologist - Night Shift,ZYLA Health,,Remote,Not Disclosed,,,,,Part-time,remote,,non_clinical,hospital,psychologist,2026-07-29,1 day ago,"About Zyla (www.zyla.in):
+Opportunities for training and continued professional development.",remote,non_clinical,https://in.indeed.com/viewjob?jk=e34549bd46d7bcc0,2026-07-30,,,20000,45000,per_month,INR,true,
+India,IN,+91,Remote,ZYLA Health,hospital,,,Psychologist - Night Shift,"About Zyla (www.zyla.in):
 Zyla is an advanced care management platform helping lakhs of patients with personalized care to improve their health and prevent hospitalizations. We have the finest talent across care management, technology, data science, medicine, and a product with an NPS of +70! We are looking to hire mission oriented folks who want to create a positive impact on society while being on a high-growth career path.
 
 Requirements:
@@ -2072,8 +2072,8 @@ Experience:
 
 Psychotherapy: 2 years (Preferred)
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=a0bdfd9994ac688b,2026-07-30T09:24:37Z
-indeed,3df5ed75e5b2c241,Data Officer (India),ProductLife Group,,Remote,Not Disclosed,,,,,Permanent|Contractual / Temporary,remote,,non_clinical,hospital,pharmacovigilance,2026-07-28,1 day ago,"ProductLife Group is looking for a Data Officer to join our dynamic team and to contribute to the activities performed in the Hub:
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=a0bdfd9994ac688b,2026-07-29,,,,,,,true,
+India,IN,+91,Remote,ProductLife Group,hospital,,,Data Officer (India),"ProductLife Group is looking for a Data Officer to join our dynamic team and to contribute to the activities performed in the Hub:
 
 Responsibilities:
 
@@ -2107,8 +2107,8 @@ Works well within a team
 Knowledge of medical terminology
 Organized
 Flexible
-Excellent communication skills in English",https://in.indeed.com/viewjob?jk=3df5ed75e5b2c241,2026-07-30T09:24:37Z
-indeed,a0ccae18038d6a94,Medical Coordinator,No Guilt Fitness Pvt Ltd ( Fitelo),,Remote,"₹15,170.65 - ₹20,000.00 a month",15171,20000,INR,per_month,Full-time,remote,,non_clinical,hospital,healthcare,2026-08-06,2 days ago,"Role: Medical CoordinatorJob Type: Full TimeLocation: Remote
+Excellent communication skills in English",remote,non_clinical,https://in.indeed.com/viewjob?jk=3df5ed75e5b2c241,2026-07-28,,,,,,,true,
+India,IN,+91,Remote,No Guilt Fitness Pvt Ltd ( Fitelo),hospital,,,Medical Coordinator,"Role: Medical CoordinatorJob Type: Full TimeLocation: Remote
 About Noguilt:
   Noguilt is a multi-brand wellness group dedicated to transforming lives through personalized diet, fitness, and lifestyle programs. Alongside its core services, the company operates a growing nutraceutical portfolio offering health-focused products such as teas, chocolates, proteins, GLP-1 capsules, and is expanding into injectable solutions. Backed by a team of qualified doctors , nutritionists, fitness experts, and behavioral coaches, Noguilt combines science-driven approaches with technology and empathetic support to deliver sustainable outcomes.
 About the role:
@@ -2132,8 +2132,8 @@ Ideal candidate will have:
 Qualifications:
   ● Graduate (mandatory); candidates from Life Sciences, Healthcare, Biotechnology, Nursing, Pharmacy, DMLT, or related disciplines will be preferred.
 Pay: ₹15,170.65 - ₹20,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=a0ccae18038d6a94,2026-08-08T14:28:20Z
-indeed,6165ebe9f7d994ee,OT Incharge,Surgenesis Hospital,,Remote,"From ₹20,000 a month",20000,,INR,per_month,Full-time,remote,Flexible schedule,non_clinical,hospital,nurse,2026-08-07,Just posted,"OT IN-CHARGE – JOB DESCRIPTION
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=a0ccae18038d6a94,2026-08-06,,,15171,20000,per_month,INR,true,
+India,IN,+91,Remote,Surgenesis Hospital,hospital,,,OT Incharge,"OT IN-CHARGE – JOB DESCRIPTION
 Department: Operation TheatrePosition: OT In-ChargeExperience: 3–5 Years PreferredQualification: B.Sc. Nursing / GNM / OT Technician / OT Technology
 Key Responsibilities
 
@@ -2156,8 +2156,8 @@ Benefits:
 
  Flexible schedule
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=6165ebe9f7d994ee,2026-08-08T14:28:20Z
-indeed,9d4414cd85df9d1e,Licensed Practical Nurse / Vocational Nurse,REASONN LLC,,Remote,₹15 an hour,15,15,INR,per_hour,Contractual / Temporary,remote,,nurses,hospital,nurse,2026-07-30,8 days ago,"Licensed Practical Nurses (LPNs) or Licensed Vocational Nurses (LVNs)
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=6165ebe9f7d994ee,2026-08-07,,,20000,20000,per_month,INR,true,
+India,IN,+91,Remote,REASONN LLC,hospital,,,Licensed Practical Nurse / Vocational Nurse,"Licensed Practical Nurses (LPNs) or Licensed Vocational Nurses (LVNs)
 Remote, USA
 Required : Nurse with hands-on experience using Epic Flowsheets
 Requirements:
@@ -2170,8 +2170,8 @@ Requirements:
  Prior experience with medical data annotation or EMR systems is a plus
 
 Pay: ₹15.00 per hour
-Work Location: Remote",https://in.indeed.com/viewjob?jk=9d4414cd85df9d1e,2026-08-08T14:28:20Z
-indeed,b6f512cb853f9e68,Camp Doctor,Clove Dental,4,Remote,₹850 a day,850,850,INR,per_day,Part-time,remote,,doctors,hospital,doctor,2026-08-07,1 day ago,"Position Camp Doctor - Part Time
+Work Location: Remote",remote,nurses,https://in.indeed.com/viewjob?jk=9d4414cd85df9d1e,2026-07-30,,,,,,,true,
+India,IN,+91,Remote,Clove Dental,hospital,,,Camp Doctor,"Position Camp Doctor - Part Time
 Job Responsiblities
 Education - Minimum BDS and willing to work Part time
 1 Attend the Camp on your free time
@@ -2184,8 +2184,8 @@ Education - Minimum BDS and willing to work Part time
 8 Should Educate the Patient about Dental Issues
 If interested share your resume to sagayarani.s@clovedental.in or Call @ 9566620789
 Pay: ₹850.00 per day
-Work Location: Remote",https://in.indeed.com/viewjob?jk=b6f512cb853f9e68,2026-08-08T14:28:20Z
-indeed,01f28bee0c33d3cf,General Physician (Freelance) – Online Consultations(Meghalaya),Visit Health Pvt LTD,,Remote,"₹13,335.50 - ₹41,050.75 a month",13336,41051,INR,per_month,Freelance|Part-time,remote,Flexible schedule,doctors,hospital,doctor,2026-08-05,3 days ago,"General Physician (Freelance) – Online Consultations
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=b6f512cb853f9e68,2026-08-07,,,,,,,true,
+India,IN,+91,Remote,Visit Health Pvt LTD,hospital,,,General Physician (Freelance) – Online Consultations(Meghalaya),"General Physician (Freelance) – Online Consultations
 Job Type: Freelance / ContractWork Location: Remote (Online Consultation)Location: Meghalaya (Garo Hills, Jaintia Hills, and Khasi Hills)
 We are hiring General Physicians to provide online medical consultations for patients in Meghalaya. Candidates who can communicate in Garo, Khasi, or Jaintia (Pnar) are required.
 This is a freelance role with flexible working hours. Physicians can choose their availability and provide consultations remotely through a telemedicine platform.
@@ -2216,8 +2216,8 @@ Remote
 Application
 Please apply with your updated resume and a copy of your valid medical registration certificate.
 Pay: ₹13,335.50 - ₹41,050.75 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=01f28bee0c33d3cf,2026-08-08T14:28:20Z
-indeed,29efd44fab3c80cc,General Practitioner (GP) / MOH Doctor - Remote,Mulk Med Home Health Care,,Remote,"₹10,000 - ₹10,001 a month",10000,10001,INR,per_month,Full-time,remote,,doctors,hospital,doctor,2026-08-08,Just posted,"General Practitioner (GP) / MOH Doctor – Remote
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=01f28bee0c33d3cf,2026-08-05,,,13336,41051,per_month,INR,true,
+India,IN,+91,Remote,Mulk Med Home Health Care,hospital,,,General Practitioner (GP) / MOH Doctor - Remote,"General Practitioner (GP) / MOH Doctor – Remote
 Location: Dubai, UAE (Remote)Salary: ₹10,000 INR per monthJob Type: Full-time / Part-timeWork Location: Remote
 We are looking for a qualified General Practitioner (GP) / MOH Doctor to provide remote medical consultation services.
 The selected candidate should have appropriate medical qualifications and relevant clinical experience and be able to communicate professionally with patients online.
@@ -2243,8 +2243,8 @@ Salary
 How to Apply
 Please send your updated CV along with your medical qualifications, license details, and relevant experience.
 Pay: ₹10,000.00 - ₹10,001.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=29efd44fab3c80cc,2026-08-08T14:28:20Z
-indeed,e396fa95e4a189a0,Physician — Chronic Care & Patient Success,Sattvix,,Remote,Not Disclosed,,,,,Part-time,remote,,doctors,hospital,doctor,2026-08-06,1 day ago,"You'll own a panel of patients through their chronic care journey — check-ins, remote monitoring, and the everyday needs that keep people out of the ER — while co-leading group medical visits that bring our patients together around health, connection, and aging well. This is a hands-on clinical support role for a physician who wants meaningful patient impact without a full-time US schedule.
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=29efd44fab3c80cc,2026-08-08,,,10000,10001,per_month,INR,true,
+India,IN,+91,Remote,Sattvix,hospital,,,Physician — Chronic Care & Patient Success,"You'll own a panel of patients through their chronic care journey — check-ins, remote monitoring, and the everyday needs that keep people out of the ER — while co-leading group medical visits that bring our patients together around health, connection, and aging well. This is a hands-on clinical support role for a physician who wants meaningful patient impact without a full-time US schedule.
 The Logistics
 ● Role: Part-Time, Remote
 ● Hours: 20–25 hrs/week (4–5 hrs/day), US Pacific Time (PST) core hours
@@ -2275,8 +2275,8 @@ Why Join Us?
 ● Modern Practice: Work with AI-powered charting and a tech stack built for efficient, high-quality remote care.
 ● Global Opportunity: A genuine way to work with US patients and a US integrative health practice from wherever you are.
 Ready to Apply?
-Please submit your resume and a brief cover letter describing your",https://in.indeed.com/viewjob?jk=e396fa95e4a189a0,2026-08-08T14:28:20Z
-indeed,bede88b550e6bddd,Pharmacology,Voxtur Communication Private Limited,,Remote,"₹1,00,000 - ₹2,00,000 a month",100000,200000,INR,per_month,Full-time|Part-time|Permanent,remote,,pharmacists,hospital,physician,2026-08-06,1 day ago,"We are from MMW Corps India Private Limited, Dehradun. We have been recruiting doctors for the past 12 years for reputed private medical colleges.
+Please submit your resume and a brief cover letter describing your",remote,doctors,https://in.indeed.com/viewjob?jk=e396fa95e4a189a0,2026-08-06,,,,,,,true,
+India,IN,+91,Remote,Voxtur Communication Private Limited,hospital,,,Pharmacology,"We are from MMW Corps India Private Limited, Dehradun. We have been recruiting doctors for the past 12 years for reputed private medical colleges.
 We are currently hiring for All Departments of Clinical and Non-Clinical Doctors for the positions of:
 - Senior Resident (SR)
 - Assistant Professor
@@ -2291,8 +2291,8 @@ Full-Time & Part-Time roles available across different departments.
 Interested candidates are requested to share their updated CV.
 Contact / Send CV: 9837546662
 Pay: ₹100,000.00 - ₹200,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=bede88b550e6bddd,2026-08-08T14:28:20Z
-indeed,bf7e1fcb98ff72fe,community Medicine,Voxtur Communication Private Limited,,Remote,"₹1,00,000 - ₹2,00,000 a month",100000,200000,INR,per_month,Permanent|Full-time|Part-time,remote,Food provided|Flexible schedule,non_clinical,hospital,physician,2026-08-06,1 day ago,"We are from MMW Corps India Private Limited, Dehradun. We have been recruiting doctors for the past 12 years for reputed private medical colleges.
+Work Location: Remote",remote,pharmacists,https://in.indeed.com/viewjob?jk=bede88b550e6bddd,2026-08-06,,,100000,200000,per_month,INR,true,
+India,IN,+91,Remote,Voxtur Communication Private Limited,hospital,,,community Medicine,"We are from MMW Corps India Private Limited, Dehradun. We have been recruiting doctors for the past 12 years for reputed private medical colleges.
 We are currently hiring for All Departments of Clinical and Non-Clinical Doctors for the positions of:
 - Senior Resident (SR)
 - Assistant Professor
@@ -2312,8 +2312,8 @@ Benefits:
  Flexible schedule
  Food provided
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=bf7e1fcb98ff72fe,2026-08-08T14:28:20Z
-indeed,c1de4cbd84cc830a,Manager/Senior Manager-Medical Information,Soterius,,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,pharma,pharmacist,2026-07-30,8 days ago,"Why this role exists
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=bf7e1fcb98ff72fe,2026-08-06,,,100000,200000,per_month,INR,true,
+India,IN,+91,Remote,Soterius,pharma,,,Manager/Senior Manager-Medical Information,"Why this role exists
  
  
   
@@ -2392,8 +2392,8 @@ indeed,c1de4cbd84cc830a,Manager/Senior Manager-Medical Information,Soterius,,Rem
  
  
   
-    Compliance, audits,",https://in.indeed.com/viewjob?jk=c1de4cbd84cc830a,2026-08-08T14:28:20Z
-indeed,876771d1e12e470d,Medical coder EM ED surgery,SW pvt ltd,,Remote,"₹30,000 - ₹60,000 a month",30000,60000,INR,per_month,Permanent|Full-time,remote,Work from home|Leave encashment|Paid sick time|Paid time off|Provident Fund,non_clinical,hospital,medical coder,2026-07-31,8 days ago,"Job Title: EM Coder / ED Profee / Facility Surgery Coder
+    Compliance, audits,",remote,non_clinical,https://in.indeed.com/viewjob?jk=c1de4cbd84cc830a,2026-07-30,,,,,,,true,
+India,IN,+91,Remote,SW pvt ltd,hospital,,,Medical coder EM ED surgery,"Job Title: EM Coder / ED Profee / Facility Surgery Coder
 Location: Tambaram, Chennai
 Shift: Night Shift Only - Work from Office
 Employment Type: Full-time
@@ -2440,8 +2440,8 @@ Application Question(s):
  Where is your current location? Are you an immediate joiner?
  Please mention your notice period
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=876771d1e12e470d,2026-08-08T14:28:20Z
-indeed,5ffee54735cb3248,Sr Invoicing Analyst,Egnyte,4.2,Remote,Not Disclosed,,,,,Full-time,remote,Health insurance|Flexible schedule|Paid time off,non_clinical,hospital,medical billing,2026-07-29,9 days ago,"Title – Sr Invoicing Analyst
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=876771d1e12e470d,2026-07-31,,,30000,60000,per_month,INR,true,
+India,IN,+91,Remote,Egnyte,hospital,,,Sr Invoicing Analyst,"Title – Sr Invoicing Analyst
   Location – Remote, India
  
   EGNYTE YOUR CAREER. SPARK YOUR PASSION.
@@ -2483,8 +2483,8 @@ indeed,5ffee54735cb3248,Sr Invoicing Analyst,Egnyte,4.2,Remote,Not Disclosed,,,,
   Childcare reimbursement
  
   EQUAL EMPLOYMENT OPPORTUNITY:
- At Egnyte, we celebrate our differences and thrive",https://in.indeed.com/viewjob?jk=5ffee54735cb3248,2026-08-08T14:28:20Z
-indeed,5d5ca75c21f2f4c8,Clinical Dietitian Specialist,Fitelo,,Remote,"₹15,000 - ₹25,000 a month",15000,25000,INR,per_month,Full-time,remote,Internet reimbursement|Paid sick time|Paid time off|Work from home,non_clinical,hospital,clinical research,2026-07-31,8 days ago,"Job description
+ At Egnyte, we celebrate our differences and thrive",remote,non_clinical,https://in.indeed.com/viewjob?jk=5ffee54735cb3248,2026-07-29,,,,,,,true,
+India,IN,+91,Remote,Fitelo,hospital,,,Clinical Dietitian Specialist,"Job description
 We are looking for a nutritionist to provide our clients with comprehensive advice on matters of well-being. As an expert in food and nutrition, people depend on you to guide them towards better eating habits to prevent ill-health. The goal is to contribute to the maintenance of a client’s healthy constitution thus delivering value to our organization by strengthening our reputations.
 Roles and Responsibilities
 
@@ -2527,8 +2527,8 @@ Benefits:
  Paid time off
  Work from home
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=5d5ca75c21f2f4c8,2026-08-08T14:28:20Z
-indeed,901a6a1393f36db9,Clinical Nutritionist and Dietician,FittyMe Healthcare Private Limited,,Remote,"₹22,000 - ₹25,000 a month",22000,25000,INR,per_month,Full-time,remote,Flexible schedule,non_clinical,hospital,clinical research,2026-08-08,Just posted,"Job Title : Clinical Nutritionist(English,Tamil,Kannada,Hindi,Telugu)
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=5d5ca75c21f2f4c8,2026-07-31,,,15000,25000,per_month,INR,true,
+India,IN,+91,Remote,FittyMe Healthcare Private Limited,hospital,,,Clinical Nutritionist and Dietician,"Job Title : Clinical Nutritionist(English,Tamil,Kannada,Hindi,Telugu)
 Location : Remote
 Salary : Rs.20,000 - Rs.25,000
 About the Company:
@@ -2558,8 +2558,8 @@ Benefits:
 
  Flexible schedule
 
-Work Location: Remote",https://in.indeed.com/viewjob?jk=901a6a1393f36db9,2026-08-08T14:28:20Z
-indeed,be88348f068d3a7a,Medical Writer II (Project/Program Coordinator),Syneos - Clinical and Corporate - Prod,3.6,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,pharma,clinical research,2026-08-03,5 days ago,"Medical Writer II (Project/Program Coordinator) 
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=901a6a1393f36db9,2026-08-08,,,22000,25000,per_month,INR,true,
+India,IN,+91,Remote,Syneos - Clinical and Corporate - Prod,pharma,,,Medical Writer II (Project/Program Coordinator),"Medical Writer II (Project/Program Coordinator) 
  
  
   Syneos Health® is a leading fully-integrated life sciences services organization built to accelerate customer success. We partner with innovators at every point across the drug development and commercialization continuum, helping them navigate complexity, anticipate change and accelerate progress. 
@@ -2598,8 +2598,8 @@ indeed,be88348f068d3a7a,Medical Writer II (Project/Program Coordinator),Syneos -
     Performs dummy submissions to ensure readiness and regularly review journal and congress websites to collect submission requirements and monitor updates to guidelines.
     Collates metadata for submissions and prepares comprehensive submission packages for journal and congress submissions
    
-  Provides timely sub",https://in.indeed.com/viewjob?jk=be88348f068d3a7a,2026-08-08T14:28:20Z
-indeed,47fef9df106e8290,Senior Clinical Data Associate (Rave),Syneos - Clinical and Corporate - Prod,3.6,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,pharma,clinical research,2026-07-30,9 days ago,"Senior Clinical Data Associate (Rave) 
+  Provides timely sub",remote,non_clinical,https://in.indeed.com/viewjob?jk=be88348f068d3a7a,2026-08-03,,,,,,,true,
+India,IN,+91,Remote,Syneos - Clinical and Corporate - Prod,pharma,,,Senior Clinical Data Associate (Rave),"Senior Clinical Data Associate (Rave) 
  
  
   Syneos Health® is a leading fully-integrated life sciences services organization built to accelerate customer success. We partner with innovators at every point across the drug development and commercialization continuum, helping them navigate complexity, anticipate change and accelerate progress. 
@@ -2635,8 +2635,8 @@ indeed,47fef9df106e8290,Senior Clinical Data Associate (Rave),Syneos - Clinical 
  • Performs User Acceptance Testing (UAT) for data entry screens, edits and data review listings, all different roles used in the study and Targeted Source Data Verification (SDV) configuration and matrices.
  • Receives and enters lab normal ranges.
  • Completes and submits Clinical Database Management System (CDMS)-specific access forms and/or spreadsheets.
- • Performs reviews of discrepancy (edit check) output and validation listings based on data entered into",https://in.indeed.com/viewjob?jk=47fef9df106e8290,2026-08-08T14:28:20Z
-indeed,7ca887fcc164686d,Medical Scientist,Syneos - Clinical and Corporate - Prod,3.6,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,pharma,clinical research,2026-08-07,Just posted,"Medical Scientist 
+ • Performs reviews of discrepancy (edit check) output and validation listings based on data entered into",remote,non_clinical,https://in.indeed.com/viewjob?jk=47fef9df106e8290,2026-07-30,,,,,,,true,
+India,IN,+91,Remote,Syneos - Clinical and Corporate - Prod,pharma,,,Medical Scientist,"Medical Scientist 
  
  
   Syneos Health® is a leading fully-integrated life sciences services organization built to accelerate customer success. We partner with innovators at every point across the drug development and commercialization continuum, helping them navigate complexity, anticipate change and accelerate progress. 
@@ -2673,8 +2673,8 @@ indeed,7ca887fcc164686d,Medical Scientist,Syneos - Clinical and Corporate - Prod
  
   Communicates to Sponsor any data training needs or concerns for CRAs, sites, etc
   Provides clinical data review project management status and is viewed as an expert in data clinical/medical review and cleaning.
-  Ensures data quality focus t",https://in.indeed.com/viewjob?jk=7ca887fcc164686d,2026-08-08T14:28:20Z
-indeed,a92a03597a1a9d70,Licensed Mental Health Professional Annotator,Destinare services,,Remote,"Up to ₹7,00,000 a year",,700000,INR,per_annum,Contractual / Temporary,remote,,non_clinical,hospital,clinical research,2026-08-05,3 days ago,"Destinare Services is hiring Licensed Mental Health Professionals to support an exciting AI initiative focused on improving Large Language Models (LLMs) used in mental health and psychological well-being.
+  Ensures data quality focus t",remote,non_clinical,https://in.indeed.com/viewjob?jk=7ca887fcc164686d,2026-08-07,,,,,,,true,
+India,IN,+91,Remote,Destinare services,hospital,,,Licensed Mental Health Professional Annotator,"Destinare Services is hiring Licensed Mental Health Professionals to support an exciting AI initiative focused on improving Large Language Models (LLMs) used in mental health and psychological well-being.
 In this role, you will evaluate AI-generated responses for clinical accuracy, safety, and appropriateness, helping develop responsible AI systems that provide evidence-based mental health information.
 This is an excellent opportunity for clinicians interested in combining their mental health expertise with cutting-edge AI technology.
 Responsibilities
@@ -2739,8 +2739,8 @@ Pay: Up to ₹700,000.00 per year
 Application Question(s):
 
  Are you a licensed mental health professional (Clinical Psychologist, Counselor, LCSW, MSW, or equivalent)
- How many years of direct clinical experience do you have using evidence-based therapies such as CBT,",https://in.indeed.com/viewjob?jk=a92a03597a1a9d70,2026-08-08T14:28:20Z
-indeed,933a188a72516313,Data Officer,ProductLife Group,,Remote,Not Disclosed,,,,,Permanent|Contractual / Temporary,remote,,non_clinical,hospital,pharmacovigilance,2026-08-03,4 days ago,"Data Officer (IN)
+ How many years of direct clinical experience do you have using evidence-based therapies such as CBT,",remote,non_clinical,https://in.indeed.com/viewjob?jk=a92a03597a1a9d70,2026-08-05,,,,,,,true,
+India,IN,+91,Remote,ProductLife Group,hospital,,,Data Officer,"Data Officer (IN)
    
     ProductLife Group (PLG) is a global consulting and outsourcing company supporting life sciences organizations throughout the product lifecycle.
    
@@ -2813,8 +2813,8 @@ indeed,933a188a72516313,Data Officer,ProductLife Group,,Remote,Not Disclosed,,,,
                 Database experience is preferred; training will be provided where needed.
                
                
-               Key",https://in.indeed.com/viewjob?jk=933a188a72516313,2026-08-08T14:28:20Z
-indeed,b247f8293ce56301,"Regulatory Consultant (CMC-EU, GCC & AU)",Syneos - Clinical and Corporate - Prod,3.6,Remote,Not Disclosed,,,,,Full-time,remote,,non_clinical,pharma,pharmacovigilance,2026-07-29,9 days ago,"Regulatory Consultant (CMC-EU, GCC & AU) 
+               Key",remote,non_clinical,https://in.indeed.com/viewjob?jk=933a188a72516313,2026-08-03,,,,,,,true,
+India,IN,+91,Remote,Syneos - Clinical and Corporate - Prod,pharma,,,"Regulatory Consultant (CMC-EU, GCC & AU)","Regulatory Consultant (CMC-EU, GCC & AU) 
  
  
   Syneos Health® is a leading fully-integrated life sciences services organization built to accelerate customer success. We partner with innovators at every point across the drug development and commercialization continuum, helping them navigate complexity, anticipate change and accelerate progress. 
@@ -2846,8 +2846,8 @@ indeed,b247f8293ce56301,"Regulatory Consultant (CMC-EU, GCC & AU)",Syneos - Clin
   Contribute to or prepare administrative and technical components of regulatory agency submissions for the IND, for pre-approval submission packages, for product registration applications, and for post-approval maintenance. Prepare briefing packages for regulatory agency meetings or scientific advice and contribute to or support the agency interactions.
   Manage and/or operationalize the delivery of day-today regulatory activities for assigned project according to agreed timelines, scope of contract, budgets, and strategies.
   Participate as regulatory support on multidisciplinary project teams, which may include clinical and other technical experts, to develop products throughout their life cycle.
-  Act as a subject matter expert and help the team members with day-to-day trouble shooting activities, presenting solutions to project related",https://in.indeed.com/viewjob?jk=b247f8293ce56301,2026-08-08T14:28:20Z
-indeed,319bcdd522836e2c,"Consultant, Regulatory Operations",Syner-G,,"Bengaluru, Karnataka",Not Disclosed,,,,,,remote,,non_clinical,hospital,pharmacovigilance,2026-08-03,4 days ago,"COMPANY DESCRIPTION:
+  Act as a subject matter expert and help the team members with day-to-day trouble shooting activities, presenting solutions to project related",remote,non_clinical,https://in.indeed.com/viewjob?jk=b247f8293ce56301,2026-07-29,,,,,,,true,
+India,IN,+91,Bengaluru,Syner-G,hospital,,,"Consultant, Regulatory Operations","COMPANY DESCRIPTION:
   A career here is life-enhancing.
   At Syner-G, we enable our people to build careers that impact positively on their quality of life. Through our expertise, insight, consulting and management skills, we accelerate breakthrough science and delivery of life-enhancing therapies to more patients. We work across a diverse range of clients and projects, supporting many organizations from the most critical phases of the drug discovery and approval process through to commercialization. It is meaningful, varied and thought-provoking work with a strategic emphasis, a solutions-driven approach and significant, real-world outcomes, from science to delivery/success. To learn more about who we are and what drives us, watch our company video here.
   Underpinning this mission is a culture that aligns perfectly with what we want to achieve. We enable our people to grow, we support them in their learning and we reward them in so many different ways. In return, they play an instrumental role in maintaining our reputation across the globe as a strategic biopharma product development and delivery partner.
@@ -2861,8 +2861,8 @@ indeed,319bcdd522836e2c,"Consultant, Regulatory Operations",Syner-G,,"Bengaluru,
    The position requires hands-on support in regulatory document conversion, hyperlinking, bookmarking, PDF quality checks, eCTD sequence preparation, validation using approved tools, and submission dispatch through relevant health authority gateways under the guidance of senior team members. The role also involves coordination with CMC Regulatory Affairs, Labelling, Clinical, Quality and other cross-functional teams to ensure timely collection, organization and processing of documents while maintaining accuracy, compliance and audit-ready documentation standards.
   WORK LOCATION:
  Bangalore
-  KEY RES",https://in.indeed.com/viewjob?jk=319bcdd522836e2c,2026-08-08T14:28:20Z
-indeed,96c6446607236cb3,Medical Editor (Only MBBS Candidates),Daily Rounds,5,Remote,"₹58,000 - ₹65,000 a month",58000,65000,INR,per_month,Full-time|Permanent,remote,,doctors,hospital,medical writer,2026-07-31,8 days ago,"Marrow is a learning platform for doctors, medical students, and other healthcare practitioners with topic-wise learning modules, tests and performance analytics, and high-quality recorded medical video classes. Marrow is currently used by over 5 lakh medical students in India to prepare for the country’s largest medical competitive exam - NEET PG.
+  KEY RES",remote,non_clinical,https://in.indeed.com/viewjob?jk=319bcdd522836e2c,2026-08-03,,,,,,,true,
+India,IN,+91,Remote,Daily Rounds,hospital,,,Medical Editor (Only MBBS Candidates),"Marrow is a learning platform for doctors, medical students, and other healthcare practitioners with topic-wise learning modules, tests and performance analytics, and high-quality recorded medical video classes. Marrow is currently used by over 5 lakh medical students in India to prepare for the country’s largest medical competitive exam - NEET PG.
 USP of Marrow
 1) Loved by more than 70% of aspiring doctors in India.
 2) NEET-PG 2020, 2021, 2022,2023 - Top 10 Rankers were the Marrow users.
@@ -2884,8 +2884,8 @@ Who are we looking for?
 
 Job Types: Full-time, Permanent
 Pay: ₹58,000.00 - ₹65,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=96c6446607236cb3,2026-08-08T14:28:20Z
-indeed,42bf6e0089457549,Hindi Script Writer,Nidhii Skincare,,Remote,"₹20,000 - ₹40,000 a month",20000,40000,INR,per_month,Contractual / Temporary|Freelance,remote,Work from home,non_clinical,hospital,medical writer,2026-08-07,1 day ago,"Hiring: Hindi Script Writer (Freelance / Work From Home)
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=96c6446607236cb3,2026-07-31,,,58000,65000,per_month,INR,true,
+India,IN,+91,Remote,Nidhii Skincare,hospital,,,Hindi Script Writer,"Hiring: Hindi Script Writer (Freelance / Work From Home)
 Position: Hindi Script Writer
 Company:40Plus Mom (Nidhii Skincare)
 Job Type:Freelance / Work From Home
@@ -2923,8 +2923,8 @@ Send your Resume and Script Portfolio to:
 Email:hr.nidhiiskincare@gmail.com
 WhatsApp: +91 91759 43408
 Pay: ₹20,000.00 - ₹40,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=42bf6e0089457549,2026-08-08T14:28:20Z
-indeed,98219e8e7eff059c,Sales Nutritionist - GLP1,Fitelo,,Remote,"₹12,369.48 - ₹21,000.00 a month",12369,21000,INR,per_month,Full-time,remote,,non_clinical,hospital,dietitian,2026-08-06,2 days ago,"About the Role
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=42bf6e0089457549,2026-08-07,,,20000,40000,per_month,INR,true,
+India,IN,+91,Remote,Fitelo,hospital,,,Sales Nutritionist - GLP1,"About the Role
 We are looking for a passionate and result-driven Sales Nutritionist to promote and sell nutritional supplements while providing expert dietary guidance to customers. The ideal candidate should combine strong nutrition knowledge with sales ability to help customers choose the right products based on their health, fitness, and wellness goals.
 Key Responsibilities
 
@@ -2951,8 +2951,8 @@ Required Qualifications
  1–3 years of experience in nutrition counseling, supplement sales, wellness, gym, pharmacy, or healthcare sales preferred.
 
 Pay: ₹12,369.48 - ₹21,000.00 per month
-Work Location: Remote",https://in.indeed.com/viewjob?jk=98219e8e7eff059c,2026-08-08T14:28:20Z
-indeed,3acad8cbb17ebae4,Empanelled Pshychologist,MANAH Wellness,,Remote,"₹500 - ₹1,500 an hour",500,1500,INR,per_hour,Part-time,remote,,doctors,hospital,counsellor,2026-08-03,5 days ago,"Job Title:
+Work Location: Remote",remote,non_clinical,https://in.indeed.com/viewjob?jk=98219e8e7eff059c,2026-08-06,,,12369,21000,per_month,INR,true,
+India,IN,+91,Remote,MANAH Wellness,hospital,,,Empanelled Pshychologist,"Job Title:
 Empanelled Psychologist (Malayalam Speaking)
 Employment Type:
 Consultant / Part-time
@@ -2994,8 +2994,8 @@ Qualifications & Skills:
 
 Remuneration - For 1-1 Counselling - 500/- per session (45-60min)Online webinars (Group session) - 1000/- per session (60 min)On site workshops- 3000/- (travel reimbursement above 40Kms)
 Pay: ₹500.00 - ₹1,500.00 per hour
-Work Location: Remote",https://in.indeed.com/viewjob?jk=3acad8cbb17ebae4,2026-08-08T14:28:20Z
-indeed,f9df214f43085154,Hindi Annotator,"e2f, inc.",,Remote,Not Disclosed,,,,,,remote,Flexible schedule,non_clinical,hospital,medical transcriptionist,2026-08-07,1 day ago,"What this is about:
+Work Location: Remote",remote,doctors,https://in.indeed.com/viewjob?jk=3acad8cbb17ebae4,2026-08-03,,,,,,,true,
+India,IN,+91,Remote,"e2f, inc.",hospital,,,Hindi Annotator,"What this is about:
  At TrustScale (an e2f company), we offer an array of remote opportunities to work on compelling projects aimed at enhancing AI capabilities. As a significant team member, you will help shape the future of AI-driven solutions. We value your skills and domain expertise, offering competitive compensation and flexible working arrangements.
  TrustScale is seeking experienced Hindi language professionals to evaluate AI-generated responses, verify factual accuracy, assess supporting evidence, and help define the quality standards that AI systems learn from.
  We are looking for people who are:
@@ -3045,4 +3045,4 @@ indeed,f9df214f43085154,Hindi Annotator,"e2f, inc.",,Remote,Not Disclosed,,,,,,r
  
  
  About Us: TrustScale (an e2f company) is dedicated to facilitating natural communication between people and machines across languages and cultures. With expertise in data science, we provide top-tier linguistic datasets for AI and NLP projects.
- Know more here: https://trustscale.ai/",https://in.indeed.com/viewjob?jk=f9df214f43085154,2026-08-08T14:28:20Z
+ Know more here: https://trustscale.ai/",remote,non_clinical,https://in.indeed.com/viewjob?jk=f9df214f43085154,2026-08-07,,,,,,,true,

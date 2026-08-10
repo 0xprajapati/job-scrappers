@@ -11,36 +11,39 @@
 | 7 | Dubai Live Jobs | — | Others |
 | 8 | Dubizzle | — | Others |
 | 9 | Fortis Healthcare | — | India |
-| 10 | GulfTalent | — | Others |
-| 11 | Himalayas | Remote | Others |
-| 12 | HMG | — | Others |
-| 13 | H. Ziegler | — | Others |
-| 14 | Indeed | Remote | India |
-| 15 | Internshala | — | India |
-| 16 | Jobberman | — | Others |
-| 17 | Jobslly | — | India |
-| 18 | KFSHRC | — | Others |
-| 19 | Manipal Hospitals | — | India |
-| 20 | Max Healthcare | — | India |
-| 21 | Medcare | — | Others |
-| 22 | Michael Page | — | India |
-| 23 | MOH | — | Others |
-| 24 | Narayana Health | — | India |
-| 25 | NaukriGulf | — | Others |
-| 26 | Nextenti | — | India |
-| 27 | NHM | — | India |
-| 28 | PharmaBharat | — | India |
+| 10 | Freshersworld | — | India |
+| 11 | GulfTalent | — | Others |
+| 12 | H. Ziegler | — | Others |
+| 13 | Himalayas | Remote | Others |
+| 14 | HMG | — | Others |
+| 15 | Indeed | Remote | India |
+| 16 | Internshala | — | India |
+| 17 | Jobberman | — | Others |
+| 18 | Jobslly | — | India |
+| 19 | KFSHRC | — | Others |
+| 20 | Manipal Hospitals | — | India |
+| 21 | Max Healthcare | — | India |
+| 22 | Medcare | — | Others |
+| 23 | Michael Page | — | India |
+| 24 | MOH | — | Others |
+| 25 | Narayana Health | — | India |
+| 26 | NaukriGulf | — | Others |
+| 27 | Nextenti | — | India |
+| 28 | NHM | — | India |
 | 29 | Pharma Recruiter | — | India |
-| 30 | PHCC | — | Others |
-| 31 | Profco | — | Others |
-| 32 | Public Health Career | — | India |
-| 33 | PureHealth | — | Others |
-| 34 | Reed | — | Others |
-| 35 | SEHA | — | Others |
-| 36 | Sidra Medicine | — | Others |
-| 37 | SimplyHired | — | India |
-| 38 | Swaasa | — | India |
-| 39 | Vaidyog | — | India |
-| 40 | Zulekha Hospitals | — | Others |
+| 30 | PharmaBharat | — | India |
+| 31 | PHCC | — | Others |
+| 32 | Profco | — | Others |
+| 33 | Public Health Career | — | India |
+| 34 | PureHealth | — | Others |
+| 35 | Reed | — | Others |
+| 36 | SEHA | — | Others |
+| 37 | Shine | — | India |
+| 38 | Sidra Medicine | — | Others |
+| 39 | SimplyHired | — | India |
+| 40 | Swaasa | — | India |
+| 41 | Vaidyog | — | India |
+| 42 | WorkIndia | — | India |
+| 43 | Zulekha Hospitals | — | Others |
 
-**Total:** 40 scrapers (22 India · 18 Others · 2 Remote-focused)
+**Total:** 43 scrapers (23 India · 20 Others · 2 Remote-focused)
