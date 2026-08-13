@@ -1,54 +1,31 @@
 job_id,title,site_categories
-57645,Piramal Pharma is Hiring for Trainee – R&D Job | FRESHERS,vacancies
-46363,Clinical Data Science Associate – ICON,clinical-data-management-jobs; data-analyst
-59406,Associate STEM Content Analyst Polymer Indexing | Clarivate Freshers,vacancies
-67895,EVERSANA Medical Affairs & Medical Writing Jobs in Pune,medical-science-liaison-jobs; medical-writer-jobs
-67847,Novo Nordisk Hiring Clinical Data Management,clinical-data-management-jobs
-58236,Pharmacovigilance Associate Job at ICON,pharmacovigilance-jobs
-58242,Study Review Specialist Job at ICON | Clinical Research,clinical-research-jobs
-67755,Medpace Hiring Site Payments Processor & Safety Database Specialist,pharmacovigilance-jobs
-67746,"Colgate Hiring Oral Care Associate in Mumbai | BDS, B.Pharm, B.Sc Apply",vacancies
-33688,Clinical Research Associate I Job at Lambda Therapeutic Research,clinical-research-jobs
-13240,Jubilant Biosys Hiring Trainee Research Associate,research-and-development-jobs
-67653,Officer QMS Jobs in Ahmedabad | B.Pharm & M.Pharm Apply,quality-assurance-jobs
-67592,"Syneos Health Hiring PV Specialist & Senior PV Specialist | Hyderabad, Gurugram & Pune",vacancies
-67579,Lambda Therapeutic Research Hiring Biostatistician & PK Reviewer,biostatistics; sas
-64643,IQVIA Hiring Site Activation Coordinator | Clinical Research,clinical-research-jobs
-67411,Clinical Research Associate Jobs 2026 | Bangalore & Pune,clinical-research-jobs
-67392,"Accenture Pharmacovigilance Jobs Associate, Analyst & Specialist Openings",pharmacovigilance-jobs
-65408,Clinical Data Abstraction Jobs in Pune at MRO Corp,clinical-research-jobs; medical-reviewer
-28130,Labcorp Hiring Freshers in Clinical Trials as Informed Consent Codification Associate,clinical-research-jobs
-54089,"Eurofins hiring for Sample Management, Bioinformatics, Toxicology & DMPK roles",bioinformatics; research-and-development-jobs
-51434,ICON Hiring SMA I/II in Clinical Research,clinical-research-jobs
-34772,Job Opportunity: Analyst – Scientific Communications & Medical Information at AstraZeneca,medical-science-liaison-jobs
-66867,Cognizant Hiring for Pharmacovigilance & Medical Coding,medical-coding-jobs; pharmacovigilance-jobs
-66831,"Wipro is hiring Drug Safety Physicians, Medical Device Investigation Specialists, Trainers, and MIS Assistant Managers across Pune & Kolkata",data-analyst; medical-devices; pharmacovigilance-jobs
-59300,Regulatory Affairs Jobs at Genedrift India | 0 – 5 Years,regulatory-affairs-jobs
-66770,Lambda Therapeutic Research Hiring Freshers for CDM & SAS Programming,clinical-data-management-jobs; sas
-59988,Syneos Health Hiring for Clinical Support Specialist,clinical-research-jobs
-66589,GSK hiring Freshers & experienced CMC Regulatory Affairs & QAC Audit Intake Coordinator,quality-assurance-jobs; regulatory-affairs-jobs
-66552,Life Science Research Analyst (Literature Review & Evidence Synthesis) Jobs 2026 | Chennai & Nagercoil,vacancies
-39118,ICON Hiring CRA I/II,clinical-research-jobs
-35998,Clinical Publishing Coordinator – Labcorp,clinical-research-jobs; vacancies
-64813,Thermo Fisher Scientific Hiring Centralized Monitoring Analysts,clinical-data-management-jobs; clinical-research-jobs
-38355,Safety Writer Job in Mumbai & Pune | Fortrea,medical-writer-jobs; pharmacovigilance-jobs
-33795,Entry Level Clinical Research TMF Role in Fortrea,clinical-research-jobs; tmf
-60501,Pharmaceutical Intelligence Intern Job for Freshers,internships; market-research
-66395,Pharmacovigilance Client Manager Jobs in Lambda,pharmacovigilance-jobs
-66369,"Clinical Data Coder Jobs | Bengaluru, Mumbai, Kochi, Kolkata, Ahmedabad, Noida | IQVIA",clinical-data-management-jobs; medical-coding-jobs
-66174,Medical Writer | Work from home Jobs For Freshers | LUCIDWRITERS HUB LLP,medical-writer-jobs; scientific-writer-jobs; vacancies
-66101,Sanofi Hiring Analyst & Senior Analyst Business Analytics,data-analyst; vacancies
-66089,ProductLife Group Hiring for PV & Regulatory Roles | 0 – 5 Years | Work From Home,pharmacovigilance-jobs; regulatory-affairs-jobs
-48698,ProductLife Group PLG Hiring Pharmacovigilance Data Officer | Work From Home,pharmacovigilance-jobs
-47876,Advarra Hiring Freshers in Clinical trial operations,clinical-research-jobs
-65208,Eli Lilly Hiring Associate Clinical Case Management | Pharmacovigilance,pharmacovigilance-jobs
-33196,Trial Master File (TMF) Document Management Associate Apply Now | Novotech CRO,clinical-research-jobs; tmf
-65876,Pfizer Hiring Freshers for Interns in Data Science & AI & AI Acceleration,data-analyst; internships
-14450,Icon Plc Hiring TMF specialist (Entry to Senior Positions) in Clinical Operations,tmf
-53495,Centralized Study Analyst Job in Fortrea – Apply Now,clinical-research-jobs
-65765,AstraZeneca Hiring Specialist RbQM (Centralised Monitoring),clinical-data-management-jobs; clinical-research-jobs
-48104,Technical Reporting Associate I – Labcorp | Freshers,clinical-research-jobs; regulatory-affairs-jobs
-57697,Medical Writing Support Coordinator Job – Parexel (Remote India),medical-writer-jobs; scientific-writer-jobs
-65454,"Amneal Pharma is Hiring for Executive, Regulatory Affairs",regulatory-affairs-jobs
-65398,"IQVIA Hiring Clinical Data Coordinator & Specialist | Hyderabad, Bengaluru, Thane, Kochi & Kolkata",clinical-data-management-jobs
-65318,Associate Data Steward Jobs in Hays,vacancies
+69617,Labcorp Contract Associate | Remote,clinical-research-jobs
+69613,"BMS hiring Regulatory Specialist, Portfolio Acceleration and Analytics",regulatory-affairs-jobs
+69608,Amgen Hiring for Associate Safety Data Analyst | Pharmacovigilance,pharmacovigilance-jobs
+47839,Data Coordinator Job at Clario | Apply Now,clinical-data-management-jobs
+69563,Clario Hiring for Cardiac Specialist,clinical-research-jobs
+69555,Myriad Consulting Hiring Case Processing | Pharmacovigilance,pharmacovigilance-jobs
+69542,Regeneron EDC Administration Specialist Jobs | Clinical Data Management,clinical-data-management-jobs
+69516,Thermo Fisher Scientific Programmer Analyst and Feasibility Site Specialist | 0 – 5 Years | Work From Home | Fresher can Apply,clinical-research-jobs; sas
+69507,Parexel Medical Writer I Patient Safety Jobs,medical-writer-jobs; pharmacovigilance-jobs
+69481,Flexiple Research Analyst Jobs | Work from Home,vacancies
+69421,01Health Clinical Support Specialist (Remote),clinical-research-jobs
+41182,Global Trial Acceleration Associate – Bristol Myers Squibb,clinical-research-jobs
+69354,Clarivate Hiring Associate STEM Content Analyst (Chemistry) | Freshers,vacancies
+69298,Indegene Hiring Drug Safety Associate & Scientific Editor Jobs,pharmacovigilance-jobs
+58266,Bristol Myers Squibb is Hiring for Site Contract Specialist | Clinical Research,clinical-research-jobs
+69091,Scientific & Medical Writer Jobs in Randstad | Apply Now,medical-writer-jobs; scientific-writer-jobs
+69082,Fortrea Hiring for Clinical Data Management Roles,clinical-data-management-jobs
+69040,"TCS Walk-In Drive for Pharmacovigilance & Medical Reviewer | Mumbai, Bengaluru & Pune",medical-reviewer; pharmacovigilance-jobs; vacancies
+68994,Advisor Clinical Data Abstraction Jobs in Pune,clinical-data-management-jobs; clinical-research-jobs
+68888,"Pharmazone hiring for GMP, Pharmacovigilance, Regulatory Affairs",pharmacovigilance-jobs; regulatory-affairs-jobs
+50063,Precision For Medicine Hiring for Clinical Data Management,clinical-data-management-jobs
+68721,Associate Transformation Solution Consultant Jobs in EXL | 0–3 Years,consulting; data-analyst
+47110,Drug Safety Specialist | OrciMed Life Sciences,pharmacovigilance-jobs
+47474,Sanofi Hiring Analyst – Field Analytics,data-analyst
+68673,Senior Associate Clinical Safety & Pharmacovigilance Jobs in Soterius,pharmacovigilance-jobs
+42154,"MRO Hiring Clinical Data Abstraction (Remote, Pune)",clinical-research-jobs
+59914,TMF Classifier I Job in Fortrea (Entry Level),clinical-research-jobs; tmf
+65259,Wipro Hiring Medical Writers in Pune | M.Pharm & PharmD Freshers,medical-writer-jobs
+68478,"Cognizant Mega Walk in Drive For Pharmacovigilance | 300+ Openings | Pune, Hyderabad & Mumbai",pharmacovigilance-jobs
+68391,"Advantmed Medical Coder Fresher Drive 2026 | B.Pharm, M.Pharm & Pharm.D | NASHIK INTERVIEW",medical-coding-jobs

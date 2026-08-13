@@ -8,21 +8,36 @@ pre-filter to healthcare:
 
     https://apna.co/jobs/dep_healthcare_doctor_hospital_staff-jobs?page=N
 
-Listing pages are server-rendered Next.js: every job card's full data object
-is embedded in the page's __NEXT_DATA__ JSON (props.pageProps.jobs[].data),
-which is far more robust than parsing card markup — and it already includes
-the FIXED salary range (`fixed_min_salary`/`fixed_max_salary`) separately
-from incentive-inflated `max_salary`/`earning_potential`, plus description,
-education, shift, gender and dates. pageProps.totalPages bounds pagination
-(25 cards per page).
+Since ~Aug 2026 apna serves Next.js App Router pages: the old pages-router
+__NEXT_DATA__ JSON is gone, listing cards are plain server-rendered HTML
+(no dates, no salary floor detail), and the RSC flight stream on LISTING
+pages carries no job JSON. Each DETAIL page, however, embeds the complete
+job object (the same shape the old listing JSON had — fixed salary range,
+description, education, shift, gender, created_on/last_updated, ui_tags,
+organization) in its own flight stream (self.__next_f.push chunks).
+
+The crawl is therefore two-phase:
+1. Sweep listing pages (~25 cards each, 1 cheap request per page) collecting
+   job URL + title stubs, until an empty page.
+2. For stubs that survive the deny-title gate and aren't already in the CSV,
+   fetch the detail page and extract the job object from the flight stream.
+
+posted_date is last_updated (this is what apna itself publishes as
+datePosted in the page's structured data; created_on can be months older
+for re-upped postings) with created_on as fallback. Because the listing is
+relevance-ordered and dates are only known after the detail fetch, jobs
+older than the cutoff are counted excluded_old and NOT stored, so they may
+be detail-fetched again on later runs (bounded: active postings expire
+~10 days after their last re-up).
 
 The salary filter uses the FIXED lower bound: earning potential (incentives)
 never counts toward the threshold. A fixed floor of 0 means "salary not
 disclosed" and is excluded.
 
-With --enrich, each NEW passing job's detail page is fetched; the app-router
-payload embeds a "job_details_section" JSON structure carrying Role/Category,
-Degree/Specialisation and the About-company address.
+Detail data already includes role category and education, so the old
+--enrich second fetch is no longer needed (the flag remains a no-op for
+compatibility; company_address is filled from the detail payload when
+present).
 
 Run `python apna_scraper.py --help` for options.
 """
@@ -224,28 +239,189 @@ def get_html(session, url, params=None):
 # Listing-page parsing
 # ----------------------------------------------------------------------------
 
-_NEXT_DATA_RE = re.compile(
-    r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', re.S)
-_JOB_ID_RE = re.compile(r"-(\d+)/?$")
+_JOB_ID_RE = re.compile(r"(?:-|/)(\d+)/?$")
 _WS_RE = re.compile(r"\s+")
+_CARD_RE = re.compile(
+    r'<a[^>]*data-testid="job-card"[^>]*href="([^"]+)"(.*?)</a>', re.S)
+_H2_RE = re.compile(r"<h2[^>]*>(.*?)</h2>", re.S)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+_FLIGHT_PUSH_RE = re.compile(r'self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)')
 
 
 def parse_listing_page(html):
-    """Return (cards, total_pages) from a department listing page.
+    """Return (stubs, total_pages) from a department listing page.
 
-    cards is a list of the raw job data dicts embedded in __NEXT_DATA__.
-    Returns (None, None) if the page structure is unrecognizable.
+    stubs is a list of {"job_url", "title"} dicts parsed from the
+    server-rendered job-card anchors. total_pages is always None (the App
+    Router pages don't report it; the crawl stops on the first empty page).
+    Returns (None, None) if the page structure is unrecognizable (no App
+    Router flight stream at all — bot wall or another redesign).
     """
-    match = _NEXT_DATA_RE.search(html or "")
-    if not match:
+    if "self.__next_f" not in (html or ""):
         return (None, None)
-    try:
-        page_props = json.loads(match.group(1))["props"]["pageProps"]
-    except (json.JSONDecodeError, KeyError):
-        return (None, None)
-    cards = [j["data"] for j in page_props.get("jobs") or []
-             if isinstance(j, dict) and j.get("data")]
-    return (cards, page_props.get("totalPages"))
+    stubs = []
+    for match in _CARD_RE.finditer(html):
+        href, body = match.group(1), match.group(2)
+        title_match = _H2_RE.search(body)
+        title = ""
+        if title_match:
+            title = _WS_RE.sub(
+                " ", _HTML_TAG_RE.sub(" ", title_match.group(1))).strip()
+        stubs.append({
+            "job_url": href if href.startswith("http") else SITE_BASE + href,
+            "title": title,
+        })
+    return (stubs, None)
+
+
+def _flight_stream(html):
+    """Concatenate the page's decoded self.__next_f.push text chunks."""
+    parts = []
+    for match in _FLIGHT_PUSH_RE.finditer(html or ""):
+        try:
+            parts.append(json.loads(match.group(1)))
+        except ValueError:
+            pass
+    return "".join(parts)
+
+
+def _grab_object(stream, anchor):
+    """Parse the JSON object in `stream` that contains the `anchor` key.
+
+    Walks back from the anchor to the enclosing '{', then does a
+    string-aware balanced scan forward. Returns a dict or None.
+    """
+    at = stream.find(anchor)
+    if at < 0:
+        return None
+    depth, j = 0, at
+    while j > 0:
+        j -= 1
+        char = stream[j]
+        if char == "}":
+            depth += 1
+        elif char == "{":
+            if depth == 0:
+                break
+            depth -= 1
+    else:
+        return None
+    depth, in_str, esc = 0, False, False
+    for k in range(j, len(stream)):
+        char = stream[k]
+        if esc:
+            esc = False
+            continue
+        if char == "\\":
+            esc = True
+            continue
+        if in_str:
+            if char == '"':
+                in_str = False
+            continue
+        if char == '"':
+            in_str = True
+            continue
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    parsed = json.loads(stream[j:k + 1])
+                except ValueError:
+                    return None
+                return parsed if isinstance(parsed, dict) else None
+    return None
+
+
+_REF_RE = re.compile(r"^\$([0-9a-f]{1,4})$")
+
+
+def _resolve_ref(stream, ref_id):
+    """Resolve an RSC flight reference ("$3d") to its chunk's value.
+
+    Chunks look like `3d:T5a2,<text…>` (text, hex BYTE length prefix) or
+    `3d:{…}` / `3d:[…]` (JSON). Returns str/dict/list or None.
+    """
+    t_at = stream.find(ref_id + ":T")
+    if t_at >= 0:
+        head = stream[t_at + len(ref_id) + 2: t_at + len(ref_id) + 12]
+        m = re.match(r"([0-9a-f]+),", head)
+        if m:
+            byte_len = int(m.group(1), 16)
+            start = t_at + len(ref_id) + 2 + m.end()
+            # binary-search the char count whose UTF-8 encoding is byte_len
+            lo, hi = 0, min(len(stream) - start, byte_len)
+            while lo < hi:
+                mid = (lo + hi + 1) // 2
+                if len(stream[start:start + mid].encode("utf-8")) <= byte_len:
+                    lo = mid
+                else:
+                    hi = mid - 1
+            return stream[start:start + lo]
+    for open_char in ("{", "["):
+        j_at = stream.find(ref_id + ":" + open_char)
+        if j_at < 0:
+            continue
+        start = j_at + len(ref_id) + 1
+        depth, in_str, esc = 0, False, False
+        for k in range(start, len(stream)):
+            char = stream[k]
+            if esc:
+                esc = False
+                continue
+            if char == "\\":
+                esc = True
+                continue
+            if in_str:
+                if char == '"':
+                    in_str = False
+                continue
+            if char == '"':
+                in_str = True
+                continue
+            if char in "{[":
+                depth += 1
+            elif char in "}]":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return json.loads(stream[start:k + 1])
+                    except ValueError:
+                        return None
+        return None
+    return None
+
+
+def fetch_job_card(session, job_url):
+    """Fetch a detail page and return its embedded job object, or None."""
+    html = get_html(session, job_url)
+    if html is None:
+        return None
+    stream = _flight_stream(html)
+    card = (_grab_object(stream, '"created_on"')
+            or _grab_object(stream, '"public_url"'))
+    if not isinstance(card, dict) or not card.get("title"):
+        return None
+    # Aggregated/external postings replace nested values with flight refs
+    # ("$3d"): resolve one level of them (description text, organization…).
+    for field, value in list(card.items()):
+        if isinstance(value, str):
+            ref = _REF_RE.match(value)
+            if ref:
+                card[field] = _resolve_ref(stream, ref.group(1))
+            elif value == "$undefined":  # RSC placeholder for "no value"
+                card[field] = None
+    # App Router payload: department is a plain string named job_department.
+    if not card.get("department") and isinstance(card.get("job_department"), str):
+        card["department"] = {"name": card["job_department"]}
+    # Some payload variants carry organization as a bare name string.
+    if isinstance(card.get("organization"), str):
+        card["organization"] = {"name": card["organization"]}
+    if not isinstance(card.get("address"), dict):
+        card["address"] = {}
+    return card
 
 
 def card_to_row(card):
@@ -264,13 +440,29 @@ def card_to_row(card):
     if not job_type:
         job_type = "Part Time" if card.get("is_part_time") else "Full Time"
 
-    address = card.get("address") or {}
+    address = card.get("address")
+    if not isinstance(address, dict):
+        address = {}
     location = card.get("location_name") or ""
     if not location:
-        city = (address.get("city") or {}).get("name") or ""
-        location = ", ".join(x for x in (address.get("area"), city) if x)
+        # city/area are dicts on organic postings, bare strings on
+        # aggregated ones.
+        city = address.get("city")
+        if isinstance(city, dict):
+            city = city.get("name")
+        area = address.get("area")
+        if isinstance(area, dict):
+            area = area.get("name")
+        location = ", ".join(x for x in (area, city)
+                             if x and isinstance(x, str)
+                             and not x.startswith("$"))
 
-    description = _WS_RE.sub(" ", card.get("description") or "").strip()
+    description = card.get("description")
+    if not isinstance(description, str):
+        description = ""
+    if "<" in description:  # aggregated postings ship rich HTML
+        description = _HTML_TAG_RE.sub(" ", description)
+    description = _WS_RE.sub(" ", description).strip()
 
     return {
         "source": SOURCE,
@@ -286,12 +478,15 @@ def card_to_row(card):
         "experience_raw": card.get("experience_in_years") or "",
         "english_level": card.get("english") or "",
         "department": ((card.get("department") or {}).get("name") or ""),
-        "role_category": "",
+        "role_category": card.get("category") or "",
         "education": card.get("education") or "",
         "degree_specialisation": "",
         "shift": card.get("shift") or "",
         "gender": card.get("gender") or "",
-        "posted_date": (card.get("created_on") or "")[:10],
+        # last_updated is what apna publishes as datePosted; created_on can
+        # be months older for re-upped postings.
+        "posted_date": (card.get("last_updated")
+                        or card.get("created_on") or "")[:10],
         "description": description[:DESCRIPTION_MAX_CHARS],
         "job_url": job_url,
         # external postings carry the employer's real application link
@@ -433,8 +628,8 @@ def main(argv=None):
             if html is None:
                 counters["page_errors"] += 1
                 break  # repeated failures on this department; move on
-            cards, reported_total = parse_listing_page(html)
-            if cards is None:
+            stubs, reported_total = parse_listing_page(html)
+            if stubs is None:
                 counters["page_errors"] += 1
                 log.error("Unrecognized page structure at %s?page=%d — stopping "
                           "this department", base_url, page)
@@ -442,7 +637,7 @@ def main(argv=None):
             if total_pages is None and reported_total:
                 total_pages = int(reported_total)
                 log.info("%s: %d pages reported", slug, total_pages)
-            if not cards:
+            if not stubs:
                 # The server occasionally returns a valid page with zero
                 # cards mid-listing; only stop on a persistent run of them.
                 if (total_pages is not None and page < total_pages
@@ -457,10 +652,24 @@ def main(argv=None):
             empty_streak = 0
 
             counters["pages"] += 1
-            for card in cards:
+            for stub in stubs:
                 counters["listings"] += 1
-                if _DENY_RE.search(card.get("title") or ""):
+                if _DENY_RE.search(stub["title"] or ""):
                     counters["excluded_deny_title"] += 1
+                    continue
+                id_match = _JOB_ID_RE.search(stub["job_url"])
+                if not id_match:
+                    log.warning("No job id in %s — skipping", stub["job_url"])
+                    continue
+                key = (SOURCE, id_match.group(1))
+                # Dedup BEFORE the detail fetch: known jobs cost no request.
+                if key in known_pairs:
+                    counters["duplicates"] += 1
+                    continue
+                card = fetch_job_card(session, stub["job_url"])
+                if card is None:
+                    log.warning("No job payload at %s — skipping",
+                                stub["job_url"])
                     continue
                 try:
                     row = card_to_row(card)
@@ -470,24 +679,19 @@ def main(argv=None):
                 if row["posted_date"] and row["posted_date"] < cutoff:
                     counters["excluded_old"] += 1
                     continue
-                key = (SOURCE, row["job_id"])
-                if key in known_pairs:
-                    counters["duplicates"] += 1
-                    continue
+                if not row["apply_url"]:  # non-external jobs: apply via apna
+                    row["apply_url"] = row["job_url"]
                 known_pairs.add(key)
                 new_rows.append(row)
                 counters["new"] += 1
             page += 1
 
-    if args.enrich and new_rows:
-        log.info("Enriching %d new jobs with detail pages...", len(new_rows))
-        for row in new_rows:
-            try:
-                enrich_row(session, row)
-            except Exception as exc:
-                log.warning("Enrichment failed for %s: %s", row["job_url"], exc)
+    if args.enrich:
+        # Detail pages are always fetched now and already carry the enrich
+        # fields; the flag is kept as a no-op for old cron lines.
+        log.info("--enrich is a no-op: detail data is captured on every run")
 
-    columns = CSV_COLUMNS + (["company_address"] if args.enrich else [])
+    columns = CSV_COLUMNS
     if new_rows:
         new_df = pd.DataFrame(new_rows)
         if existing_df is not None:

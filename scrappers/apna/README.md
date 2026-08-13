@@ -9,18 +9,32 @@ so the CSVs can be concatenated into one dataset.
 
 ## How it gets the data
 
-Listing pages are server-rendered Next.js:
+Listing pages are Next.js **App Router** pages (apna dropped the old
+pages-router markup around Aug 2026 — `__NEXT_DATA__` is gone):
 
     https://apna.co/jobs/dep_healthcare_doctor_hospital_staff-jobs?page=N
 
-Instead of parsing card markup, the scraper reads each page's `__NEXT_DATA__`
-JSON (`props.pageProps.jobs[].data`), which carries the complete job object —
-including the **fixed vs. incentive salary split** (`fixed_min_salary` /
-`fixed_max_salary` vs. `earning_potential`), description, education, shift,
-gender, and dates. That makes most "detail-page" fields free, and it is far
-more robust than CSS selectors. `pageProps.totalPages` bounds pagination
-(25 cards/page, ~142 pages); the loop stops after 3 consecutive empty pages
-(single empty pages happen transiently mid-listing).
+The crawl is two-phase:
+
+1. **Listing sweep** — job cards are plain server-rendered HTML
+   (`<a data-testid="job-card" href="/job/…-<id>">` with an `<h2>` title).
+   One cheap request per page (25 cards/page, ~144 pages) collects
+   URL + title stubs until the first empty page. The listing carries no
+   dates or structured salary, and its RSC flight stream has no job JSON.
+2. **Detail fetch** — only for stubs that pass the deny-title gate and are
+   not already in the CSV. Each detail page embeds the complete job object
+   (the same shape the old listing JSON had: **fixed vs. incentive salary
+   split** (`fixed_min_salary`/`fixed_max_salary` vs. `earning_potential`),
+   description, education, shift, gender, `created_on`/`last_updated`,
+   ui_tags, organization) in its `self.__next_f.push` flight stream; the
+   scraper reassembles the stream and brace-matches the object out.
+
+`posted_date` is `last_updated` (what apna itself publishes as `datePosted`
+in the page's structured data; `created_on` can be months older for re-upped
+postings), falling back to `created_on`. Because dates are only known after
+the detail fetch and the listing is relevance-ordered, jobs older than the
+cutoff are excluded but not stored — they may be re-fetched on later runs
+(bounded: active postings expire ~10 days after their last re-up).
 
 The department slug list is a constant (`DEPARTMENT_SLUGS`) — append e.g.
 `dep_beauty_fitness_personal_care-jobs` to widen coverage later.
@@ -50,12 +64,13 @@ in the parent `Jobs/` folder + `pip install -r requirements.txt`):
 # Sample run: first 3 pages
 ../.venv/bin/python apna_scraper.py --max-pages 3 --output apna_jobs_sample.csv
 
-# Full crawl (~142 pages, ≈5 min at the default 1 req/sec)
+# Full crawl: ~144 listing pages + one detail fetch per NEW job.
+# First run ≈ 1.5–2 h at the default 1 req/sec (≈3k details); later runs are
+# incremental (known job ids are skipped before the detail fetch) and fast.
 ../.venv/bin/python apna_scraper.py
 
-# Full crawl + detail-page enrichment for NEW passing jobs
-# (adds role_category, degree_specialisation, company_address, apply_url)
-../.venv/bin/python apna_scraper.py --enrich
+# --enrich is now a no-op (detail data incl. role_category is captured on
+# every run); the flag is accepted so old cron lines keep working.
 ```
 
 Options: `--output PATH` (default `apna_jobs.csv`), `--max-pages N`,

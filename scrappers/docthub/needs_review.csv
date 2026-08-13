@@ -1,0 +1,412 @@
+job_id,title,category,salary_raw,posted_date
+J123210,"QA Manager Jobs in Zenotech Laboratories Limited - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-08-10
+J123208,"QA Executive Jobs in Zenotech Laboratories Limited - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-08-10
+J123206,"Sr. Executive-QC (Analytical) Jobs in Zenotech Laboratories Limited - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-08-10
+J123205,"Sr. Executive Production (QMS) Jobs in Zenotech Laboratories Limited - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-08-10
+J123204,"Production Executive (Downstream) Jobs in Zenotech Laboratories Limited - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-08-10
+J123203,"Production Executive (Upstream) Jobs in Zenotech Laboratories Limited - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-08-10
+J122977,"Production Officer Jobs in Macmillon Pharmaceuticals Private Limited - Amritsar, Punjab",Pharmaceuticals,Not Disclosed,2026-08-07
+J122976,"QA Executive Jobs in Macmillon Pharmaceuticals Private Limited - Amritsar, Punjab",Pharmaceuticals,Not Disclosed,2026-08-07
+J122975,"QA Officer Jobs in Macmillon Pharmaceuticals Private Limited - Amritsar, Punjab",Pharmaceuticals,Not Disclosed,2026-08-07
+J122974,"Packing Operator Jobs in H&H Healthcare And Cosmetics Private Limited - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-08-07
+J122973,"Packing Officer Jobs in H&H Healthcare And Cosmetics Private Limited - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-08-07
+J122968,"Packing Manager Jobs in H&H Healthcare And Cosmetics Private Limited - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-08-07
+J122944,"Sr. Officer-QC Jobs in Higgs Healthcare - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-07
+J122943,"IPQA Executive Jobs in Higgs Healthcare - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-07
+J122942,"IPQA Officer Jobs in Higgs Healthcare - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-07
+J122928,"QA Executive (QMS) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-06
+J122927,"QA Executive (HVAC) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-06
+J122926,"Production Operator (QMS) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-06
+J122925,"Production Executive (QMS) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-06
+J122924,"Production Officer (QMS) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-06
+J122853,"QA Executive (QMS) Jobs in Lyka Labs Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-06
+J122852,"QA Officer (IPQA) Jobs in Lyka Labs Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-06
+J122659,"Officer/Sr. Officer-QC (CSV) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122658,"Officer/Sr. Officer-QC (FP) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122657,"Officer/Sr. Officer-QC (Stability) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122656,"Officer/Sr. Officer-QC (Dissolution) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122655,"Officer/Sr. Officer-QC (GC) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122654,"Officer/Sr. Officer-QC (HPLC) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122653,"Officer/Sr. Officer-QA (QMS) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122652,"Officer/Sr. Officer-QA (Validation) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122651,"Officer/Sr. Officer-QA (Lab QA) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122649,"Officer/Sr. Officer-QA (IPQA) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122646,"Packing Supervisor (Blister) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122645,"Officer/Sr. Officer-Packing (Blister) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122644,"Production Supervisor (Liquid) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122643,"Production Supervisor (Softgel) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122642,"Production Supervisor (OSD) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122641,"Production Supervisor (Capsule filling) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122640,"Production Supervisor (Compression) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122639,"Production Supervisor (Coating) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122638,"Officer/Sr. Officer-Production (Liquid) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122637,"Officer/Sr. Officer-Production (Softgel) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122636,"Officer/Sr. Officer-Production (OSD) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122635,"Officer/Sr. Officer-Production (Capsule filling) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122634,"Officer/Sr. Officer-Production (Compression) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122633,"Officer/Sr. Officer-Production (Coating) Jobs in Marksans Pharma Limited - South Goa, Goa",Pharmaceuticals,Not Disclosed,2026-08-04
+J122632,"Officer/Sr. Officer-QC Jobs in Alivus Life Sciences Limited - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122631,"QA Officer Jobs in Alivus Life Sciences Limited - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122630,"Sr. Officer-QA Jobs in Alivus Life Sciences Limited - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122629,"Production Officer Jobs in Alivus Life Sciences Limited - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122627,"QA Executive Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122626,"QA Officer Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122625,"Asst. Manager-QA Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122624,"Production Officer Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122622,"Production Chemist Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122621,"QC Executive Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122620,"QC Officer Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122619,"Production Operator (Granulation) Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122618,"Production Operator (Compression) Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122617,"Production Operator (Coating) Jobs in Varav Biogenesis Private Limited - Kala Amb, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-04
+J122605,"Sr. Officer/Officer-ADL Jobs in Finecure Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122604,"Sr. Officer/Officer-QC Jobs in Finecure Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122602,"Packing Operator Jobs in Finecure Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122601,"Manufacturing Executive Jobs in Finecure Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122600,"Jr. Officer/Sr. Officer/Officer- Manufacturing Jobs in Finecure Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122591,"QC Executive Jobs in Ajanta Pharma Limited - Vapi, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122589,"Officer/Sr. Officer-QA Jobs in Ajanta Pharma Limited - Vapi, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122588,"Officer/Sr. Officer-QC Jobs in Ajanta Pharma Limited - Vapi, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-04
+J122553,"Executive / Sr. Executive-QA Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-03
+J122514,"QA Executive (QMS) Jobs in Beta Drugs Ltd - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-03
+J122513,"Officer/Sr. Officer-QA (Validation) Jobs in Beta Drugs Ltd - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-03
+J122512,"Officer/Sr. Officer-QA (Qualification) Jobs in Beta Drugs Ltd - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-08-03
+J122503,"Associate/Research Scientist-F&D Jobs in Baroque Pharmaceuticals Pvt Ltd - Anand, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122502,"Associate/Research Scientist-ADL Jobs in Baroque Pharmaceuticals Pvt Ltd - Anand, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122501,"QC Executive Jobs in Baroque Pharmaceuticals Pvt Ltd - Anand, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122500,"QC Officer Jobs in Baroque Pharmaceuticals Pvt Ltd - Anand, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122499,"Production Executive Jobs in Baroque Pharmaceuticals Pvt Ltd - Anand, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122498,"Production Officer Jobs in Baroque Pharmaceuticals Pvt Ltd - Anand, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122497,"Manager/Sr. Manager-Regulatory Affairs Jobs in Baroque Pharmaceuticals Pvt Ltd - Anand, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122495,"Associate/Research Scientist-ADL Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122494,"Associate/Research Scientist-F&D Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122493,"Asst. Manager-QC (Micro) Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122492,"Sr. Executive-QC (Micro) Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122491,"QC Executive Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122490,"QC Officer Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122489,"Production Executive Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122488,"Production Officer Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122487,"Manager/Sr. Manager-Regulatory Affairs Jobs in Baroque Pharmaceuticals Pvt Ltd - Khambhat, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122474,"Packing Operator Jobs in Emcure Pharmaceuticals Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122473,"Packing Officer Jobs in Emcure Pharmaceuticals Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122466,"Production Officer (Vial Washing) Jobs in Emcure Pharmaceuticals Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122465,"Production Officer (Filling) Jobs in Emcure Pharmaceuticals Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122464,"Production Operator (Vial Washing) Jobs in Emcure Pharmaceuticals Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122463,"Production Operator (Filling) Jobs in Emcure Pharmaceuticals Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-08-03
+J122162,"Production Executive Jobs in Penam Biosciences Private Limited - Kathua, Jammu and Kashmir",Pharmaceuticals,Not Disclosed,2026-07-30
+J122161,"Production Manager Jobs in Penam Biosciences Private Limited - Kathua, Jammu and Kashmir",Pharmaceuticals,Not Disclosed,2026-07-30
+J122160,"QA Executive Jobs in Penam Biosciences Private Limited - Kathua, Jammu and Kashmir",Pharmaceuticals,Not Disclosed,2026-07-30
+J122159,"Dy. Manager/Manager-QC Jobs in Penam Biosciences Private Limited - Kathua, Jammu and Kashmir",Pharmaceuticals,Not Disclosed,2026-07-30
+J122158,"Dy. Manager/Manager-QA Jobs in Penam Biosciences Private Limited - Kathua, Jammu and Kashmir",Pharmaceuticals,Not Disclosed,2026-07-30
+J122157,"Executive/Sr. Executive-Production (Compression) Jobs in Aurobindo Pharma Limited - Jadcherla, Telangana",Pharmaceuticals,Not Disclosed,2026-07-30
+J122156,"Executive/Sr. Executive-Production (Coating) Jobs in Aurobindo Pharma Limited - Jadcherla, Telangana",Pharmaceuticals,Not Disclosed,2026-07-30
+J122155,"Executive/Sr. Executive-Production (Granulation) Jobs in Aurobindo Pharma Limited - Jadcherla, Telangana",Pharmaceuticals,Not Disclosed,2026-07-30
+J122154,"Technical Assistant-Production (Granulation) Jobs in Aurobindo Pharma Limited - Jadcherla, Telangana",Pharmaceuticals,Not Disclosed,2026-07-30
+J122150,"Production Operator (Autoclave) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122149,"Production Operator (Vial Filling) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122148,"Production Operator (Lyophilizer) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122147,"Production Operator (Manufacturing) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122146,"Production Operator (Ampoule Filling) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122145,"Production Officer Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122144,"Officer/Sr. Officer-Production (Packing) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122143,"Officer/Sr. Officer-Production Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122142,"Production Executive Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122141,"Production Executive (QMS) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122140,"Sr. Executive-QC (QMS) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122139,"Sr. Executive-QC (Stability) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122138,"Sr. Executive-QC (PM) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122137,"Sr. Executive-QC (RM) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122136,"Asst. Manager-QC (PM) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122135,"Asst. Manager-QC (RM) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122134,"Asst. Manager-QC (QMS) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122133,"Asst. Manager-QC (Stability) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122131,"QC Executive (Micro) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122130,"Dy. Manager/Asst. Manager-QC (Micro) Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122129,"Executive/Sr. Executive-QA Jobs in Verve Human Care Laboratories - Dehradun, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-30
+J122128,"Manager/Sr. Manager-QA (QMS) Jobs in Cadila Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-30
+J122127,"Asst. Manager/Dy. Manager-QA (Validation) Jobs in Cadila Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-30
+J122126,"Sr. Executive-QA (Validation) Jobs in Cadila Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-30
+J122125,"Deputy Manager-QA Jobs in Cadila Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-30
+J122124,"Officer/Sr. Officer-QA (Injection) Jobs in Cadila Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-30
+J122123,"Officer/Sr. Officer-QA (OSD) Jobs in Cadila Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-30
+J122122,"Officer/Sr. Officer-QA (IPQA) Jobs in Cadila Pharmaceuticals Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-30
+J122074,"QC Officer Jobs in Elixir Pharma - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-29
+J122072,"QA Officer Jobs in Elixir Pharma - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-29
+J122071,"QC Executive Jobs in Elixir Pharma - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-29
+J122069,"QC Executive Jobs in Enzyme Bioscience Pvt. Ltd - Surat, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-29
+J122068,"QA Executive Jobs in Enzyme Bioscience Pvt. Ltd - Surat, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-29
+J122065,"QC Officer (Stability) Jobs in Emcure Pharmaceuticals Limited - Surendranagar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-29
+J122064,"QC Officer (Analyst) Jobs in Emcure Pharmaceuticals Limited - Surendranagar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-29
+J122020,"Project Manager Jobs in Tofflon India Pvt. Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-29
+J122019,"QC Executive Jobs in Tofflon India Pvt. Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-29
+J121831,"Production Executivr (Filling) Jobs in Abryl Laboratories - Dera Bassi, Punjab",Pharmaceuticals,Not Disclosed,2026-07-25
+J121830,"Production Executivr (Autoclave) Jobs in Abryl Laboratories - Dera Bassi, Punjab",Pharmaceuticals,Not Disclosed,2026-07-25
+J121829,"Production Executive (Washing) Jobs in Abryl Laboratories - Dera Bassi, Punjab",Pharmaceuticals,Not Disclosed,2026-07-25
+J121828,"Production Operator (Washing) Jobs in Abryl Laboratories - Dera Bassi, Punjab",Pharmaceuticals,Not Disclosed,2026-07-25
+J121827,"Production Operator (Autoclave) Jobs in Abryl Laboratories - Dera Bassi, Punjab",Pharmaceuticals,Not Disclosed,2026-07-25
+J121757,"QA Officer Jobs in Curefox Healthcare Private Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-24
+J121756,"QA Executive Jobs in Curefox Healthcare Private Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-24
+J121755,"QC Officer (Micro) Jobs in Curefox Healthcare Private Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-24
+J121754,"Executive/Sr. Executive-QC (QMS) Jobs in Curefox Healthcare Private Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-24
+J121749,"Asst. Manager/Dy. Manager-QA Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121748,"QA Executive Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121747,"Production Operator Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121746,"Executive/Sr. Executive-Production Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121745,"Officer/Sr. Officer-Production Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121744,"Deputy Manager-QC Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121743,"Jr. Executive-QC Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121742,"Officer/Sr. Officer-QC Jobs in Centaur Pharmaceuticals Pvt Ltd - Pune, Maharashtra",Pharmaceuticals,Not Disclosed,2026-07-24
+J121580,"Sr. Officer-QA Jobs in Stallion Laboratories Pvt Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-23
+J121578,"Officer/Sr. Officer-Production Jobs in Stallion Laboratories Pvt Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-23
+J121576,"Technical Assistant-Production (Capsule) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121575,"Technical Assistant-Production (Coating) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121574,"Technical Assistant-Production (Compression) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121573,"Technical Assistant-Production (Granulation) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121572,"Executive/Sr. Executive-QA (AQA) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121571,"Executive/Sr. Executive-QA (QMS) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121570,"Executive/Sr. Executive-QA (Validation) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121569,"Executive/Sr. Executive-QA (IPQA) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121568,"Executive/Sr. Executive-QC (Stability) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121567,"Executive/Sr. Executive-QC (RM) Jobs in Aurobindo Pharma Limited - Tirupati, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-23
+J121562,"IPQA Officer Jobs in Strava Healthcare Pvt Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-23
+J121560,"Production Officer Jobs in Strava Healthcare Pvt Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-23
+J121559,"Asst. Manager-QC Jobs in Strava Healthcare Pvt Ltd - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-23
+J121487,"Production Operator (Filling) Jobs in Synokem Pharmaceuticals Ltd - Paonta Sahib, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-20
+J121486,"Executive/Sr. Executive-Production Jobs in Synokem Pharmaceuticals Ltd - Paonta Sahib, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-20
+J121485,"Officer/Sr. Officer-QA (IPQA) Jobs in Synokem Pharmaceuticals Ltd - Paonta Sahib, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-20
+J121484,"Executive/Sr. Executive-QA (DRA) Jobs in Synokem Pharmaceuticals Ltd - Paonta Sahib, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-20
+J121483,"QA Executive (QMS) Jobs in Synokem Pharmaceuticals Ltd - Paonta Sahib, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-20
+J121482,"Officer/Sr. Officer-QC (GLP) Jobs in Synokem Pharmaceuticals Ltd - Paonta Sahib, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-20
+J121480,"Officer/Sr. Officer-QC (Stability) Jobs in Synokem Pharmaceuticals Ltd - Paonta Sahib, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-20
+J121422,"Executive/Sr. Executive-QA (IPQA) Jobs in Innoxel Lifesciences Private Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121421,"QA Officer (IPQA) Jobs in Innoxel Lifesciences Private Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121420,"Dy. Manager-QA (IPQA) Jobs in Innoxel Lifesciences Private Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121419,"Executive/Sr. Executive-QC (HPLC) Jobs in Innoxel Lifesciences Private Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121418,"Executive/Sr. Executive-QC (Validation) Jobs in Innoxel Lifesciences Private Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121417,"Officer/Sr. Officer-QC (HPLC) Jobs in Innoxel Lifesciences Private Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121416,"Officer/Sr. Officer-QC (Validation) Jobs in Innoxel Lifesciences Private Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121415,"Dy. Manager-QC (Reviewer) Jobs in Piramal Pharma Solutions - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-07-18
+J121414,"Dy. Manager-QC (Lab QA) Jobs in Piramal Pharma Solutions - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-07-18
+J121413,"Sr. Executive-QC (Reviewer) Jobs in Piramal Pharma Solutions - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-07-18
+J121411,"Sr. Executive-QC (Lab QA) Jobs in Piramal Pharma Solutions - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-07-18
+J121410,"QC Manager (Stability) Jobs in Piramal Pharma Solutions - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-07-18
+J121408,"QC Manager Jobs in Piramal Pharma Solutions - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-07-18
+J121407,"Executive/Sr. Executive-QC Jobs in Piramal Pharma Solutions - Indore, Madhya Pradesh",Pharmaceuticals,Not Disclosed,2026-07-18
+J121356,"Asst. Manager-QA Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121355,"Executive/Sr. Executive-QA Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121354,"QA Officer Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121353,"Jr. Executive-QA Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121352,"Asst. Manager-QC Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121351,"Executive/Sr. Executive-QC Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121350,"QC Officer Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121349,"Jr. Executive-QC Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121348,"Manager/Sr. Manager-Production Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121347,"Deputy Manager-Production Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121346,"Asst. Manager-Production Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121345,"Executive/Sr. Executive-Production Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121344,"Jr. Executive-Production Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121343,"Production Officer Jobs in Cadila Pharmaceuticals Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121342,"ADL Officer Jobs in Tatva Chintan Pharma Chem Limited - Vadodara, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121332,"QC Officer Jobs in Tatva Chintan Pharma Chem Limited - Bharuch, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121331,"QC Executive Jobs in Tatva Chintan Pharma Chem Limited - Bharuch, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121330,"QA Officer Jobs in Tatva Chintan Pharma Chem Limited - Bharuch, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121329,"QA Executive Jobs in Tatva Chintan Pharma Chem Limited - Bharuch, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-18
+J121328,"Production Executive Jobs in Tatva Chintan Pharma Chem Limited - Bharuch, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-17
+J121281,"Packing Executive (Secondary Packing) Jobs in Swiss Garnier Group of Companies - Una, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-17
+J121280,"Production Operator (Compression) Jobs in Swiss Garnier Group of Companies - Una, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-17
+J121279,"Jr. Executive/Executive-Production (Compression) Jobs in Swiss Garnier Group of Companies - Una, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-17
+J121278,"Jr. Executive/Executive-QC (GC) Jobs in Swiss Garnier Group of Companies - Una, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-17
+J121277,"Jr. Executive/Executive-QC (RM) Jobs in Swiss Garnier Group of Companies - Una, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-17
+J121198,"QA Executive Jobs in Lifechem Pharma, Panoli GIDC - Ankleshwar,Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121197,"QC Executive Jobs in Lifechem Pharma, Panoli GIDC - Ankleshwar,Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121196,"R&D Executive Jobs in Lifechem Pharma, Panoli GIDC - Ankleshwar,Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121195,"QA Officer Jobs in Lifechem Pharma, Panoli GIDC - Ankleshwar,Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121194,"QC Officer Jobs in Lifechem Pharma, Panoli GIDC - Ankleshwar,Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121193,"R&D Officer Jobs in Lifechem Pharma, Panoli GIDC - Ankleshwar,Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121192,"Asst. Manager/Manager-R&D Jobs in Lifechem Pharma, Panoli GIDC - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121184,"Officer/Sr. Officer-QC (HPLC) Jobs in Aneta Pharmaceuticals Private Limited - Ahmedabad, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-16
+J121172,"Assistant Manager-QA (QMS) Jobs in Neuland Laboratories Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-16
+J121171,"QA Executive (QMS) Jobs in Neuland Laboratories Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-16
+J121170,"QA Officer (AQA) Jobs in Neuland Laboratories Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-16
+J121169,"QC Chemist (QMS) Jobs in Neuland Laboratories Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-16
+J121168,"QC Officer (QMS) Jobs in Neuland Laboratories Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-16
+J121167,"QC Executive (QMS) Jobs in Neuland Laboratories Ltd - Hyderabad, Telangana",Pharmaceuticals,Not Disclosed,2026-07-16
+J121163,"Asst. Manager/Dy. Manager-DRA Jobs in Ravian Life Science Pvt Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121162,"QA Officer (IPQA) Jobs in Ravian Life Science Pvt Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121161,"Officer/Sr. Officer-QC (GLP) Jobs in Ravian Life Science Pvt Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121160,"Officer/Sr. Officer-QC (RM) Jobs in Ravian Life Science Pvt Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121159,"Officer/Sr. Officer-QC Jobs in Ravian Life Science Pvt Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121158,"Asst. Manager/Dy. Manager-QC Jobs in Ravian Life Science Pvt Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121157,"Manager/Asst. Manager-QA (Validation) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121156,"Manager/Asst. Manager-QA (IPQA) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121155,"Manager/Asst. Manager-QA (QMS) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121154,"Officer/Sr. Officer-QC (PM) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121153,"Officer/Sr. Officer-QC (RM) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121152,"Officer/Sr. Officer-QC (GLP) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121151,"Officer/Sr. Officer-QC (GC) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121150,"Officer/Sr. Officer-QC (Micro) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121149,"Officer/Sr. Officer-QC (HPLC) Jobs in Synokem Pharmaceuticals Ltd - Haridwar, Uttarakhand",Pharmaceuticals,Not Disclosed,2026-07-16
+J121148,"Asst. Manager/Deputy Manager-QC Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121147,"QA Executive (Lab QA) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121146,"QA Executive (Validation) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121145,"QA Officer (Lab QA) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121144,"QA Officer (Validation) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121143,"Officer/Sr. Officer-QC (Validation) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121142,"Officer/Sr. Officer-QC (HPLC) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121141,"Production Officer (Capsule) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121140,"Production Operator (Capsule) Jobs in Acme Generics LLP - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-16
+J121139,"R&D Executive Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121138,"ARD Executive Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121137,"QC Executive Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121136,"QA Executive Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121135,"R&D Officer Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121134,"ARD Officer Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121133,"QC Officer Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121132,"QA Officer Jobs in SCL Lifescience Limited - Mohali, Punjab",Pharmaceuticals,Not Disclosed,2026-07-16
+J121122,"QA Executive (QMS) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121121,"QA Executive (IPQA) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121120,"Sr. Officer-QA (QMS) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121119,"Sr. Officer-QA (IPQA) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121118,"QA Executive (DRA) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121117,"Packing Officer Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121116,"Packing Officer (QMS) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121115,"Packing Officer (Documentation) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121114,"Sr. Executive-Packing Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121113,"Manufacturing Executive Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121112,"Manufacturing Officer (Documentation) Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J121111,"Asst. Manager-Manufacturing Jobs in Crius Life Sciences, Airport Road - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-15
+J120841,"Executive/Sr. Executive-Production Jobs in AMGIS Lifescience Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-13
+J120840,"Sr. Officer-Production Jobs in AMGIS Lifescience Ltd - Ankleshwar, Gujarat",Pharmaceuticals,Not Disclosed,2026-07-13
+J120803,"Asst. Manager-Packing Jobs in Allrite Group - Baddi, Himachal Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120766,"QC Officer (Documentation) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120765,"QC Officer (HPLC) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120764,"QA Executive (Validation) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120763,"QA Executive (IPQA) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120762,"Production Operator (Packing) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120761,"Production Operator (Coating) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120760,"Production Operator (Compression) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120759,"Production Operator (Granulation) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120758,"Production Executive (Packing) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120757,"Production Executive (Coating) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120756,"Production Executive (Compression) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J120755,"Production Executive (Granulation) Jobs in Vkt Pharma - Srikakulam, Andhra Pradesh",Pharmaceuticals,Not Disclosed,2026-07-11
+J123189,"Special Educator Jobs in Career Strides Consultancy - Shimla, Himachal Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-10
+J123188,"Special Educator Jobs in Career Strides Consultancy - Solan, Himachal Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-10
+J123185,"Special Educator Jobs in Career Strides Consultancy - Zirakpur, Punjab",Professor / Academic Staff,Not Disclosed,2026-08-10
+J123059,"Asst. professor-Urology Jobs in Trimus HR Solutions Private Limited - Nashik, Maharashtra",Professor / Academic Staff,Not Disclosed,2026-08-08
+J123057,"Asst. professor-Urology Jobs in Trimus HR Solutions Private Limited - Igatpuri, Maharashtra",Professor / Academic Staff,Not Disclosed,2026-08-08
+J123055,"Asst. professor-Obstetrics and Gynecology Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-08
+J122883,"Asst. Professor-Forensic Medicine Jobs in Trimus HR Solutions Private Limited - Greater Noida, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122882,"Asst. Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Greater Noida, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122880,"Professor General Medicine Jobs in Trimus HR Solutions Private Limited - Greater Noida, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122877,"Professor/Asst. Professor-Biochemistry Jobs in Trimus HR Solutions Private Limited - Greater Noida, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122876,"Asst. Professor/Associate Professor-Biochemistry Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122875,"Asst. Professor/Associate Professor-Biochemistry Jobs in Trimus HR Solutions Private Limited - Kolkata, West Bengal",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122870,"Associate Professor-Forensic Medicine Jobs in Trimus HR Solutions Private Limited - Gajraula, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122868,"Professor Psychiatry Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122867,"Asst. Professor-Community Medicine Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122866,"Asst. Professor/Associate Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122865,"Asst. Professor/Associate Professor-Biochemistry Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122862,"Associate Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122855,"Associate Professor Dermatology Jobs in Trimus HR Solutions Private Limited - Kanpur, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122851,"Associate Professor-General Medicine Jobs in Pathfinders Global Private Limited - Ambala, Haryana",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122850,"Associate Professor-General Surgery Jobs in Pathfinders Global Private Limited - Ambala, Haryana",Professor / Academic Staff,Not Disclosed,2026-08-06
+J122542,"Asst. Professor-Anesthesia Jobs in Pathfinders Global Private Limited - Jaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-03
+J122541,"Asst. Professor-General Medicine Jobs in Pathfinders Global Private Limited - Jaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-03
+J122536,"Asst. Professor-Biochemistry Jobs in Pathfinders Global Private Limited - Bareilly, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-03
+J122523,"Associate Professor-General Medicine Jobs in Pathfinders Global Private Limited - Delhi NCR, Delhi",Professor / Academic Staff,Not Disclosed,2026-08-03
+J122444,"Professor/Associate Professor-Forensic Medicine Jobs in Trimus HR Solutions Private Limited - Jodhpur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122442,"Professor/Asst. Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Jodhpur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122441,"Associate Professor-Biochemistry Jobs in Trimus HR Solutions Private Limited - Jodhpur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122436,"Associate Professor-Ophthalmology Jobs in Trimus HR Solutions Private Limited - Jodhpur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122434,"Associate Professor-General Medicine Jobs in Trimus HR Solutions Private Limited - Kota, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122433,"Associate Professor-General Medicine Jobs in Trimus HR Solutions Private Limited - Jodhpur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122432,"Asst. Professor-Gastroenterology Jobs in Trimus HR Solutions Private Limited - Meerut, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122429,"Asst. Professor-Pediatrics Jobs in Trimus HR Solutions Private Limited - Meerut, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122428,"Asst. Professor/Associate Professor-General Surgery Jobs in Trimus HR Solutions Private Limited - Meerut, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122427,"Associate Professor-Forensic Medicine Jobs in Trimus HR Solutions Private Limited - Meerut, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122423,"Associate Professor-General Medicine Jobs in Trimus HR Solutions Private Limited - Indore, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122420,"Professor Psychiatry Jobs in Trimus HR Solutions Private Limited - Indore, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122419,"Professor Psychiatry Jobs in Trimus HR Solutions Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122412,"Asst. Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Indore, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122411,"Asst. Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122410,"Professor Pediatric Jobs in Trimus HR Solutions Private Limited - Bareilly, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122409,"Professor Community Medicine Jobs in Trimus HR Solutions Private Limited - Bareilly, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122408,"Asst. Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Bareilly, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122405,"Professor General Surgery Jobs in Trimus HR Solutions Private Limited - Bareilly, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122404,"Professor General Medicine Jobs in Trimus HR Solutions Private Limited - Bareilly, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122403,"Professor Ophthalmology Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122402,"Professor General Medicine Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122401,"Professor Orthopedics Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122400,"Professor/Asst. Professor/Associate Professor-Forensic Medicine Jobs in Trimus HR Solutions Private Limited - Jabalpur, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-08-01
+J122225,"Professor Psychiatry Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-31
+J122224,"Professor Dermatology Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-31
+J122223,"Asst. Professor General Medicine Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-31
+J122222,"Asst. Professor Forensic Medicine Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-31
+J122221,"Associate Professor Radio-diagnosis Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-31
+J122220,"Associate Professor Anaesthesiology Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-31
+J122216,"Associate Professor Obstetrics & Gynaecology Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-30
+J122215,"Associate Professor General Surgery Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-30
+J122214,"Associate Professor Pediatrics Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-30
+J122211,"Asst. Professor/Associate Professor-Pharmacology Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-30
+J122210,"Professor/Asst. Professor-Biochemistry Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-30
+J122208,"Professor/Asst. Professor/Associate Professor-Ophthalmology Jobs in Pathfinders Global Private Limited - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-30
+J122102,"Assistant Professor-Anesthesia Jobs in Pathfinders Global Private Limited - Delhi NCR, Delhi",Professor / Academic Staff,Not Disclosed,2026-07-29
+J122101,"Assistant Professor-Pulmonary Medicine Jobs in Pathfinders Global Private Limited - Delhi NCR, Delhi",Professor / Academic Staff,Not Disclosed,2026-07-29
+J122099,"Assistant Professor-Community Medicine Jobs in Pathfinders Global Private Limited - Delhi NCR, Delhi",Professor / Academic Staff,Not Disclosed,2026-07-29
+J122098,"Assistant Professor-Orthopedics Jobs in Pathfinders Global Private Limited - Delhi NCR, Delhi",Professor / Academic Staff,Not Disclosed,2026-07-29
+J122097,"Assistant Professor-Pediatrics Jobs in Pathfinders Global Private Limited - Delhi NCR, Delhi",Professor / Academic Staff,Not Disclosed,2026-07-29
+J122091,"Associate Professor Ophthalmology Jobs in Pathfinders Global Private Limited - Dehradun, Uttarakhand",Professor / Academic Staff,Not Disclosed,2026-07-29
+J121589,"Professor Psychiatry Jobs in Trimus HR Solutions Private Limited - Varanasi, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-23
+J121440,"Professor/Associate Professor-Forensic Medicine Jobs in People's University (PU) - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-20
+J121439,"Professor/Associate Professor-Ophthalmology Jobs in People's University (PU) - Bhopal, Madhya Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-20
+J121057,"Professor/Asst. Professor/Associate Professor-Orthopaedics Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121055,"Professor/Asst. Professor/Associate Professor-Obstetrics & Gynecology Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121054,"Professor/Asst. Professor/Associate Professor-Dermatology Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121053,"Professor/Asst. Professor/Associate Professor-Respiratory Medicine Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121052,"Professor/Asst. Professor/Associate Professor-Psychiatry Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121051,"Professor/Asst. Professor/Associate Professor-General Medicine Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121050,"Professor/Asst. Professor/Associate Professor-Community Medicine Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121049,"Professor/Asst. Professor/Associate Professor-Forensic Medicine Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121048,"Professor/Asst. Professor/Associate Professor-Pharmacology Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121047,"Professor/Asst. Professor/Associate Professor-Biochemistry Jobs in Quench Techno Valley - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121028,"Asst. Professor-Obstetrics & Gynaecology Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121027,"Asst. Professor-General Surgery Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121026,"Professor/Asst. Professor/Associate Professor-Anaesthesiology Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121025,"Professor/Asst. Professor/Associate Professor-Psychiatry Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121024,"Professor/Asst. Professor/Associate Professor-Dermatology Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121023,"Professor/Asst. Professor/Associate Professor-Community Medicine Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121022,"Professor/Asst. Professor/Associate Professor-Forensic Medicine Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121020,"Professor/Asst. Professor/Associate Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121019,"Professor/Asst. Professor/Associate Professor-Biochemistry Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121018,"Professor/Asst. Professor-General Medicine Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J121014,"Asst. Professor/Associate Professor-Pediatrics Jobs in Trimus HR Solutions Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-15
+J120908,"Professor/Associate Professor-General Surgery Jobs in Pathfinders Global Private Limited - Udaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120907,"Professor/Associate Professor-General Medicine Jobs in Pathfinders Global Private Limited - Udaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120906,"Associate Professor-Biochemistry Jobs in Pathfinders Global Private Limited - Udaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120905,"Associate Professor-Forensic Medicine Jobs in Pathfinders Global Private Limited - Udaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120897,"Associate Professor-General Medicine Jobs in Pathfinders Global Private Limited - Bareilly, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120896,"Associate Professor-General Medicine Jobs in Pathfinders Global Private Limited - Mathura, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120895,"Associate Professor-General Medicine Jobs in Pathfinders Global Private Limited - Kanpur, Uttar Pradesh",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120894,"Asst. Professor-Forensic Medicine Jobs in Pathfinders Global Private Limited - Udaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120893,"Asst. Professor-Pharmacology Jobs in Pathfinders Global Private Limited - Udaipur, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-13
+J120833,"Asst. Professor-Pharmacology Jobs in Dhanalakshmi Srinivasan University (DSU), Samayapuram - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-11
+J120832,"Asst. Professor-Biostatistics Jobs in Dhanalakshmi Srinivasan University (DSU), Samayapuram - Tiruchirappalli, Tamil Nadu",Professor / Academic Staff,Not Disclosed,2026-07-11
+J120799,"Professor/Associate Professor-Ophthalmology Jobs in Trimus HR Solutions Private Limited - Kota, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-11
+J120798,"Professor/Associate Professor-Dermatology Jobs in Trimus HR Solutions Private Limited - Kota, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-11
+J120797,"Asst. Professor/Professor/Associate Professor-Community Medicine Jobs in Trimus HR Solutions Private Limited - Kota, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-11
+J120796,"Professor/Associate Professor-Forensic Medicine Jobs in Trimus HR Solutions Private Limited - Kota, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-11
+J120794,"Professor/Associate Professor-Pharmacology Jobs in Trimus HR Solutions Private Limited - Kota, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-11
+J120793,"Professor/Associate Professor-Biochemistry Jobs in Trimus HR Solutions Private Limited - Kota, Rajasthan",Professor / Academic Staff,Not Disclosed,2026-07-11
+J123177,"IT Executive Jobs in Sterling Accuris Diagnostics, Iffco Colony - Gandhidham, Gujarat",Others,Not Disclosed,2026-08-10
+J122773,"IT Executive Jobs in Shalby Multi-Specialty Hospitals, Adajan - Surat, Gujarat",Others,Not Disclosed,2026-08-05
+J122166,"IT Executive Jobs in Penam Biosciences Private Limited - Kathua, Jammu and Kashmir",Others,Not Disclosed,2026-07-30
+J122165,"IT Officer Jobs in Penam Biosciences Private Limited - Kathua, Jammu and Kashmir",Others,Not Disclosed,2026-07-30
+J122578,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Chennai, Tamil Nadu",Clinical Research/ Data Science,Not Disclosed,2026-08-03
+J122577,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Dehradun, Uttarakhand",Clinical Research/ Data Science,Not Disclosed,2026-08-03
+J122576,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Jaipur, Rajasthan",Clinical Research/ Data Science,Not Disclosed,2026-08-03
+J122574,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Srinagar, Uttarakhand",Clinical Research/ Data Science,Not Disclosed,2026-08-03
+J122573,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Nagpur, Maharashtra",Clinical Research/ Data Science,Not Disclosed,2026-08-03
+J122572,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Mumbai, Maharashtra",Clinical Research/ Data Science,Not Disclosed,2026-08-03
+J122571,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Bengaluru, Karnataka",Clinical Research/ Data Science,Not Disclosed,2026-08-03
+J122570,"Scientific Officer (Critical Care) Jobs in Cadila Pharmaceuticals Ltd - Hyderabad, Telangana",Clinical Research/ Data Science,Not Disclosed,2026-08-03
