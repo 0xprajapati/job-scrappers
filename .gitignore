@@ -3,3 +3,8 @@ jobs_csv/.DS_Store
 scrappers/docthub/.DS_Store
 .DS_Store
 scrappers/dubizzle/.pw_profile/
+
+# pharmabharat daily_scraper.py runtime files
+scrappers/pharmabharat/.daily_state.json
+scrappers/pharmabharat/.daily_scraper.lock
+scrappers/pharmabharat/**/*.tmp.*

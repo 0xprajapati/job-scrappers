@@ -81,3 +81,204 @@ whole page is older (the API is newest-first).
 
 Etiquette: descriptive User-Agent, robots.txt check at startup, ≥1s delay
 between requests, exponential backoff (3s → 24s) on 429/5xx.
+
+---
+
+# daily_scraper.py — six-category daily feed
+
+A second, narrower scraper for running **every day** against a chosen set of
+categories, keeping the **complete job description**. `scraper.py` (above)
+still owns the whole-site → 22-column club schema job; this one is for the
+non-clinical category feed.
+
+## What it does differently
+
+| | `scraper.py` | `daily_scraper.py` |
+|---|---|---|
+| Scope | every post on the site | only the categories you ask for (server-side `?categories=` filter) |
+| Facts from | parsing prose/tables out of the article body | the site's **ACF custom fields** — `company_name`, `position_name`, `location`, `qualification`, `experience`, `salary`, `mode_of_inteview` |
+| Description | flattened text | full body as readable text: `##` headings, `-` bullets, apply URLs inlined as `label [https://…]` |
+| Output | club 22-column schema | 17-column rich schema (below) |
+
+The ACF fields are the same values the site prints on its own job cards, so
+company/location/experience come out clean instead of being re-derived from
+sentences.
+
+## Categories
+
+Defaults to the six non-clinical ones:
+
+```
+clinical-data-management-jobs   clinical-research-jobs   medical-writer-jobs
+tmf                             medical-coding-jobs      pharmacovigilance-jobs
+```
+
+Slugs are resolved to ids at runtime, so if the site renames one the run fails
+loudly instead of silently scraping the wrong bucket.
+
+```bash
+python daily_scraper.py --list-categories        # all ~40 slugs, with post counts
+python daily_scraper.py --categories tmf,medical-coding-jobs
+```
+
+## Usage
+
+```bash
+python daily_scraper.py                  # the daily run — resumes from last time
+python daily_scraper.py --days 7         # last 7 days, ignore saved state
+python daily_scraper.py --since 2026-08-01
+python daily_scraper.py --no-master --no-state --days 1   # one-off, writes nothing persistent
+```
+
+## Incremental behaviour
+
+- First run with no state: last **7 days** (`--first-run-days`).
+- Later runs: from the previous run's timestamp minus a **48h grace window**,
+  so posts that are backdated or edited after publishing still get picked up.
+- Every fetched post is diffed against the cumulative CSV on WP post id:
+  - id not seen before → **new**
+  - id seen but `modified` changed → **updated** (row is refreshed in place)
+  - otherwise ignored.
+- Running twice in one day is safe: the day's file is **merged on post id**,
+  never overwritten, so a later run that finds nothing cannot wipe out what an
+  earlier one collected.
+
+State lives in `.daily_state.json` (`last_run`, `total_known`).
+
+## Outputs
+
+- `pharmabharat_category_jobs.csv` — cumulative store, one row per post id, newest first.
+- `daily/pharmabharat_<DD-MM-YYYY>.csv` — just what was new or updated that day.
+
+Columns:
+
+```
+Post ID · Category (matched) · Date Posted · Last Modified · Job Title ·
+Company · Position · Location · Qualification · Experience · Salary ·
+Mode of Application · Apply Link(s) · Contact Email(s) · All Site Categories ·
+Job Post URL · Full Description
+```
+
+CSV is UTF-8 with BOM and fully quoted, so Excel opens it cleanly and the
+multi-line descriptions stay in one cell.
+
+## Notes on the data
+
+- **Salary** is populated on well under a tenth of posts — the site leaves the
+  field blank on most listings. Not a scraping gap.
+- A post cross-listed in two target categories appears **once**, with both
+  labels in `Category (matched)`.
+- `Apply Link(s)` excludes the portal's own links and social channels, matched
+  on hostname only — an employer link carrying `?source=Pharmabharat.com`
+  is kept.
+- Walk-in posts sometimes have no apply URL at all; venue and timing are in
+  the description, and `Contact Email(s)` catches the email-application ones.
+
+## Scheduling
+
+cron, every morning at 08:00:
+
+```cron
+0 8 * * * cd /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/pharmabharat && ../../.venv/bin/python daily_scraper.py >> daily/run.log 2>&1
+```
+
+On macOS, cron needs Full Disk Access for `cron` (or use a launchd agent) if
+the repo lives under `~/Documents`.
+
+Etiquette: descriptive User-Agent, 1s between requests, exponential backoff
+(3s → 24s) on 429/5xx.
+
+## Running on a server (AWS)
+
+`daily_scraper.py` is built to run unattended. What that adds:
+
+**Timezone is pinned to the site, not the host.** The WordPress `?after=`
+filter compares against `post_date` in **site-local time (IST)** — verified
+against the live API, not assumed. A UTC EC2 host asking for "the last day"
+with its own clock would be asking about a window shifted 5h30m, and a host
+*ahead* of IST would silently miss posts. The scraper computes its window in
+IST regardless of `TZ`, so the same run on a UTC, IST or `us-east-1` host
+produces a byte-identical window. Nothing about the instance's timezone needs
+configuring.
+
+**Writes are atomic.** Every CSV and JSON goes to a temp file, is `fsync`ed,
+then `os.replace`d into place. A spot-instance reclaim or OOM kill mid-write
+leaves the previous complete file, never a truncated master CSV.
+
+**Only one run at a time.** A `flock` guard means an overrunning job cannot
+interleave with the next scheduled one; the second exits immediately with
+code 3 and does no work. Disable with `--no-lock` only for manual one-offs.
+
+**Exit codes**, for CloudWatch alarms or `OnFailure=`:
+
+| Code | Meaning |
+|------|---------|
+| 0 | success (including "nothing new") |
+| 1 | unhandled error — traceback is logged |
+| 2 | bad configuration, e.g. unknown category slug |
+| 3 | another run holds the lock |
+
+**Logs** are timestamped and go to stderr, which journald/CloudWatch collect
+and rotate. `--log-file` exists for cron setups; don't use it under systemd
+unless you also add logrotate, or it grows forever.
+
+**`--summary-json PATH`** drops run stats (`new_jobs`, `updated_jobs`,
+`total_known`, window) for a monitoring agent to pick up.
+
+### Data location
+
+Set `PHARMABHARAT_DATA_DIR` and all outputs — master CSV, `daily/`, state,
+lock — move together, so a code deploy never touches scraped data:
+
+```bash
+PHARMABHARAT_DATA_DIR=/var/lib/pharmabharat python daily_scraper.py
+```
+
+Put that on a persistent volume. The master CSV grows roughly **6 KB per job**
+(the full description dominates); at ~40 jobs/day that is ~90 MB/year.
+
+### Install
+
+```bash
+sudo useradd --system --home /var/lib/pharmabharat --create-home scraper
+sudo git clone <repo> /opt/job-scrappers
+sudo python3 -m venv /opt/job-scrappers/.venv
+sudo /opt/job-scrappers/.venv/bin/pip install -r \
+     /opt/job-scrappers/scrappers/pharmabharat/deploy/requirements.txt
+sudo chown -R scraper:scraper /var/lib/pharmabharat
+
+sudo cp deploy/pharmabharat-daily.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now pharmabharat-daily.timer
+```
+
+Check it:
+
+```bash
+systemctl list-timers pharmabharat-daily     # next run
+systemctl start pharmabharat-daily.service   # run now
+journalctl -u pharmabharat-daily -n 50       # last run's log
+```
+
+The unit runs as an unprivileged `scraper` user under `ProtectSystem=strict`
+with `/var/lib/pharmabharat` as the only writable path. The timer fires at
+08:00 IST with `Persistent=true` (catches up if the box was down) and a
+5-minute jitter.
+
+### First run on a fresh server
+
+State starts empty, so the first run pulls **7 days** and every post counts as
+new. Seed a deeper history first if you want one:
+
+```bash
+python daily_scraper.py --since 2026-01-01     # backfill, then let the timer take over
+```
+
+### Notes
+
+- Only `requests` is needed (`deploy/requirements.txt`); everything else is
+  stdlib. `pandas` is for `scraper.py`, not this one.
+- The site sits behind Cloudflare. It has been fine from residential and cloud
+  IPs, but if an EC2 range ever gets challenged you'll see HTTP 403 with an
+  HTML body — that's a WAF block, not a bug in the parser.
+- No credentials are involved; the WP REST API is public and read-only.

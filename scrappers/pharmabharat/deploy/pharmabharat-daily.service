@@ -1,0 +1,46 @@
+[Unit]
+Description=PharmaBharat daily category scraper
+Documentation=file:/opt/job-scrappers/scrappers/pharmabharat/readme.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+
+User=scraper
+Group=scraper
+
+WorkingDirectory=/opt/job-scrappers/scrappers/pharmabharat
+Environment=PYTHONUNBUFFERED=1
+# Keep scraped data off the code checkout so a deploy never touches it.
+Environment=PHARMABHARAT_DATA_DIR=/var/lib/pharmabharat
+
+ExecStart=/opt/job-scrappers/.venv/bin/python daily_scraper.py \
+    --summary-json /var/lib/pharmabharat/last_run.json
+
+# Logs go to stderr -> journald, which already rotates. Do NOT add --log-file
+# here as well, or you get an unrotated file growing forever.
+StandardOutput=journal
+StandardError=journal
+
+TimeoutStartSec=1800
+# The scraper is safe to re-run: it is incremental and locks itself.
+Restart=on-failure
+RestartSec=300
+
+# --- sandboxing ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pharmabharat
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target
