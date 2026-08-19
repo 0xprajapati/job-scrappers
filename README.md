@@ -36,30 +36,29 @@ Every scraper **must** write the same columns as [`job_samples.csv`](./job_sampl
 
 ### Columns
 
-| Column | Required | Description |
-|--|-|-|
-| `country_name` | Yes | e.g. `India` |
-| `country_code` | Yes | ISO code, e.g. `IN` |
-| `country_dial_code` | Yes | e.g. `+91` |
-| `city_name` | Yes | e.g. `Mumbai` |
-| `company_name` | Yes | Employer name |
-| `company_type` | Yes | Enum — see below |
-| `company_logo` | No | Image URL |
-| `company_about` | No | Short company description |
-| `title` | Yes | Job title |
-| `description` | No | Full job details |
-| `job_type` | Yes | Enum — see below |
-| `category` | Yes | Enum — see below |
-| `application_url` | Yes | URL where the candidate applies |
-| `posted_at` | Yes | `YYYY-MM-DD` |
-| `min_experience` | No | Years (integer) |
-| `max_experience` | No | Years (integer) |
-| `min_salary` | No | Full amount (e.g. `1500000`, not lakhs) |
-| `max_salary` | No | Full amount |
-| `salary_period` | No | Enum — see below |
-| `salary_currency` | No | Enum — see below |
-| `is_active` | Yes | `true` or `false` (default `true`) |
-| `expires_at` | No | `YYYY-MM-DD` |
+| Column              | Required | Description                             |
+| ------------------- | -------- | --------------------------------------- |
+| `country_name`      | Yes      | e.g. `India`                            |
+| `country_code`      | Yes      | ISO code, e.g. `IN`                     |
+| `country_dial_code` | Yes      | e.g. `+91`                              |
+| `city_name`         | Yes      | e.g. `Mumbai`                           |
+| `company_name`      | Yes      | Employer name                           |
+| `company_type`      | Yes      | Enum — see below                        |
+| `company_logo`      | No       | Image URL                               |
+| `company_about`     | No       | Short company description               |
+| `title`             | Yes      | Job title                               |
+| `description`       | No       | Full job details                        |
+| `job_type`          | Yes      | Enum — see below                        |
+| `category`          | Yes      | Enum — see below                        |
+| `application_url`   | Yes      | URL where the candidate applies         |
+| `posted_at`         | Yes      | `YYYY-MM-DD`                            |
+| `min_experience`    | No       | Years (integer)                         |
+| `max_experience`    | No       | Years (integer)                         |
+| `qualification`     | No       | Qualification or education requirements |
+| `min_salary`        | No       | Full amount (e.g. `1500000`, not lakhs) |
+| `max_salary`        | No       | Full amount                             |
+| `salary_period`     | No       | Enum — see below                        |
+| `salary_currency`   | No       | Enum — see below                        |
 
 Leave optional fields empty when the source page does not provide them. Do not invent salary or experience.
 
@@ -67,19 +66,16 @@ Leave optional fields empty when the source page does not provide them. Do not i
 
 Use these exact strings (Postgres / Prisma enums). Do **not** use display labels like `Full Time` or numeric codes.
 
-| Field | Allowed values |
-|-|-|
-| `company_type` | `hospital`, `pharma` |
-| `job_type` | `full_time`, `part_time`, `remote`, `hybrid` |
-| `category` | `doctors`, `nurses`, `pharmacists`, `non_clinical` |
+| Field          | Allowed values                                   |
+| -------------- | ------------------------------------------------ |
+| `company_type` | `hospital`, `pharma`                             |
+| `job_type`     | `full_time`, `part_time`, `remote`, `hybrid`     |
+| `category`     | `Clinical Data Management`, `Clinical Research`, |
+
+`Medical Writer`, `TMF`, `Medical Coding`, `Pharmacovigilance`, `Regulatory Affairs`,
+`Medical Reviewer`, `MSL`, and `HEOR` |
 | `salary_period` | `per_annum`, `per_month` |
 | `salary_currency` | `INR`, `USD` |
-
-### Example row
-
-```csv
-India,IN,+91,Mumbai,Apollo Hospital,hospital,https://example.com/logos/apollo.png,Multi-specialty hospital network across India.,Senior Cardiologist,"Full-time cardiologist role.",full_time,doctors,https://careers.example.com/apply,2026-07-01,2,5,1500000,2000000,per_annum,INR,true,2026-09-30
-```
 
 Full sample file: [`job_samples.csv`](./job_samples.csv).
 
@@ -90,15 +86,15 @@ Full sample file: [`job_samples.csv`](./job_samples.csv).
 3. Map scraped fields → the CSV columns above (including enum mapping).
 4. Write output to:
 
-   ```
-   scrapers/jobs_csv/<DD-MM-YYYY>/<site_name>.csv
-   ```
+    ```
+    scrapers/jobs_csv/<DD-MM-YYYY>/<site_name>.csv
+    ```
 
-   Example for Jobslly on 10 Jul 2026:
+    Example for Jobslly on 10 Jul 2026:
 
-   ```
-   scrapers/jobs_csv/10-07-2026/jobslly.csv
-   ```
+    ```
+    scrapers/jobs_csv/10-07-2026/jobslly.csv
+    ```
 
 5. Create the date folder if it does not exist. Overwrite or append only as agreed for that site’s run.
 

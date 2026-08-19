@@ -2,7 +2,7 @@
 """Export scraped job CSVs to the HealthCareers.club import format.
 
 Converts the rich per-source CSVs produced by the Docthub, jobslly and apna
-scrapers into the shared 22-column schema defined by
+scrapers into the shared schema defined by
 https://github.com/0xprajapati/job-scrappers (see its README and
 job_samples.csv), writing one file per site to:
 
@@ -49,8 +49,8 @@ CLUB_COLUMNS = [
     "company_name", "company_type", "company_logo", "company_about",
     "title", "description", "job_type", "category", "application_url",
     "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
+    "qualification", "min_salary", "max_salary", "salary_period",
+    "salary_currency",
 ]
 
 ENUMS = {
@@ -161,7 +161,7 @@ def city_from_location(location, style):
 def base_row():
     return {col: "" for col in CLUB_COLUMNS} | {
         "country_name": "India", "country_code": "IN",
-        "country_dial_code": "+91", "is_active": "true",
+        "country_dial_code": "+91",
         "salary_currency": "",  # set together with amounts
     }
 

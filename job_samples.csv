@@ -1,7 +1,117 @@
-country_name,country_code,country_dial_code,city_name,company_name,company_type,company_logo,company_about,title,description,job_type,category,application_url,posted_at,min_experience,max_experience,min_salary,max_salary,salary_period,salary_currency,is_active,expires_at
-India,IN,+91,Mumbai,Apollo Hospital,hospital,https://example.com/logos/apollo.png,Multi-specialty hospital network across India.,Senior Cardiologist,"Full-time cardiologist role. Diagnose and treat cardiovascular conditions; collaborate with ICU and surgical teams.",full_time,doctors,https://careers.apollohospitals.com/jobs/senior-cardiologist,2026-07-01,2,5,1500000,2000000,per_annum,INR,true,2026-09-30
-India,IN,+91,Ahmedabad,Lambda Therapeutic Research Ltd.,pharma,https://example.com/logos/lambda.png,"Clinical Research Organization (CRO) providing end-to-end clinical research solutions.",Medical Affairs Professional,"Hiring Medical Affairs Professionals for Ahmedabad. Ideal for MBBS graduates with MD in Pharmacology. Provide scientific and medical support throughout clinical trials.",full_time,doctors,https://www.lambda-cro.com/careers/medical-affairs,2026-07-05,0,2,,,,,true,
-India,IN,+91,Chennai,Apollo Hospitals,hospital,,,Staff Nurse — ICU,"Provide critical care nursing in a high-acuity ICU environment. Work with multidisciplinary teams.",full_time,nurses,https://careers.apollohospitals.com/jobs/staff-nurse-icu,2026-07-03,1,3,600000,800000,per_annum,INR,true,2026-10-01
-India,IN,+91,Bangalore,IQVIA Partners,pharma,,,Associate Medical Data Reviewer,"Review clinical data for accuracy and compliance. Support pharmacovigilance and data integrity initiatives.",remote,non_clinical,https://jobs.iqvia.com/associate-medical-data-reviewer,2026-07-02,2,4,1400000,1900000,per_annum,INR,true,
-India,IN,+91,Delhi NCR,Novartis India,pharma,,,Medical Science Liaison,"Engage HCPs with scientific exchange on oncology portfolio. Hybrid role across Delhi NCR.",hybrid,doctors,https://www.novartis.com/careers/msl-delhi,2026-06-28,5,,1800000,2500000,per_annum,INR,true,2026-08-31
-India,IN,+91,Hyderabad,Serene Health Global,pharma,,,Senior Medical Regulatory Writer,"Lead regulatory writing for global clinical submissions. Collaborate with cross-functional teams to deliver high-quality documents.",full_time,doctors,https://serenehealth.example.com/careers/regulatory-writer,2026-07-01,5,,2100000,2340000,per_annum,INR,true,
+country_name,country_code,country_dial_code,city_name,company_name,company_type,company_logo,company_about,title,description,job_type,category,application_url,posted_at,min_experience,max_experience,qualification,min_salary,max_salary,salary_period,salary_currency
+India,IN,91,Chennai,ICON,pharma,,,"TMF Specialist I, TMF Specialist II & Senior TMF Specialist","ICON plc has announced a TMF Specialist Walk-In Drive in Chennai for experienced clinical research professionals looking to build their careers in Trial Master File management.
+
+The recruitment drive covers multiple levels, including TMF Specialist I, TMF Specialist II, and Senior TMF Specialist. Candidates with experience in clinical research, Trial Master File management, essential document management, eTMF systems, and regulatory compliance can apply.
+
+The scheduled walk-in drive will take place on 28 August 2026 at the ICON Chennai office. Candidates must first submit their profiles through the application process. According to the recruitment announcement, shortlisted candidates will be contacted and invited for the scheduled walk-in.
+
+This ICON TMF Specialist hiring opportunity may be particularly relevant to professionals working in TMF operations, eTMF, clinical documentation, clinical trial operations, document management, and clinical research.
+
+## Available Positions
+
+ICON is recruiting professionals across multiple TMF levels:
+
+- TMF Specialist I
+
+- TMF Specialist II
+
+- Senior TMF Specialist
+
+The specific level offered may depend on the candidate’s TMF experience, technical knowledge, and suitability for the position.
+
+## Key Responsibilities
+
+As a TMF Specialist at ICON, selected candidates will support Trial Master File activities across the clinical trial lifecycle. Key responsibilities include:
+
+- Manage and maintain the Trial Master File for assigned clinical trials.
+
+- Ensure TMF documents are complete, accurate, appropriately filed, and maintained to required quality standards.
+
+- Work with clinical study teams to facilitate timely collection, processing, and filing of essential documents.
+
+- Maintain TMF quality throughout the clinical trial lifecycle.
+
+- Support TMF audits and inspection-readiness activities.
+
+- Ensure TMF activities comply with applicable regulatory requirements and sponsor expectations.
+
+- Work with internal stakeholders on TMF-related requirements and issues.
+
+- Provide guidance and support on Trial Master File processes where required.
+
+- Contribute to high-quality clinical documentation and TMF management outcomes.
+
+## Qualification & Experience
+
+Candidates interested in the ICON TMF Specialist Chennai recruitment 2026 should meet the following requirements:
+
+Education: Bachelor’s degree in Life Sciences, Documentation Management, or a related discipline.
+
+Experience: The official job description specifies a minimum of 3 years of experience in clinical research or TMF management.
+
+Candidates should also have:
+
+- Strong understanding of Trial Master File regulations, guidelines, and industry best practices.
+
+- Experience with electronic document management systems.
+
+- Knowledge or experience working with eTMF/TMF software.
+
+- Strong organizational and documentation-management skills.
+
+- Good written and verbal communication skills.
+
+- Strong attention to detail.
+
+- Ability to work independently and collaborate with clinical study teams.
+
+Candidates must also have the legal right to work in India.
+
+## Who Should Apply?
+
+This opportunity is most suitable for experienced professionals currently working in areas such as:
+
+Trial Master File (TMF) | eTMF | Clinical Document Management | Clinical Research | Clinical Trial Operations | Essential Document Management | TMF Quality Control | Inspection Readiness
+
+Because the official requirement specifies at least 3 years of clinical research or TMF management experience, this particular vacancy should not be presented as a fresher-level TMF opportunity.
+
+## Walk-In Drive Details
+
+Date: 28 August 2026
+
+Venue:
+ICON plc – Chennai Office
+CHENNAI ONE IT PARK (SEZ)
+4th Floor, Phase II, North Block – B
+Pallavaram – 200ft Road
+Thoraipakkam, Chennai – 600097
+
+Important: Candidates should not simply arrive at the venue without completing the initial application process. The recruitment announcement states that applicants should submit their profiles first, after which shortlisted candidates will be contacted and invited for the scheduled walk-in drive.
+
+## Benefits
+
+ICON states that its total rewards package may include:
+
+- Competitive base salary
+
+- Performance-related incentives
+
+- Health and wellbeing programmes
+
+- Medical, dental, and vision coverage where applicable
+
+- Retirement and pension plans
+
+- Life assurance and disability coverage
+
+- Employee assistance and wellbeing resources
+
+- Structured learning and development opportunities
+
+- Career development pathways
+
+Actual benefits can vary according to position and location.
+
+## How to Apply
+
+Application Link [https://icon.wd3.myworkdayjobs.com/en-US/broadbean_external/job/Senior-TMF-Specialist_JR158186?locationCountry=c4f78be1a8f14da0ab49ce1162348a5e]",full_time,Clinical Research,https://icon.wd3.myworkdayjobs.com/en-US/broadbean_external/job/Senior-TMF-Specialist_JR158186?locationCountry=c4f78be1a8f14da0ab49ce1162348a5e,2026-08-19,3,,"B.Pharm, M.Pharm, Pharm.D, Msc, BSc, Lifesciences"

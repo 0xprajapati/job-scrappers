@@ -98,7 +98,7 @@ non-clinical category feed.
 | Scope | every post on the site | only the categories you ask for (server-side `?categories=` filter) |
 | Facts from | parsing prose/tables out of the article body | the site's **ACF custom fields** — `company_name`, `position_name`, `location`, `qualification`, `experience`, `salary`, `mode_of_inteview` |
 | Description | flattened text | full body as readable text: `##` headings, `-` bullets, apply URLs inlined as `label [https://…]` |
-| Output | club 22-column schema | 17-column rich schema (below) |
+| Output | club 22-column schema | run file: club schema + `qualification`, without `is_active`/`expires_at`; cumulative store: 17-column rich schema (below) |
 
 The ACF fields are the same values the site prints on its own job cards, so
 company/location/experience come out clean instead of being re-derived from
@@ -160,16 +160,33 @@ State lives in `.daily_state.json` (`last_run`, `total_known`).
 ## Outputs
 
 - `../../jobs_csv/<DD-MM-YYYY>/pharmabharat_categories.csv` — just what was new
-  or updated that day, in the repo's usual dated run folders.
+  or updated that day, in the repo's usual dated run folders. Columns are the
+  root `job_samples.csv` contract plus `qualification`, minus `is_active` and
+  `expires_at`:
+
+  ```
+  country_name · country_code · country_dial_code · city_name · company_name ·
+  company_type · company_logo · company_about · title · description · job_type ·
+  category · application_url · posted_at · min_experience · max_experience ·
+  qualification · min_salary · max_salary · salary_period · salary_currency
+  ```
+
+  - `title` is the site's ACF **position** (post title when empty)
+  - `category` is the matched PharmaBharat category: Clinical Data Management,
+    Clinical Research, Medical Writer, TMF, Medical Coding, Pharmacovigilance,
+    Regulatory Affairs, Medical Reviewer, MSL, HEOR (` | `-joined if several)
+  - `application_url` is the post's Apply Link(s) (` ; `-joined; post URL if none)
+  - salary / experience / location are normalised by the parsers shared with
+    `scraper.py`; several runs a day merge on `application_url` + `title`
 - `pharmabharat_category_jobs.csv` — cumulative store, one row per post id,
-  newest first. Stays in this folder; it is a working store, not a run output
+  newest first, in the rich schema below (it drives the new/updated diff). Stays in this folder; it is a working store, not a run output
   (the same way `scraper.py` keeps `pharmabharat_jobs.csv` here).
 
 `scraper.py` writes `pharmabharat.csv` into those same dated folders, so this
 one deliberately uses a different basename and the two never overwrite each
 other.
 
-Columns:
+Rich-store columns:
 
 ```
 Post ID · Category (matched) · Date Posted · Last Modified · Job Title ·

@@ -18,8 +18,11 @@ Incremental by default: each run resumes from the previous run's timestamp
 
 Outputs
 -------
-    jobs_csv/<DD-MM-YYYY>/pharmabharat_categories.csv   this run's new/updated
-    pharmabharat_category_jobs.csv                      cumulative store
+    jobs_csv/<DD-MM-YYYY>/pharmabharat_categories.csv   this run's new/updated,
+                                                        club schema (job_samples.csv
+                                                        + qualification, without
+                                                        is_active / expires_at)
+    pharmabharat_category_jobs.csv                      cumulative rich store
 
 Usage
 -----
@@ -46,6 +49,16 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 import requests
+
+# Field parsers shared with the whole-site scraper, so both pharmabharat CSVs
+# normalise salary / experience / location the same way.
+from scraper import (  # noqa: E402
+    classify_company_type,
+    classify_job_type,
+    parse_experience,
+    parse_location,
+    parse_salary,
+)
 
 SITE_BASE = "https://pharmabharat.com"
 POSTS_URL = SITE_BASE + "/wp-json/wp/v2/posts"
@@ -115,7 +128,7 @@ DEFAULT_CATEGORIES = [
 # Friendly labels for the columns; anything not listed falls back to the
 # site's own category name.
 CATEGORY_LABELS = {
-    "clinical-data-management-jobs": "CDM (Clinical Data Management)",
+    "clinical-data-management-jobs": "Clinical Data Management",
     "clinical-research-jobs": "Clinical Research",
     "medical-writer-jobs": "Medical Writer",
     "tmf": "TMF",
@@ -123,8 +136,8 @@ CATEGORY_LABELS = {
     "pharmacovigilance-jobs": "Pharmacovigilance",
     "regulatory-affairs-jobs": "Regulatory Affairs",
     "medical-reviewer": "Medical Reviewer",
-    "medical-science-liaison-jobs": "MSL (Medical Science Liaison)",
-    "heor-rwe": "HEOR / RWE",
+    "medical-science-liaison-jobs": "MSL",
+    "heor-rwe": "HEOR",
 }
 
 COLUMNS = [
@@ -145,6 +158,16 @@ COLUMNS = [
     "All Site Categories",
     "Job Post URL",
     "Full Description",
+]
+
+# Per-run output: the repo's job_samples.csv contract (see ../../README.md)
+# plus "qualification", minus "is_active" / "expires_at".
+CLUB_COLUMNS = [
+    "country_name", "country_code", "country_dial_code", "city_name",
+    "company_name", "company_type", "company_logo", "company_about",
+    "title", "description", "job_type", "category", "application_url",
+    "posted_at", "min_experience", "max_experience", "qualification",
+    "min_salary", "max_salary", "salary_period", "salary_currency",
 ]
 
 POST_FIELDS = "id,date,modified,link,slug,title,content,excerpt,categories,acf"
@@ -438,6 +461,56 @@ def build_row(post, matched_labels, cat_names_by_id):
     }
 
 
+def _int_str(v):
+    try:
+        return str(int(float(v)))
+    except (TypeError, ValueError):
+        return ""
+
+
+def to_club_row(r):
+    """Rich row -> CLUB_COLUMNS.
+
+    title           = the site's ACF "position" (post title if empty)
+    category        = the matched PharmaBharat category label(s)
+    application_url = the post's Apply Link(s) (post URL if none)
+    """
+    post_title = r.get("Job Title", "")
+    company = r.get("Company", "")
+    city, country, code, dial = parse_location(r.get("Location", ""))
+    min_exp, max_exp = parse_experience(r.get("Experience", ""))
+    sal = parse_salary(r.get("Salary", ""))
+    min_sal = _int_str(sal.get("salary_min"))
+    has_salary = bool(min_sal) and sal.get("salary_currency") in ("INR", "USD")
+    return {
+        "country_name": country or "India",
+        "country_code": code or "IN",
+        "country_dial_code": dial or "+91",
+        "city_name": city,
+        "company_name": company or post_title,
+        "company_type": classify_company_type(company, post_title),
+        "company_logo": "",
+        "company_about": "",
+        "title": r.get("Position", "") or post_title,
+        "description": r.get("Full Description", ""),
+        "job_type": classify_job_type(r.get("Mode of Application", "")),
+        "category": r.get("Category (matched)", ""),
+        "application_url": r.get("Apply Link(s)", "") or r.get("Job Post URL", ""),
+        "posted_at": r.get("Date Posted", ""),
+        "min_experience": _int_str(min_exp),
+        "max_experience": _int_str(max_exp),
+        "qualification": r.get("Qualification", ""),
+        "min_salary": min_sal if has_salary else "",
+        "max_salary": _int_str(sal.get("salary_max")) if has_salary else "",
+        "salary_period": sal.get("salary_period", "") if has_salary else "",
+        "salary_currency": sal.get("salary_currency", "") if has_salary else "",
+    }
+
+
+def _day_key(club_row):
+    return club_row.get("application_url", "") + "\n" + club_row.get("title", "")
+
+
 # --------------------------------------------------------------------------
 # state + csv
 # --------------------------------------------------------------------------
@@ -495,13 +568,13 @@ def read_csv_rows(path):
         return list(csv.DictReader(f))
 
 
-def write_csv(path, rows):
+def write_csv(path, rows, columns=COLUMNS):
     def _w(f):
-        w = csv.DictWriter(f, fieldnames=COLUMNS, quoting=csv.QUOTE_ALL,
+        w = csv.DictWriter(f, fieldnames=columns, quoting=csv.QUOTE_ALL,
                            extrasaction="ignore")
         w.writeheader()
         for r in rows:
-            w.writerow({c: r.get(c, "") for c in COLUMNS})
+            w.writerow({c: r.get(c, "") for c in columns})
 
     _atomic_write(path, _w, encoding="utf-8-sig", newline="")
 
@@ -643,17 +716,23 @@ def main(argv=None):
     todays = changed if not argv.no_master else rows
 
     # Several runs a day are normal (cron retry, manual re-run). Merge into the
-    # day's file on Post ID rather than overwriting it, so an later run that
-    # finds nothing new cannot wipe out what an earlier one collected.
+    # day's file rather than overwriting it, so a later run that finds nothing
+    # new cannot wipe out what an earlier one collected. The day file is the
+    # club schema (no Post ID), so application_url + title is the merge key.
     if todays or not os.path.exists(daily_path):
         existing = read_csv_rows(daily_path)
-        day_by_id = {r.get("Post ID"): r for r in existing if r.get("Post ID")}
+        day_by_key = {}
+        for r in existing:
+            if set(CLUB_COLUMNS) - set(r):
+                continue  # file from before the schema change: rebuild it
+            day_by_key[_day_key(r)] = r
         for r in todays:
-            day_by_id[r["Post ID"]] = r
-        day_rows = list(day_by_id.values())
-        day_rows.sort(key=lambda r: (r.get("Date Posted", ""), r.get("Job Title", "")),
+            club = to_club_row(r)
+            day_by_key[_day_key(club)] = club
+        day_rows = list(day_by_key.values())
+        day_rows.sort(key=lambda r: (r.get("posted_at", ""), r.get("title", "")),
                       reverse=True)
-        write_csv(daily_path, day_rows)
+        write_csv(daily_path, day_rows, CLUB_COLUMNS)
     else:
         day_rows = read_csv_rows(daily_path)
 

@@ -1,3 +1,0 @@
-# daily_scraper.py only needs requests; everything else is stdlib.
-# (scraper.py, the whole-site club-schema scraper, additionally needs pandas.)
-requests>=2.31,<3

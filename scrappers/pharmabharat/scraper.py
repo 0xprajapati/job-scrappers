@@ -43,7 +43,7 @@ Quirks
 Outputs
 -------
 * pharmabharat_jobs.csv                         — rich cumulative store (dedup: post id)
-* ../../jobs_csv/<DD-MM-YYYY>/pharmabharat.csv  — HealthCareers.club 22-col schema
+* ../../jobs_csv/<DD-MM-YYYY>/pharmabharat.csv  — HealthCareers.club schema
 
 Time window (master spec): first run keeps the last INITIAL_WINDOW_DAYS;
 later runs keep only jobs newer than the newest stored date minus
@@ -136,8 +136,8 @@ CLUB_COLUMNS = [
     "company_name", "company_type", "company_logo", "company_about",
     "title", "description", "job_type", "category", "application_url",
     "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
+    "qualification", "min_salary", "max_salary", "salary_period",
+    "salary_currency",
 ]
 
 log = logging.getLogger("pharmabharat_scraper")
@@ -368,7 +368,7 @@ def classify_category(title, site_category_slugs=()):
     return category, bool(_NEWSY_TITLE_RE.search(title))
 
 
-_HOSPITAL_RE = re.compile(r"hospital|clinic|medical college|nursing home", re.IGNORECASE)
+_HOSPITAL_RE = re.compile(r"hospital|\bclinics?\b|medical college|nursing home", re.IGNORECASE)
 
 
 def classify_company_type(company, title):
