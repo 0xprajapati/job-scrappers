@@ -16,6 +16,11 @@ Unlike scraper.py (whole-site -> 22-column club schema), this one:
 Incremental by default: each run resumes from the previous run's timestamp
 (minus a grace window) and only reports posts that are new or edited since.
 
+Outputs
+-------
+    jobs_csv/<DD-MM-YYYY>/pharmabharat_categories.csv   this run's new/updated
+    pharmabharat_category_jobs.csv                      cumulative store
+
 Usage
 -----
     python daily_scraper.py                    # daily incremental run
@@ -60,8 +65,23 @@ DATA_DIR = os.environ.get("PHARMABHARAT_DATA_DIR", HERE)
 
 STATE_FILE = os.path.join(DATA_DIR, ".daily_state.json")
 MASTER_CSV = os.path.join(DATA_DIR, "pharmabharat_category_jobs.csv")
-DAILY_DIR = os.path.join(DATA_DIR, "daily")
 LOCK_FILE = os.path.join(DATA_DIR, ".daily_scraper.lock")
+
+# Per-run output follows the repo convention: jobs_csv/<DD-MM-YYYY>/<file>.csv,
+# the same dated folders every other scraper in this repo writes into.
+REPO_ROOT = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir))
+if os.environ.get("PHARMABHARAT_JOBS_CSV_DIR"):
+    JOBS_CSV_DIR = os.environ["PHARMABHARAT_JOBS_CSV_DIR"]
+elif os.environ.get("PHARMABHARAT_DATA_DIR"):
+    # On a server the checkout is usually read-only, so keep jobs_csv beside
+    # the rest of the scraped data instead of inside the code tree.
+    JOBS_CSV_DIR = os.path.join(DATA_DIR, "jobs_csv")
+else:
+    JOBS_CSV_DIR = os.path.join(REPO_ROOT, "jobs_csv")
+
+# scraper.py already owns "pharmabharat.csv" (the club 22-column export) in
+# these same folders; this file must not overwrite it.
+OUTPUT_BASENAME = "pharmabharat_categories.csv"
 
 # The site's WP instance runs on Asia/Kolkata and its ?after= filter compares
 # against post_date in SITE-LOCAL time (verified against the live API), not GMT.
@@ -505,8 +525,10 @@ def main(argv=None):
                    help="window used when no state exists (default: 7)")
     p.add_argument("--master", default=MASTER_CSV,
                    help="cumulative CSV of every job ever seen")
-    p.add_argument("--daily-dir", default=DAILY_DIR,
-                   help="directory for per-run CSVs")
+    p.add_argument("--jobs-csv-dir", "--daily-dir", dest="jobs_csv_dir",
+                   default=JOBS_CSV_DIR,
+                   help="jobs_csv root; the run writes "
+                        "<root>/<DD-MM-YYYY>/" + OUTPUT_BASENAME)
     p.add_argument("--run-date", default=None, metavar="DD-MM-YYYY",
                    help="label for this run's output file (default: today)")
     p.add_argument("--no-master", action="store_true",
@@ -617,7 +639,7 @@ def main(argv=None):
 
     # ---- write -------------------------------------------------------------
     run_label = argv.run_date or now.strftime("%d-%m-%Y")
-    daily_path = os.path.join(argv.daily_dir, "pharmabharat_%s.csv" % run_label)
+    daily_path = os.path.join(argv.jobs_csv_dir, run_label, OUTPUT_BASENAME)
     todays = changed if not argv.no_master else rows
 
     # Several runs a day are normal (cron retry, manual re-run). Merge into the

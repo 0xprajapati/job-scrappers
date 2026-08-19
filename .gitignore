@@ -8,3 +8,4 @@ scrappers/dubizzle/.pw_profile/
 scrappers/pharmabharat/.daily_state.json
 scrappers/pharmabharat/.daily_scraper.lock
 scrappers/pharmabharat/**/*.tmp.*
+jobs_csv/**/*.tmp.*

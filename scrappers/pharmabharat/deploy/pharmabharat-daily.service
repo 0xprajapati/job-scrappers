@@ -13,6 +13,8 @@ Group=scraper
 WorkingDirectory=/opt/job-scrappers/scrappers/pharmabharat
 Environment=PYTHONUNBUFFERED=1
 # Keep scraped data off the code checkout so a deploy never touches it.
+# Run CSVs then land in /var/lib/pharmabharat/jobs_csv/<DD-MM-YYYY>/ -- the
+# checkout stays read-only under ProtectSystem=strict below.
 Environment=PHARMABHARAT_DATA_DIR=/var/lib/pharmabharat
 
 ExecStart=/opt/job-scrappers/.venv/bin/python daily_scraper.py \

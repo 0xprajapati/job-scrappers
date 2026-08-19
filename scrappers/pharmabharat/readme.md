@@ -130,6 +130,7 @@ loudly instead of silently scraping the wrong bucket.
 ```bash
 python daily_scraper.py --list-categories        # all ~40 slugs, with post counts
 python daily_scraper.py --categories tmf,medical-coding-jobs
+python daily_scraper.py --jobs-csv-dir /srv/exports    # write run CSVs elsewhere
 ```
 
 ## Usage
@@ -158,8 +159,15 @@ State lives in `.daily_state.json` (`last_run`, `total_known`).
 
 ## Outputs
 
-- `pharmabharat_category_jobs.csv` — cumulative store, one row per post id, newest first.
-- `daily/pharmabharat_<DD-MM-YYYY>.csv` — just what was new or updated that day.
+- `../../jobs_csv/<DD-MM-YYYY>/pharmabharat_categories.csv` — just what was new
+  or updated that day, in the repo's usual dated run folders.
+- `pharmabharat_category_jobs.csv` — cumulative store, one row per post id,
+  newest first. Stays in this folder; it is a working store, not a run output
+  (the same way `scraper.py` keeps `pharmabharat_jobs.csv` here).
+
+`scraper.py` writes `pharmabharat.csv` into those same dated folders, so this
+one deliberately uses a different basename and the two never overwrite each
+other.
 
 Columns:
 
@@ -242,8 +250,11 @@ unless you also add logrotate, or it grows forever.
 
 ### Data location
 
-Set `PHARMABHARAT_DATA_DIR` and all outputs — master CSV, `daily/`, state,
-lock — move together, so a code deploy never touches scraped data:
+Set `PHARMABHARAT_DATA_DIR` and all outputs — master CSV, `jobs_csv/`, state,
+lock — move together, so a code deploy never touches scraped data. With it set,
+run CSVs go to `$PHARMABHARAT_DATA_DIR/jobs_csv/<DD-MM-YYYY>/` rather than into
+the checkout, which matters under `ProtectSystem=strict`. Override just that
+path with `PHARMABHARAT_JOBS_CSV_DIR`:
 
 ```bash
 PHARMABHARAT_DATA_DIR=/var/lib/pharmabharat python daily_scraper.py
