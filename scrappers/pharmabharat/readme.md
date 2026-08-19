@@ -106,12 +106,23 @@ sentences.
 
 ## Categories
 
-Defaults to the six non-clinical ones:
+Defaults to these ten non-clinical ones:
 
-```
-clinical-data-management-jobs   clinical-research-jobs   medical-writer-jobs
-tmf                             medical-coding-jobs      pharmacovigilance-jobs
-```
+| Slug | Label in the CSV |
+|------|------------------|
+| `clinical-data-management-jobs` | CDM (Clinical Data Management) |
+| `clinical-research-jobs` | Clinical Research |
+| `medical-writer-jobs` | Medical Writer |
+| `tmf` | TMF |
+| `medical-coding-jobs` | Medical Coding |
+| `pharmacovigilance-jobs` | Pharmacovigilance |
+| `regulatory-affairs-jobs` | Regulatory Affairs |
+| `medical-reviewer` | Medical Reviewer |
+| `medical-science-liaison-jobs` | MSL (Medical Science Liaison) |
+| `heor-rwe` | HEOR / RWE |
+
+The site's nav labels "RWE/HEOR" and "MSL" map to the `heor-rwe` and
+`medical-science-liaison-jobs` slugs respectively.
 
 Slugs are resolved to ids at runtime, so if the site renames one the run fails
 loudly instead of silently scraping the wrong bucket.
@@ -166,8 +177,12 @@ multi-line descriptions stay in one cell.
 
 - **Salary** is populated on well under a tenth of posts — the site leaves the
   field blank on most listings. Not a scraping gap.
-- A post cross-listed in two target categories appears **once**, with both
-  labels in `Category (matched)`.
+- A post cross-listed in several target categories appears **once**, with every
+  matching label in `Category (matched)` (e.g. a regulatory-affairs post that is
+  also filed under clinical research).
+- The four newest categories are low-volume: Regulatory Affairs runs ~13 posts
+  a week, while Medical Reviewer, MSL and HEOR/RWE typically add only one or
+  two each. A day with zero from them is normal, not a failure.
 - `Apply Link(s)` excludes the portal's own links and social channels, matched
   on hostname only — an employer link carrying `?source=Pharmabharat.com`
   is kept.

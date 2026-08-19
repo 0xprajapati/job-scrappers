@@ -3,8 +3,9 @@
 PharmaBharat daily category scraper.
 
 Pulls job posts for a chosen set of pharmabharat.com categories (by default the
-six non-clinical ones: CDM, Clinical Research, Medical Writer, TMF, Medical
-Coding, Pharmacovigilance) and writes them to CSV with the full job description.
+ten non-clinical ones: CDM, Clinical Research, Medical Writer, TMF, Medical
+Coding, Pharmacovigilance, Regulatory Affairs, Medical Reviewer, MSL,
+HEOR/RWE) and writes them to CSV with the full job description.
 
 Unlike scraper.py (whole-site -> 22-column club schema), this one:
   * filters server-side by category id,
@@ -85,6 +86,10 @@ DEFAULT_CATEGORIES = [
     "tmf",
     "medical-coding-jobs",
     "pharmacovigilance-jobs",
+    "regulatory-affairs-jobs",
+    "medical-reviewer",
+    "medical-science-liaison-jobs",
+    "heor-rwe",
 ]
 
 # Friendly labels for the columns; anything not listed falls back to the
@@ -96,6 +101,10 @@ CATEGORY_LABELS = {
     "tmf": "TMF",
     "medical-coding-jobs": "Medical Coding",
     "pharmacovigilance-jobs": "Pharmacovigilance",
+    "regulatory-affairs-jobs": "Regulatory Affairs",
+    "medical-reviewer": "Medical Reviewer",
+    "medical-science-liaison-jobs": "MSL (Medical Science Liaison)",
+    "heor-rwe": "HEOR / RWE",
 }
 
 COLUMNS = [
@@ -486,7 +495,7 @@ def main(argv=None):
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--categories", default=",".join(DEFAULT_CATEGORIES),
-                   help="comma-separated category slugs (default: the six "
+                   help="comma-separated category slugs (default: the ten "
                         "non-clinical ones)")
     p.add_argument("--days", type=int, default=None, metavar="N",
                    help="scrape the last N days, ignoring saved state")
