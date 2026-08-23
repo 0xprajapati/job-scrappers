@@ -363,7 +363,11 @@ def html_to_text(c):
     """Article HTML -> readable plain text, keeping headings, bullets, links."""
     c = re.sub(r"<script.*?</script>", " ", c, flags=re.S | re.I)
     c = re.sub(r"<style.*?</style>", " ", c, flags=re.S | re.I)
-    c = re.sub(r"<figure.*?</figure>", " ", c, flags=re.S | re.I)
+    # Figures usually wrap images -- but this site puts its "Job Details"
+    # table inside <figure class="wp-block-table">, which must survive.
+    def _figure(m):
+        return m.group(0) if re.search(r"<table", m.group(0), re.I) else " "
+    c = re.sub(r"<figure.*?</figure>", _figure, c, flags=re.S | re.I)
     c = re.sub(r"<(img|source)[^>]*>", " ", c, flags=re.I)
 
     def _inline(m):
@@ -376,7 +380,7 @@ def html_to_text(c):
     c = re.sub(r"<h[1-6][^>]*>", "\n\n## ", c, flags=re.I)
     c = re.sub(r"<li[^>]*>", "\n- ", c, flags=re.I)
     c = re.sub(r"<br\s*/?>", "\n", c, flags=re.I)
-    c = re.sub(r"<td[^>]*>", " | ", c, flags=re.I)
+    c = re.sub(r"<t[hd][^>]*>", " | ", c, flags=re.I)
     c = re.sub(BLOCK_END, "\n", c, flags=re.I)
     c = re.sub(r"<[^>]+>", "", c)
     c = html.unescape(c).replace("\xa0", " ")

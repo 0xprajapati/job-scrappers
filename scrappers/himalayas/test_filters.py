@@ -15,13 +15,15 @@ import pandas as pd
 
 from himalayas_scraper import (
     DESCRIPTION_MAX_CHARS,
+    INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
     classify_category,
     classify_company_type,
     clean_value,
     compute_cutoff,
     epoch_to_date,
-    is_healthcare,
+    extract_qualification,
+    match_role_family,
     job_id_from_guid,
     parse_listish,
     parse_salary,
@@ -164,62 +166,149 @@ class TestParseSalary(unittest.TestCase):
                          ("Not Disclosed", "", "", "", ""))
 
 
-class TestHealthcareGate(unittest.TestCase):
-    """Three-signal union — see the module docstring for the sample numbers."""
+class TestRoleFamilyGate(unittest.TestCase):
+    """The scope is 11 clinical-research / pharma-regulatory families.
 
-    def test_parent_category_signal(self):
-        # real listing: Oliva — "Wellbeing Coach (Japanese Speaking)".
-        # Title alone says nothing; parentCategories carries it.
-        keep, signal = is_healthcare("Wellbeing Coach (Japanese Speaking)",
-                                     [], ["Healthcare"])
-        self.assertTrue(keep)
-        self.assertEqual(signal, "parent_category")
+    Every title below is verbatim from the 7,930-job stored corpus.
+    """
 
-    def test_title_signal(self):
-        # real listing: Thriveworks — parentCategories was empty
-        keep, signal = is_healthcare(
-            "Remote Psychiatric Nurse Practitioner - Fee For Service", [], [])
-        self.assertTrue(keep)
-        self.assertEqual(signal, "title")
+    def fam(self, title):
+        return match_role_family(title)[0]
 
-    def test_categories_signal_recovers_empty_parent_categories(self):
-        # real shape: 180 of the sample's healthcare jobs looked like this
-        keep, signal = is_healthcare(
-            "Advanced Care at Home RN- 8HR Shifts 3:30p-12a",
-            ["Licensed-Practical-Nurse", "Home-Health"], [])
-        self.assertTrue(keep)
-        # title matches first here; the point is that it is kept either way
-        self.assertIn(signal, ("title", "categories"))
+    # ---- each family admits its own ----
+    def test_tmf(self):
+        self.assertEqual(self.fam("Team Lead, TMF Operations - Argentina- Remote"), "TMF")
 
-    def test_categories_only(self):
-        keep, signal = is_healthcare(
-            "Provider Partnerships Associate",
-            ["Telehealth-Therapy", "Behavioral-Health"], [])
-        self.assertTrue(keep)
-        self.assertEqual(signal, "categories")
+    def test_heor(self):
+        self.assertEqual(self.fam("Senior Director, HEOR & Evidence Strategy"), "HEOR")
 
-    def test_software_job_excluded(self):
-        # real listing: Bjak — the single most common shape on this board
-        keep, _ = is_healthcare("Android Software Engineer - AI Neobank App",
-                                ["Android-Software-Engineer"], [])
-        self.assertFalse(keep)
+    def test_heor_market_access(self):
+        self.assertEqual(self.fam("Market Access & Payer Manager"), "HEOR")
 
-    def test_customer_care_is_not_healthcare(self):
-        # guards the deliberate exclusion of bare "care" from the allow-list
-        keep, _ = is_healthcare("Customer Care Representative",
-                                ["Customer-Support"], [])
-        self.assertFalse(keep)
+    def test_msl(self):
+        self.assertEqual(self.fam("Medical Science Liaison - Metabolism"), "MSL")
 
-    def test_sales_job_excluded(self):
-        keep, _ = is_healthcare("Business Development Representative",
-                                ["Sales-Development"], [])
-        self.assertFalse(keep)
+    def test_msl_medical_affairs(self):
+        self.assertEqual(self.fam("Assoc Director, Medical Affairs"), "MSL")
 
-    def test_healthcare_sales_is_kept(self):
-        # sector-adjacent commercial roles are healthcare jobs, not noise
-        keep, _ = is_healthcare("Healthcare Sales Executive",
-                                ["Healthcare-Sales"], [])
-        self.assertTrue(keep)
+    def test_pharmacovigilance(self):
+        self.assertEqual(
+            self.fam("Senior Associate, Pharmacovigilance - Mexico/Brazil - Remote"),
+            "Pharmacovigilance")
+
+    def test_pharmacovigilance_pv_abbreviation(self):
+        self.assertEqual(self.fam("PV Officer- Senior PV Officer, Team Leader"),
+                         "Pharmacovigilance")
+
+    def test_pharmacovigilance_drug_safety(self):
+        self.assertEqual(self.fam("Senior Drug Safety Specialist"), "Pharmacovigilance")
+
+    def test_medical_coding(self):
+        self.assertEqual(self.fam("Medical Coder (SC Upstate Residents)"), "Medical Coding")
+
+    def test_medical_coding_bare_coder(self):
+        self.assertEqual(self.fam("Coder, Edits/Denials"), "Medical Coding")
+
+    def test_medical_writer(self):
+        self.assertEqual(self.fam("Senior Medical Writer"), "Medical Writer")
+
+    def test_regulatory_affairs(self):
+        self.assertEqual(self.fam("Senior Associate, Regulatory Affairs (US)"),
+                         "Regulatory Affairs")
+
+    def test_medical_reviewer(self):
+        self.assertEqual(self.fam("Medical Monitor (Gastroenterology)"), "Medical Reviewer")
+
+    def test_clinical_data_management(self):
+        self.assertEqual(self.fam("Senior Clinical Data Manager"),
+                         "Clinical Data Management")
+
+    def test_public_health(self):
+        self.assertEqual(self.fam("Population Health Program Coordinator"), "Public Health")
+
+    def test_clinical_research(self):
+        self.assertEqual(self.fam("Senior Clinical Research Associate - UK - Remote"),
+                         "Clinical Research")
+
+    # ---- out of scope ----
+    def test_therapist_is_out_of_scope(self):
+        # the behavioural-health market the old broad gate let in
+        self.assertEqual(self.fam("Licensed Clinical Social Worker (LCSW) - Quincy, MA"), "")
+
+    def test_nurse_practitioner_is_out_of_scope(self):
+        self.assertEqual(self.fam("Nurse Practitioner (Remote, SC License Required)"), "")
+
+    def test_software_engineer_is_out_of_scope(self):
+        self.assertEqual(self.fam("Android Software Engineer - AI Neobank App"), "")
+
+    def test_generic_data_management_is_out_of_scope(self):
+        # bare "data management" is not Clinical Data Management
+        self.assertEqual(self.fam("Configuration / Data Management Analyst- Federal Health"), "")
+        self.assertEqual(self.fam("Manager, Client Data Management"), "")
+
+    def test_charge_description_master_is_not_cdm(self):
+        # "CDM" in US revenue-cycle listings = Charge Description Master
+        self.assertEqual(self.fam("Revenue Integrity & CDM Operations Manager"), "")
+
+    def test_revenue_cycle_regulatory_compliance_is_out_of_scope(self):
+        self.assertEqual(
+            self.fam("Senior Regulatory Compliance and Revenue Cycle Analyst"), "")
+
+    def test_utilization_review_is_out_of_scope(self):
+        # payer-side US insurance work, not pharma medical review
+        self.assertEqual(self.fam("Utilization Review Nurse-LVN/LPN"), "")
+        self.assertEqual(self.fam("Regional Director of Utilization Management"), "")
+
+    def test_ime_physician_reviewer_is_out_of_scope(self):
+        self.assertEqual(
+            self.fam("Board Certified Neurotology Physician Disability Peer Reviewer"), "")
+
+    def test_ime_field_medical_director_not_msl(self):
+        # "field medical" in this feed means IME review, not MSL
+        self.assertEqual(
+            self.fam("Physician Reviewer Internal Medicine-Field Medical Director, Radiology"), "")
+
+    # ---- precedence ----
+    def test_medical_writer_beats_regulatory_affairs(self):
+        self.assertEqual(self.fam("Medical Writer - Clinical Regulatory Documentation"),
+                         "Medical Writer")
+
+    def test_regulatory_affairs_beats_clinical_research(self):
+        self.assertEqual(self.fam("Principal Clinical Trial Regulatory Affairs"),
+                         "Regulatory Affairs")
+
+    def test_tmf_beats_clinical_research(self):
+        self.assertEqual(self.fam("Team Lead, TMF Operations"), "TMF")
+
+    # ---- kept but flagged, never silently dropped (master spec §2) ----
+    def test_legal_counsel_is_flagged(self):
+        family, _signal, review = match_role_family(
+            "Senior Counsel, Global Commercial Legal - U.S. Market Access and Pricing")
+        self.assertEqual(family, "HEOR")
+        self.assertTrue(review)
+
+    def test_business_development_is_flagged(self):
+        family, _s, review = match_role_family("Business Development Director (Clinical Research)")
+        self.assertEqual(family, "Clinical Research")
+        self.assertTrue(review)
+
+    def test_msl_meaning_medical_stop_loss_is_flagged(self):
+        # real listing: "MSL" here is an insurance product, not a liaison
+        family, _s, review = match_role_family(
+            "Regional Account Manager, Medical Stop Loss (MSL) Distribution-2")
+        self.assertEqual(family, "MSL")
+        self.assertTrue(review)
+
+    def test_clean_title_is_not_flagged(self):
+        self.assertFalse(match_role_family("Senior Medical Writer")[2])
+
+    def test_signal_is_title(self):
+        self.assertEqual(match_role_family("Senior Medical Writer")[1], "title")
+
+    def test_categories_argument_is_ignored(self):
+        # slugs are too noisy to admit a job on their own
+        self.assertEqual(
+            match_role_family("Registered Dietitian", ["Clinical-Research"])[0], "")
 
 
 class TestClassifyCategory(unittest.TestCase):
@@ -265,44 +354,14 @@ class TestClassifyCategory(unittest.TestCase):
         self.assertEqual(classify_category("Healthcare Billing Specialist"),
                          ("non_clinical", False))
 
-    def test_tech_role_at_healthcare_employer_is_flagged(self):
-        # real listing: Insight Therapy Solutions tagged this
-        # "Healthcare-Web-Developer", which passes the categories gate.
-        category, needs_review = classify_category("Freelance WordPress Developer -US")
+    def test_sales_title_is_flagged_not_silently_classified(self):
+        # wrong profession: kept for review, never confidently bucketed
+        category, needs_review = classify_category("Account Executive, Clinical Trials")
         self.assertEqual(category, "non_clinical")
         self.assertTrue(needs_review)
 
-    def test_software_engineer_at_healthcare_employer_is_flagged(self):
-        # real listing: Beacon Biosignals, tagged "Healthcare-Technology"
-        _, needs_review = classify_category(
-            "Front-End Software Engineer (React/Typescript)")
-        self.assertTrue(needs_review)
-
-    def test_interpreter_is_flagged(self):
-        # real listing: LanguageLine Solutions, "Healthcare-Interpretation"
-        _, needs_review = classify_category("Latvian Interpreter")
-        self.assertTrue(needs_review)
-
-    def test_bi_analyst_is_flagged_not_silently_non_clinical(self):
-        # real listing: Imagine Pediatrics, "Healthcare-Analytics". Before the
-        # deny list this matched "analyst" and looked confidently classified.
-        _, needs_review = classify_category("Senior Business Intelligence Analyst")
-        self.assertTrue(needs_review)
-
-    def test_engineering_suffix_also_flagged(self):
-        # real listing: "Director of Data Engineering" — the -ing form
-        _, needs_review = classify_category("Director of Data Engineering")
-        self.assertTrue(needs_review)
-
-    def test_deny_list_never_drops_a_job(self):
-        # master spec §2: flagged, but still assigned a valid club category
-        category, _ = classify_category("Data Engineer (Senior) - ETL")
-        self.assertIn(category, ("doctors", "nurses", "pharmacists",
-                                 "non_clinical"))
-
-    def test_clinical_pharmacist_not_caught_by_deny_list(self):
-        self.assertEqual(classify_category("Clinical Pharmacist"),
-                         ("pharmacists", False))
+    def test_scope_gate_title_is_not_flagged(self):
+        self.assertFalse(classify_category("Senior Clinical Data Manager")[1])
 
     def test_unmatched_title_is_kept_and_flagged(self):
         # Master spec §2: never silently dropped.
@@ -374,14 +433,18 @@ class TestTruncateDescription(unittest.TestCase):
 class TestCutoff(unittest.TestCase):
     """Master spec §4."""
 
+    def test_initial_window_is_two_days(self):
+        # narrowed from the spec's default of 7 — see the constant's comment
+        self.assertEqual(INITIAL_WINDOW_DAYS, 2)
+
     def test_first_run_uses_initial_window(self):
         cutoff = compute_cutoff(None, today=date(2026, 7, 29))
-        self.assertEqual(cutoff, "2026-07-22")   # 7 days back
+        self.assertEqual(cutoff, "2026-07-27")   # 2 days back
 
     def test_empty_csv_uses_initial_window(self):
         df = pd.DataFrame({"posted_date": []})
         self.assertEqual(compute_cutoff(df, today=date(2026, 7, 29)),
-                         "2026-07-22")
+                         "2026-07-27")
 
     def test_watermark_with_grace(self):
         df = pd.DataFrame({"posted_date": ["2026-07-20", "2026-07-25",
@@ -475,11 +538,62 @@ class TestClubMapping(unittest.TestCase):
                                         "hybrid"))
         self.assertIn(row["category"], ("doctors", "nurses", "pharmacists",
                                         "non_clinical"))
-        self.assertEqual(row["is_active"], "true")
+
+    def test_club_columns_match_the_current_contract(self):
+        # job_samples.csv gained `qualification` and dropped is_active /
+        # expires_at after this scraper was first written.
+        from himalayas_scraper import CLUB_COLUMNS
+        self.assertIn("qualification", CLUB_COLUMNS)
+        self.assertNotIn("is_active", CLUB_COLUMNS)
+        self.assertNotIn("expires_at", CLUB_COLUMNS)
+        self.assertEqual(len(CLUB_COLUMNS), 21)
+        self.assertEqual(sorted(rich_row_to_club_row(self.BASE)),
+                         sorted(CLUB_COLUMNS))
 
     def test_nan_scrubbed(self):
         row = rich_row_to_club_row(dict(self.BASE, company_logo=float("nan")))
         self.assertEqual(row["company_logo"], "")
+
+
+class TestExtractQualification(unittest.TestCase):
+    """Grounded extraction only — never inferred from the title."""
+
+    def test_pulls_explicit_credentials(self):
+        out = extract_qualification(
+            "Requires a PharmD or B.Pharm and 5 years of pharmacovigilance work.")
+        self.assertIn("PharmD", out)
+        self.assertIn("B.Pharm", out)
+
+    def test_degree_phrases(self):
+        self.assertIn("Bachelor's degree",
+                      extract_qualification("A Bachelor's degree is required."))
+
+    def test_life_sciences(self):
+        self.assertIn("Life Sciences",
+                      extract_qualification("Degree in life sciences preferred."))
+
+    def test_empty_when_nothing_stated(self):
+        self.assertEqual(
+            extract_qualification("You will manage timelines and stakeholders."), "")
+
+    def test_no_description(self):
+        self.assertEqual(extract_qualification(""), "")
+        self.assertEqual(extract_qualification(None), "")
+
+    def test_maryland_is_not_a_medical_degree(self):
+        # "MD" as a US state abbreviation must not become a qualification
+        self.assertEqual(extract_qualification("Remote role based in Bethesda, MD."), "")
+
+    def test_do_the_verb_is_not_a_degree(self):
+        self.assertEqual(extract_qualification("You will do great work here."), "")
+
+    def test_md_with_periods_is_recognised(self):
+        self.assertIn("MD", extract_qualification("An M.D. is required."))
+
+    def test_capped(self):
+        text = ("MBBS PharmD PhD MPH DVM BSN MSN MSc BSc MBA RN RAC CCRA "
+                "CCRP RHIA RHIT CPC CCS")
+        self.assertLessEqual(len(extract_qualification(text).split(", ")), 8)
 
 
 if __name__ == "__main__":

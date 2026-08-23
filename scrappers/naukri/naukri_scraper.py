@@ -90,7 +90,7 @@ LISTING_URL = SITE_BASE + "/healthcare-and-life-sciences-jobs?sort=f"
 INITIAL_WINDOW_DAYS = 7
 WATERMARK_GRACE_DAYS = 2
 
-DESCRIPTION_MAX_CHARS = 3_000
+DESCRIPTION_MAX_CHARS = 12_000
 
 HERE = Path(__file__).resolve().parent
 RICH_CSV = str(HERE / "naukri_jobs.csv")
