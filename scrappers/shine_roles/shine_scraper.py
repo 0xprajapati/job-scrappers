@@ -182,7 +182,7 @@ NEUTRAL_INDUSTRIES = {"", "Others"}
 
 RICH_CSV = str(Path(__file__).resolve().parent / "shine_roles_jobs.csv")
 NEEDS_REVIEW_CSV = str(Path(__file__).resolve().parent / "needs_review.csv")
-CLUB_CSV_DIR = Path(__file__).resolve().parents[3] / "jobs_csv"
+CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_id", "location",

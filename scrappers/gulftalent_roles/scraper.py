@@ -121,7 +121,7 @@ DESCRIPTION_MAX_CHARS = 3_000
 ABOUT_MAX_CHARS = 1_000
 
 RICH_CSV = "gulftalent_roles_jobs.csv"
-CLUB_CSV_DIR = Path(__file__).resolve().parents[3] / "jobs_csv"
+CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 # GulfTalent country slug -> (country_name, ISO-2, dial code, currency).
 COUNTRY_META = {

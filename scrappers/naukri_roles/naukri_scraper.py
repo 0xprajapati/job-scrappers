@@ -105,7 +105,7 @@ RICH_CSV = str(HERE / "naukri_roles_jobs.csv")
 NEEDS_REVIEW_CSV = str(HERE / "needs_review.csv")
 CAPTURES_DIR = HERE / "captures"
 # jobs_csv/ lives at the repo root, two levels up from scrappers/naukri/.
-CLUB_CSV_DIR = HERE.resolve().parents[2] / "jobs_csv"
+CLUB_CSV_DIR = HERE.resolve().parents[1] / "jobs_csv"
 
 # Rich (source-of-truth) columns — superset, keeps everything the card gives.
 RICH_COLUMNS = [

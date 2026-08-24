@@ -112,7 +112,7 @@ MAX_EMPTY_PAGES = 3
 DESCRIPTION_MAX_CHARS = 3_000
 
 RICH_CSV = "pharmarecruiter_roles_jobs.csv"
-CLUB_CSV_DIR = Path(__file__).resolve().parents[3] / "jobs_csv"
+CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 JOBS_CATEGORY_SLUG = "jobs"          # scraped at the source
 NEWS_CATEGORY_SLUG = "pharma-news"   # skipped unless also tagged jobs
