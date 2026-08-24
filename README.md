@@ -70,12 +70,28 @@ Use these exact strings (Postgres / Prisma enums). Do **not** use display labels
 | -------------- | ------------------------------------------------ |
 | `company_type` | `hospital`, `pharma`                             |
 | `job_type`     | `full_time`, `part_time`, `remote`, `hybrid`     |
-| `category`     | `Clinical Data Management`, `Clinical Research`, |
+| `category`     | see the eleven role families below               |
+| `salary_period` | `per_annum`, `per_month`                        |
+| `salary_currency` | `INR`, `USD`                                  |
 
-`Medical Writer`, `TMF`, `Medical Coding`, `Pharmacovigilance`, `Regulatory Affairs`,
-`Medical Reviewer`, `MSL`, and `HEOR` |
-| `salary_period` | `per_annum`, `per_month` |
-| `salary_currency` | `INR`, `USD` |
+#### `category` — role families
+
+`category` names the **role family**, not the profession. Unlike the other
+enums it uses display-style capitalisation, so write these strings verbatim:
+
+| Value | Covers |
+| --- | --- |
+| `Public Health` | epidemiology, population/community/global health, health policy |
+| `Clinical Data Management` | clinical data managers, EDC, CDISC/SDTM, clinical programming |
+| `Clinical Research` | CRAs, clinical trial/study/operations management, investigators |
+| `Medical Writer` | medical/scientific/regulatory writing, medical editors, publications |
+| `TMF` | trial master file operations |
+| `Medical Coding` | medical coders, CPC/CCS, risk adjustment, DRG, coding audit |
+| `Pharmacovigilance` | drug safety, GVP, adverse events, case processing, signal detection |
+| `Regulatory Affairs` | regulatory affairs/strategy/submissions/labelling, CTD/IND/NDA |
+| `Medical Reviewer` | medical monitors, physician reviewers, utilization review |
+| `MSL` | medical science liaisons, medical/scientific affairs, medical advisors |
+| `HEOR` | health economics, outcomes research, market access, RWE, HTA |
 
 Full sample file: [`job_samples.csv`](./job_samples.csv).
 

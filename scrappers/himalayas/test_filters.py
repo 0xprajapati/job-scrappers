@@ -17,7 +17,7 @@ from himalayas_scraper import (
     DESCRIPTION_MAX_CHARS,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
-    classify_category,
+    CLUB_CATEGORIES,
     classify_company_type,
     clean_value,
     compute_cutoff,
@@ -311,68 +311,40 @@ class TestRoleFamilyGate(unittest.TestCase):
             match_role_family("Registered Dietitian", ["Clinical-Research"])[0], "")
 
 
-class TestClassifyCategory(unittest.TestCase):
-    """Titles map onto the four club category enum values."""
+class TestClubCategories(unittest.TestCase):
+    """`category` now carries the role family itself."""
 
-    def test_nurse_practitioner(self):
-        # real listing: Galileo, Inc.
-        self.assertEqual(
-            classify_category("Nurse Practitioner (Remote, SC License Required)"),
-            ("nurses", False))
+    EXPECTED = {
+        "Public Health", "Clinical Data Management", "Clinical Research",
+        "Medical Writer", "TMF", "Medical Coding", "Pharmacovigilance",
+        "Regulatory Affairs", "Medical Reviewer", "MSL", "HEOR",
+    }
 
-    def test_rn_abbreviation(self):
-        self.assertEqual(
-            classify_category("Compact RN Care Coach - Remote"),
-            ("nurses", False))
+    def test_exactly_the_eleven_requested_families(self):
+        self.assertEqual(set(CLUB_CATEGORIES), self.EXPECTED)
 
-    def test_physician(self):
-        # real listing: Circle Medical
-        self.assertEqual(
-            classify_category("Tennessee MD/DO - Telemedicine Primary Care"),
-            ("doctors", False))
+    def test_no_duplicates(self):
+        self.assertEqual(len(CLUB_CATEGORIES), len(set(CLUB_CATEGORIES)))
 
-    def test_psychiatrist_is_a_doctor(self):
-        self.assertEqual(classify_category("Remote Psychiatrist"),
-                         ("doctors", False))
-
-    def test_pharmacist(self):
-        self.assertEqual(classify_category("Clinical Pharmacist - Telehealth"),
-                         ("pharmacists", False))
-
-    def test_lcsw_is_non_clinical_bucket(self):
-        # real listing: OptiMindHealth. The club schema has no allied-health
-        # bucket, so licensed non-physician clinicians land in non_clinical.
-        self.assertEqual(
-            classify_category("Licensed Clinical Social Worker (LCSW) - Quincy, MA"),
-            ("non_clinical", False))
-
-    def test_therapist(self):
-        self.assertEqual(classify_category("Telehealth Therapist"),
-                         ("non_clinical", False))
-
-    def test_admin_role(self):
-        self.assertEqual(classify_category("Healthcare Billing Specialist"),
-                         ("non_clinical", False))
-
-    def test_sales_title_is_flagged_not_silently_classified(self):
-        # wrong profession: kept for review, never confidently bucketed
-        category, needs_review = classify_category("Account Executive, Clinical Trials")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
-
-    def test_scope_gate_title_is_not_flagged(self):
-        self.assertFalse(classify_category("Senior Clinical Data Manager")[1])
-
-    def test_unmatched_title_is_kept_and_flagged(self):
-        # Master spec §2: never silently dropped.
-        category, needs_review = classify_category("Wellbeing Guide")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
-
-    def test_nurse_beats_the_generic_bucket(self):
-        # "Nurse Manager" contains "manager"; nurses must win
-        self.assertEqual(classify_category("Nurse Manager, Virtual Care"),
-                         ("nurses", False))
+    def test_every_family_is_reachable_from_a_real_title(self):
+        # one real listing title per family — the gate must produce each one,
+        # or a category could be declared but never emitted
+        samples = {
+            "TMF": "Associate Director, TMF Operations Lead",
+            "HEOR": "Senior Director, HEOR & Evidence Strategy",
+            "MSL": "Medical Science Liaison - Southeast",
+            "Pharmacovigilance": "Executive Director, Pharmacovigilance (PV)",
+            "Medical Coding": "Multi-Specialty Profee and/or Facility Medical Coder",
+            "Medical Writer": "Senior Medical Writer",
+            "Regulatory Affairs": "Senior Associate, Regulatory Affairs (US)",
+            "Medical Reviewer": "Medical Monitor (Gastroenterology)",
+            "Clinical Data Management": "Senior Clinical Data Manager",
+            "Public Health": "Population Health Program Coordinator",
+            "Clinical Research": "Senior Clinical Research Associate - UK - Remote",
+        }
+        self.assertEqual(set(samples), self.EXPECTED)
+        for family, title in samples.items():
+            self.assertEqual(match_role_family(title)[0], family, title)
 
 
 class TestCompanyType(unittest.TestCase):
@@ -475,7 +447,7 @@ class TestClubMapping(unittest.TestCase):
     BASE = {
         "title": "Nurse Practitioner", "company": "Galileo, Inc.",
         "company_type": "hospital", "company_logo": "https://cdn/x.png",
-        "country": "United States", "category": "nurses",
+        "country": "United States", "role_family": "Clinical Research",
         "description": "Provide virtual primary care.",
         "job_url": "https://himalayas.app/companies/galileo/jobs/np-123456",
         "posted_date": "2026-07-29", "expires_date": "2026-09-27",
@@ -536,8 +508,7 @@ class TestClubMapping(unittest.TestCase):
         self.assertIn(row["company_type"], ("hospital", "pharma"))
         self.assertIn(row["job_type"], ("full_time", "part_time", "remote",
                                         "hybrid"))
-        self.assertIn(row["category"], ("doctors", "nurses", "pharmacists",
-                                        "non_clinical"))
+        self.assertIn(row["category"], CLUB_CATEGORIES)
 
     def test_club_columns_match_the_current_contract(self):
         # job_samples.csv gained `qualification` and dropped is_active /

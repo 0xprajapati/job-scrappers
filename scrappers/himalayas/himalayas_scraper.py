@@ -154,7 +154,7 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_slug", "company_logo",
     "locations", "country", "salary_raw", "salary_min", "salary_max",
     "salary_currency", "salary_period", "employment_type", "work_mode",
-    "seniority", "category", "role_family", "company_type", "match_signal",
+    "seniority", "role_family", "company_type", "match_signal",
     "categories",
     "parent_categories", "timezones", "posted_date", "expires_date",
     "description", "job_url", "scraped_at",
@@ -517,58 +517,15 @@ def match_role_family(title, categories=None):
     return ("", "", False)
 
 
-# Title -> club category enum. US-remote flavour: overwhelmingly licensed
-# behavioural-health and telehealth roles.
-_NURSE_RE = re.compile(
-    r"(?:^|[^a-z])(?:nurse|nursing|midwif\w*|\brn\b|\blpn\b|\blvn\b|\bcna\b|"
-    r"\bapr?n\b|\bcrna\b|nurse[- ]?practitioner|\bnp\b)(?:[^a-z]|$)",
-    re.IGNORECASE)
-_PHARM_RE = re.compile(
-    r"(?:^|[^a-z])(?:pharmacist|pharmacy|pharm\.?\s?d|dispenser|"
-    r"pharmacovigilance)(?:[^a-z]|$)", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"(?:^|[^a-z])(?:physician|doctor|surgeon|dentist|\bmd\b|\bdo\b|mbbs|"
-    r"psychiatrist|medical[- ]?director|medical[- ]?officer|"
-    r"[a-z]{4,}ologist|general[- ]?practitioner|intensivist|"
-    r"an[ae]sthesiologist|radiologist|pathologist|"
-    r"(?:family|internal|emergency)[- ]?medicine)(?:[^a-z]|$)",
-    re.IGNORECASE)
-# Licensed non-physician clinicians + everything administrative. The club
-# schema has no "allied health" bucket, so these map to non_clinical.
-_NONCLINICAL_RE = re.compile(
-    r"(?:^|[^a-z])(?:therapist|therapy|counselor|counsellor|counseling|"
-    r"counselling|psycholog\w*|psychotherap\w*|social[- ]?work\w*|\blcsw\b|"
-    r"\blmft\b|\blmhc\b|\blpc\b|\blcpc\b|clinician|coach|caregiver|"
-    r"technician|technologist|dietit\w*|dietic\w*|nutritionist|"
-    r"phlebotom\w*|radiograph\w*|sonograph\w*|audiolog\w*|optometr\w*|"
-    r"coordinator|specialist|manager|director|analyst|administrator|"
-    r"assistant|associate|executive|representative|advisor|adviser|"
-    r"consultant|recruiter|scientist|researcher|writer|educator|trainer|"
-    r"sales|marketing|billing|coding|coder|scribe|receptionist|"
-    r"support|operations|lead|supervisor|liaison|reviewer|auditor"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
+# The club `category` column now carries the ROLE FAMILY itself (Clinical
+# Research, Pharmacovigilance, ...). The previous profession classifier
+# (doctors / nurses / pharmacists / non_clinical) has been retired: it was a
+# poor fit here — every one of these families is a non-clinical desk role, so
+# ~97% of rows collapsed into `non_clinical` and the column carried almost no
+# information. ROLE_FAMILIES is now the single source of truth for both the
+# scope gate and the category, so the two can never disagree.
 
-
-def classify_category(title):
-    """Return (club category, needs_review) for a healthcare job title."""
-    title = title or ""
-    # Wrong-profession titles (sales, legal, engineering) are caught by the
-    # scope gate's OUT_OF_SCOPE_TITLE and arrive here already flagged, so this
-    # function only has to pick the club category enum.
-    if OUT_OF_SCOPE_TITLE.search(title):
-        return ("non_clinical", True)
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    # Healthcare by category/parent signal but the title says nothing about
-    # the role — keep it, flag it (master spec §2: never silently dropped).
-    return ("non_clinical", True)
+CLUB_CATEGORIES = [name for name, _pat in ROLE_FAMILIES]
 
 
 _PHARMA_COMPANY_RE = re.compile(
@@ -664,9 +621,11 @@ def fetch_page(session, offset):
 
 def job_to_rich_row(job, signal="", role_family="", scope_review=False):
     title = clean_value(job.get("title"))
-    category, needs_review = classify_category(title)
-    # a slug-only / suspicious scope match is doubtful regardless of category
-    needs_review = needs_review or scope_review
+    # The role family IS the category, so there is no separate "which
+    # profession is this?" ambiguity left to flag. A row is doubtful only when
+    # the scope match itself looked wrong (an in-scope term sitting inside a
+    # counsel / sales / recruiter title).
+    needs_review = scope_review
 
     categories = parse_listish(job.get("categories"))
     parent_categories = parse_listish(job.get("parentCategories"))
@@ -702,7 +661,6 @@ def job_to_rich_row(job, signal="", role_family="", scope_review=False):
         "employment_type": clean_value(job.get("employmentType")),
         "work_mode": "remote",
         "seniority": "; ".join(seniority),
-        "category": category,
         "company_type": classify_company_type(job.get("companyName")),
         "role_family": role_family,
         "match_signal": signal,
@@ -774,7 +732,7 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": CLUB_JOB_TYPE,
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",
@@ -833,13 +791,11 @@ def reclassify(args):
         if not family:
             dropped_rows.append(row)
             continue
-        category, needs_review = classify_category(title)
         row = row.copy()
         row["role_family"] = family
         row["match_signal"] = signal
-        row["category"] = category
         kept_rows.append(row)
-        if needs_review or scope_review:
+        if scope_review:
             review_log.append({"job_id": row.get("job_id", ""),
                                "title": title,
                                "company": row.get("company", ""),
@@ -852,7 +808,6 @@ def reclassify(args):
     log.info("Kept %d of %d stored rows; dropped %d now out of scope",
              len(kept), len(df), len(dropped_rows))
     log.info("role_family: %s", kept["role_family"].value_counts().to_dict())
-    log.info("category:    %s", kept["category"].value_counts().to_dict())
 
     if dropped_rows:
         out = Path(args.output).with_name("out-of-scope.csv")

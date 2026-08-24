@@ -160,17 +160,23 @@ whether these belong on the site is an editorial call:
 - Regional Account Manager, Medical Stop Loss (MSL) Distribution
 - Clinical Research Patient Recruiter
 
-### Club `category` vs `role_family`
+### `category` is the role family
 
-They answer different questions and both are stored:
+`category` in the club CSV carries the **role family verbatim** — `Clinical
+Research`, `Pharmacovigilance`, `TMF` and so on. `role_family` in the rich CSV
+holds the same string; they are one value, so they can never disagree.
 
-- `role_family` — which of the eleven in-scope families the job belongs to.
-  This is the new scope dimension and lives in the rich CSV.
-- `category` — the club enum `doctors | nurses | pharmacists | non_clinical`,
-  which describes the *profession*. Most of these roles are `non_clinical`
-  (907 of 988) because clinical-research and regulatory work is not bedside
-  care; `pharmacists` (41), `doctors` (27) and `nurses` (13) pick up the
-  PharmD/MD/RN-credentialed postings.
+The previous profession enum (`doctors | nurses | pharmacists |
+non_clinical`) has been **retired here**. It was a poor fit for this scope:
+every one of the eleven families is a non-clinical desk role, so ~92% of rows
+collapsed into `non_clinical` and the column carried almost no information.
+`ROLE_FAMILIES` is now the single source of truth for both the scope gate and
+the category.
+
+Note this diverges from `instructions/export_club_csv.py`, whose `ENUMS` still
+validates the old four-value set for the other scrapers (dha, shine, fortis),
+which scrape bedside roles that genuinely are doctors/nurses. That exporter is
+not used by this scraper — it writes its club CSV directly.
 
 ## Salary
 
@@ -316,21 +322,21 @@ scanned slots.
 
 Intended cadence is one run per day.
 
-## First run (2026-07-29)
+## Current corpus (2026-08-21)
 
 | | |
 |---|---|
-| Jobs scanned | 19,160 (7-day window, stopped at offset 19,140) |
-| Excluded — non-healthcare | 15,148 |
-| Excluded — older than cutoff | 37 |
-| **Healthcare jobs written** | **3,835** |
-| Flagged `needs_review` | 582 (15%) |
-| Transient retries | 3 (all recovered; 0 pages lost) |
+| **Jobs stored** | **1,125** |
+| Flagged `needs_review` | 16 |
+| Descriptions truncated | 0 |
+| `qualification` populated | 883 (78%) |
 
-Breakdown: `non_clinical` 2,876 · `nurses` 492 · `doctors` 395 ·
-`pharmacists` 72. Match signal: title 1,792 · categories 1,548 ·
-parent_category 495. 45% disclose a salary. Top hiring regions: United States
-3,068, Australia 105, Canada 83, United Kingdom 68, Philippines 43, India 40.
+By family: Clinical Research 465 · Medical Coding 157 · MSL 89 · Medical
+Writer 88 · Pharmacovigilance 66 · Clinical Data Management 64 · HEOR 61 ·
+Regulatory Affairs 60 · Public Health 38 · Medical Reviewer 23 · TMF 14.
+
+Collected 2026-07-22 → 2026-08-21, with a gap at **2026-08-11 → 08-18** (a
+backfill was cancelled); `--since 2026-08-11` fills it.
 
 Healthcare density is far higher deeper in the feed (~4% in the first few
 hundred jobs, ~23% by offset 2,000) because employers such as OptiMindHealth
