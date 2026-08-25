@@ -90,14 +90,23 @@ Tests: `python test_filters.py`
 |---|---|
 | `simplyhired_jobs.csv` | Rich cumulative store, dedup key `job_id` (= `jobKey`), watermark source |
 | `../../jobs_csv/<DD-MM-YYYY>/simplyhired.csv` | HealthCareers.club 22-column schema |
-| `needs_review.csv` | Titles the category classifier could not place (kept as `non_clinical`, never dropped) |
+| `needs_review.csv` | Kept but flagged (title reads like a different profession) |
+| `out-of-scope.csv` | Rows the taxonomy dropped; append-only, deduped on `job_id`, so a scope change is reversible without a re-crawl |
 
 ## Category / enum mapping
 
-- `category`: title regexes → `nurses` / `pharmacists` / `doctors` (incl.
-  BHMS/BAMS/BDS/MD, `*ologist`/`*ology`, duty doctor, ayurvedic/homeopath);
-  allied health (physio, lab tech, dialysis tech…) and admin roles →
-  `non_clinical`; unknown → `non_clinical` + `needs_review.csv`.
+- **`category` / `sub_category`**: the shared two-level taxonomy
+  (`../_shared/classification.py`) — `Non Clinical` | `Public Health` plus
+  one of the 20 sub-categories. SimplyHired has **no role facet at all**:
+  the 31 keyword walks are a *recall* device, and `classify_job` is the
+  entire precision layer. Everything it rules out — bedside jobs, medical
+  billing, wellness, back office — is dropped, counted as
+  `excluded_out_of_scope` and moved to `out-of-scope.csv`. The site's own
+  `qualifications` bullets are passed to it as the `skills` signal and kept
+  in the rich CSV as a raw source column.
+  Reclassifying the store on 2026-08-26 kept **111 of 2,011** rows (5.5%):
+  Non Clinical 59 / Public Health 52 — top sub-categories Medical Coding 47,
+  Public Health Nutrition 46, Infection Prevention & Control 5, MSL 4.
 - `company_type`: pharma/labs/diagnostics keywords in company name →
   `pharma`, else `hospital`.
 - `job_type`: `Full-time` beats `Part-time` when both are listed;

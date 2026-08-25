@@ -12,7 +12,7 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
-    classify_category,
+    apply_classification,
     classify_company_type,
     compute_cutoff,
     INITIAL_WINDOW_DAYS,
@@ -198,32 +198,45 @@ class TestRelativeAges(unittest.TestCase):
 
 
 class TestClassifier(unittest.TestCase):
-    def test_clinical_titles(self):
-        self.assertEqual(classify_category("Registered Nurse")[0], "nurses")
-        self.assertEqual(classify_category("Pharmacist")[0], "pharmacists")
-        self.assertEqual(classify_category("Superintendent Pharmacist")[0],
-                         "pharmacists")
-        self.assertEqual(classify_category("Medical Officer")[0], "doctors")
-        self.assertEqual(classify_category("Optometrist")[0], "doctors")
-        self.assertEqual(classify_category("Sonologist")[0], "doctors")
+    """Wiring into the shared taxonomy — the engine itself is covered by
+    ../_shared/test_classification.py."""
 
-    def test_sector_roles_kept_not_flagged(self):
-        # Real page-1 examples: healthcare signal in title or company.
-        category, review = classify_category(
-            "Medical Sales Representative", "Digitall Healthcare Limited",
-            "Sales")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(review)
-        category, review = classify_category(
-            "Accountant", "Blue Chip Hospital Group", "Accounting")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(review)
+    def _row(self, title, function="", industry="", description=""):
+        return {"title": title, "site_function": function,
+                "site_industry": industry, "description": description}
 
-    def test_no_signal_flagged_never_dropped(self):
-        category, review = classify_category(
-            "Technical Assistant - Programmatic", "Acme Ltd", "Admin")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(review)
+    def test_in_scope_role_is_stamped(self):
+        row = self._row("Clinical Research Associate", "Healthcare")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+
+        row = self._row("Monitoring and Evaluation Officer", "NGO")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Monitoring & Evaluation")
+
+    def test_sector_and_bedside_roles_are_dropped(self):
+        """The healthcare vertical is a sector facet, so it carries both
+        back-office and bedside jobs. Neither is in scope any more — they
+        are dropped, not relabelled."""
+        for title, function in (("Medical Sales Representative", "Sales"),
+                                ("Accountant", "Accounting"),
+                                ("Registered Nurse", "Healthcare"),
+                                ("Superintendent Pharmacist", "Healthcare"),
+                                ("Medical Officer", "Healthcare")):
+            row = self._row(title, function)
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "")
+
+    def test_site_function_reaches_classifier_as_skills(self):
+        """occupationalCategory + industry are the curated `skills` signal;
+        they inform the score but never decide the category alone."""
+        row = self._row("Officer", "Pharmacovigilance", "Drug Safety")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
+        self.assertEqual(row["matched_in"], "skills")
 
     def test_company_type(self):
         self.assertEqual(
@@ -273,12 +286,13 @@ class TestClubRow(unittest.TestCase):
             "company": "Digitall Healthcare Limited",
             "company_type": "hospital", "title": "Medical Sales Representative",
             "description": "desc", "job_type": "full_time",
-            "category": "non_clinical",
+            "category": "Non Clinical", "sub_category": "Clinical Research",
             "job_url": "https://www.jobberman.com/listings/x",
             "posted_date": "2026-07-20", "min_experience_years": "1",
             "salary_min": 250000, "salary_max": 400000,
             "salary_period": "per_month", "salary_currency": "NGN",
             "expires_at": "2026-10-18",
+            "qualification_level": "Bachelor's Degree",
         })
         self.assertEqual(club["min_salary"], "")
         self.assertEqual(club["max_salary"], "")
@@ -287,8 +301,12 @@ class TestClubRow(unittest.TestCase):
         self.assertEqual(club["country_name"], "Nigeria")
         self.assertEqual(club["city_name"], "Lagos")
         self.assertEqual(club["min_experience"], "1")
-        self.assertEqual(club["expires_at"], "2026-10-18")
-        self.assertEqual(club["is_active"], "true")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        # the source's own qualifications field wins over extraction
+        self.assertEqual(club["qualification"], "Bachelor's Degree")
+        # retired columns are gone from the club contract
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
 
     def test_city_falls_back_to_country(self):
         club = rich_row_to_club_row({"city": "", "state": "", "title": "X"})

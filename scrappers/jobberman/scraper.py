@@ -42,9 +42,11 @@ Quirks
 * Salaries are NGN. The club schema's salary_currency enum only allows
   INR/USD, so amounts are kept in the rich CSV but the club CSV's salary
   columns are left blank (never converted, never invented).
-* The healthcare vertical includes sector back-office roles (accountants,
-  drivers, sales). They are kept as non_clinical; titles with no healthcare
-  signal in title+company+function are flagged needs_review, never dropped.
+* The healthcare vertical is a SECTOR facet, not a role facet: it is full of
+  back-office jobs (accountants, drivers, sales reps) and of bedside clinical
+  roles, and neither is in scope. The facet therefore only scopes the crawl;
+  the shared classifier makes the keep/drop call and most cards are dropped
+  as excluded_out_of_scope.
 * PostalAddress fields are shuffled (streetAddress holds the state, e.g.
   "Lagos"); the card's location chip is the cleaner city value and wins.
 
@@ -55,7 +57,8 @@ Outputs
 * ../../jobs_csv/<DD-MM-YYYY>/jobberman.csv   — HealthCareers.club 22-col
   schema
 * seen_old_ids.csv                            — out-of-window slugs (skip list)
-* needs_review.csv                            — kept-but-unclassified titles
+* needs_review.csv                            — kept but flagged
+* out-of-scope.csv                            — rows the taxonomy dropped
 
 Time window (master spec §4): first run keeps the last INITIAL_WINDOW_DAYS;
 later runs keep only jobs newer than the newest stored posted_date minus
@@ -68,6 +71,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -77,6 +81,11 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+# The one shared classifier (see ../../instructions/taxonomy-migration-spec.md).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -118,18 +127,13 @@ RICH_COLUMNS = [
     "salary_raw", "salary_min", "salary_max", "salary_period",
     "salary_currency", "job_type", "site_job_type", "site_function",
     "site_industry", "qualification_level", "min_experience_years",
-    "category", "company_type", "needs_review", "posted_date",
+    "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in",
+    "company_type", "needs_review", "posted_date",
     "expires_at", "description", "job_url", "scraped_at",
 ]
 
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
+OUT_OF_SCOPE_CSV = "out-of-scope.csv"
 
 log = logging.getLogger("jobberman_scraper")
 
@@ -354,43 +358,27 @@ def parse_experience_years(posting):
 
 # ---- classification ---------------------------------------------------------
 
-_NURSE_RE = re.compile(r"nurs|midwif", re.IGNORECASE)
-_PHARMACIST_RE = re.compile(r"pharmacist|\bpharmacy\b|\bpharm ?d\b",
-                            re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"doctor|physician|surgeon|\bmbbs\b|dentist|medical officer|"
-    r"medical director|optometrist|[a-z]+ologist|psychiatrist|"
-    r"p(a?)ediatrician|veterinar", re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-_HEALTHCARE_SIGNAL_RE = re.compile(
-    r"medical|pharma|health|nurs|doctor|clinic|hospital|\blab\b|laborator|"
-    r"diagnost|patient|dental|surgi|therap|physio|radiol|patholog|"
-    r"life ?science|biotech|clinical|vaccin|wellness|care\b|optic|"
-    r"med.?tech|locum|hmo\b", re.IGNORECASE)
-
-
-def classify_category(title, company="", function=""):
-    """Club enum doctors|nurses|pharmacists|non_clinical + needs_review.
-
-    The vertical mixes clinical roles with sector back-office jobs
-    (accountants, drivers, sales reps). Clinical regexes classify from the
-    title; everything else is non_clinical, and a listing whose
-    title+company+function shows no healthcare word at all is flagged for
-    review (kept, never dropped — master spec §2).
+    The site's own occupationalCategory (site_function) and industry
+    (site_industry) are the curated `skills` signal; both stay in the rich
+    CSV as raw source columns only. Returns in_scope — False means DROP the
+    row (excluded_out_of_scope).
     """
-    title = title or ""
-    if _NURSE_RE.search(title):
-        category = "nurses"
-    elif _PHARMACIST_RE.search(title):
-        category = "pharmacists"
-    elif _DOCTOR_RE.search(title):
-        category = "doctors"
-    else:
-        category = "non_clinical"
-    haystack = " ".join(filter(None, [title, company, function]))
-    needs_review = (category == "non_clinical"
-                    and not _HEALTHCARE_SIGNAL_RE.search(haystack))
-    return category, needs_review
+    skills = " , ".join(v for v in (row.get("site_function", ""),
+                                    row.get("site_industry", "")) if v)
+    verdict = classify_job(row.get("title", ""), skills,
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 _PHARMA_RE = re.compile(
@@ -501,7 +489,6 @@ def build_row(card, posting, by_id):
     company = company_from_graph(posting, by_id) or card["company"]
     function = (clean_text(posting.get("occupationalCategory"))
                 or card["function"])
-    category, needs_review = classify_category(title, company, function)
 
     address = address_from_graph(posting, by_id)
     # PostalAddress fields are shuffled (streetAddress holds the state);
@@ -534,9 +521,16 @@ def build_row(card, posting, by_id):
         "site_industry": clean_text(posting.get("industry")),
         "qualification_level": clean_text(posting.get("qualifications")),
         "min_experience_years": parse_experience_years(posting),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": classify_company_type(title, company, function),
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": clean_text(posting.get("datePosted"))[:10],
         "expires_at": clean_text(posting.get("validThrough"))[:10],
         "description": strip_html(posting.get("description")
@@ -583,17 +577,20 @@ def rich_row_to_club_row(r):
         "title": _blank(r.get("title")),
         "description": _blank(r.get("description")),
         "job_type": _blank(r.get("job_type")) or "full_time",
-        "category": _blank(r.get("category")) or "non_clinical",
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("min_experience_years")),
         "max_experience": "",
+        # the JobPosting's own `qualifications` field first, else grounded
+        # extraction from the description — never inferred
+        "qualification": (_blank(r.get("qualification_level"))
+                          or extract_qualification(_blank(r.get("description")))),
         "min_salary": min_sal if has_salary else "",
         "max_salary": _int_str(r.get("salary_max")) if has_salary else "",
         "salary_period": _blank(r.get("salary_period")) if has_salary else "",
         "salary_currency": currency if has_salary else "",
-        "is_active": "true",
-        "expires_at": _blank(r.get("expires_at")),
     }
 
 
@@ -613,6 +610,35 @@ def load_seen_old(path):
     if df is None or "job_id" not in df.columns:
         return set()
     return set(df["job_id"].dropna())
+
+
+def load_out_of_scope_ids(path):
+    """job_ids already judged out of scope, so their detail page is not
+    re-fetched every run.
+
+    The gate can only run after the detail fetch (the description lives
+    there), so without this skip list a vertical that is mostly out of scope
+    would re-fetch every dropped card on every run. Rows are kept in full,
+    so widening the taxonomy can recover them.
+    """
+    try:
+        return set(pd.read_csv(path, dtype=str)["job_id"].dropna())
+    except (FileNotFoundError, KeyError):
+        return set()
+
+
+def append_out_of_scope(rows, path=OUT_OF_SCOPE_CSV):
+    """Append dropped rich rows, deduped on job_id. Moved, never discarded."""
+    if not rows:
+        return 0
+    df = pd.DataFrame(rows)
+    try:
+        df = pd.concat([pd.read_csv(path, dtype=str), df], ignore_index=True)
+    except FileNotFoundError:
+        pass
+    df = df.fillna("").drop_duplicates(subset="job_id", keep="last")
+    df.to_csv(path, index=False)
+    return len(df)
 
 
 def write_club_csv(rich_df, run_date):
@@ -648,14 +674,16 @@ def main(argv=None):
     existing_df = load_existing(args.output)
     known_ids = set(existing_df["job_id"].dropna()) if existing_df is not None else set()
     seen_old = load_seen_old(SEEN_OLD_CSV)
+    out_of_scope_ids = load_out_of_scope_ids(OUT_OF_SCOPE_CSV)
     cutoff = compute_cutoff(existing_df)
     log.info("Existing CSV has %d known jobs (%d known-old skipped); "
              "keeping jobs posted on/after %s",
              len(known_ids), len(seen_old), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
-    new_rows, review_log, new_seen_old = [], [], []
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "skipped_out_of_scope": 0, "needs_review": 0, "new": 0,
+                "duplicates": 0, "detail_failed": 0}
+    new_rows, review_log, new_seen_old, dropped_rows = [], [], [], []
     empty_pages = 0
     max_pages = min(args.max_pages, MAX_PAGES)
 
@@ -677,6 +705,9 @@ def main(argv=None):
             card_surely_old = bool(optimistic) and optimistic < cutoff
             if not card_surely_old:
                 page_all_old = False
+            if card["job_id"] in out_of_scope_ids:
+                counters["skipped_out_of_scope"] += 1
+                continue
             if card["job_id"] in known_ids or card["job_id"] in seen_old:
                 counters["duplicates"] += 1
                 continue
@@ -701,6 +732,13 @@ def main(argv=None):
                 seen_old.add(row["job_id"])
                 new_seen_old.append({"job_id": row["job_id"],
                                      "posted_date": row["posted_date"]})
+                continue
+            # The healthcare vertical is a sector facet; the classifier is
+            # what decides whether the role itself is in scope.
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                out_of_scope_ids.add(row["job_id"])
+                dropped_rows.append(row)
                 continue
             if row["needs_review"]:
                 counters["needs_review"] += 1
@@ -749,11 +787,18 @@ def main(argv=None):
         except FileNotFoundError:
             pass
         old_df.drop_duplicates(subset="job_id").to_csv(SEEN_OLD_CSV, index=False)
+    if dropped_rows:
+        total = append_out_of_scope(dropped_rows)
+        log.info("Moved %d rows to %s (%d total, kept for review)",
+                 len(dropped_rows), OUT_OF_SCOPE_CSV, total)
+
     if review_log:
         pd.DataFrame(review_log).to_csv("needs_review.csv", index=False)
 
     print("\n===== Run summary =====")
     print("Jobs scanned:          {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
+    print("Skipped (known out of scope): {:>3,}".format(counters["skipped_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

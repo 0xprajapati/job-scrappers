@@ -26,11 +26,21 @@ default; the whole board is ~15 jobs.
 Salaries are INR/USD, both valid club currencies, so club salary fields are
 populated when the sidebar states an amount (never invented, never filtered).
 
+Classification is the shared two-level taxonomy (scrappers/_shared/
+classification.py): category "Non Clinical" | "Public Health" plus a
+sub_category. The whole board is public-health domain, so most rows are in
+scope — but the board also carries bedside and administrative posts, which are
+dropped and counted as excluded_out_of_scope. The site's own job_category term
+is the curated `skills` signal and stays in the rich CSV as a raw source
+column (job_category_raw); it never decides the category itself.
+
 Outputs
 -------
 * publichealthcareer_jobs.csv           — rich cumulative store (dedup: job id)
 * ../../jobs_csv/<DD-MM-YYYY>/publichealthcareer.csv
-                                        — shared job_samples.csv schema
+                                        — HealthCareers.club 22-col schema
+* needs_review.csv                      — kept but flagged
+* out-of-scope.csv                      — rows the taxonomy dropped (reversible)
 
 Time window (master spec): first run keeps the last INITIAL_WINDOW_DAYS;
 later runs keep only jobs newer than the newest stored date minus
@@ -43,6 +53,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -52,6 +63,11 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+# The one shared classifier (see ../../instructions/taxonomy-migration-spec.md).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -91,18 +107,13 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_website", "city",
     "country", "salary_raw", "salary_min", "salary_max", "salary_period",
     "salary_currency", "experience_raw", "job_type", "job_level",
-    "job_category_raw", "category", "company_type", "needs_review",
+    "job_category_raw", "category", "sub_category", "role_family",
+    "all_families", "family_scores", "family_confidence", "matched_in",
+    "company_type", "needs_review",
     "posted_date", "description", "job_url", "scraped_at",
 ]
 
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
+OUT_OF_SCOPE_CSV = "out-of-scope.csv"
 
 log = logging.getLogger("publichealthcareer_scraper")
 
@@ -170,26 +181,26 @@ def map_job_type(text):
     return "full_time"
 
 
-_NURSE_RE = re.compile(r"\b(nurse|nursing|midwif)\b", re.IGNORECASE)
-_PHARM_RE = re.compile(r"\b(pharmacist|pharmacy|pharm\.?d)\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|mbbs|dentist|medical officer|"
-    r"psychiatrist|paediatrician|pediatrician)\b", re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-
-def classify_category(title, category_term):
-    """club category enum. Public-health program/research/faculty roles are
-    non_clinical by nature; only explicit clinical titles map elsewhere.
-    Returns (category, needs_review)."""
-    text = "{} {}".format(title or "", category_term or "")
-    if _NURSE_RE.search(text):
-        return ("nurses", False)
-    if _PHARM_RE.search(text):
-        return ("pharmacists", False)
-    if _DOCTOR_RE.search(text):
-        return ("doctors", False)
-    # program / research / faculty / consultant roles — expected majority
-    return ("non_clinical", False)
+    The site's own job_category term (job_category_raw) is the curated
+    `skills` signal; the raw value stays in the rich CSV as a source column
+    only. Returns in_scope — False means DROP the row
+    (excluded_out_of_scope).
+    """
+    verdict = classify_job(row.get("title", ""),
+                           row.get("job_category_raw", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 _PHARMA_ORG_RE = re.compile(
@@ -330,7 +341,6 @@ def job_to_rich_row(job, terms):
 
     title = clean_text((job.get("title") or {}).get("rendered", ""))
     category_term = term_name("job_category")
-    category, needs_review = classify_category(title, category_term)
     description = strip_html((job.get("content") or {}).get("rendered", ""))
 
     return {
@@ -350,9 +360,16 @@ def job_to_rich_row(job, terms):
         "job_type": map_job_type(term_name("job_type")),
         "job_level": term_name("job_level"),
         "job_category_raw": category_term,
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": "hospital",  # refined after company is known
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": (job.get("date") or "")[:10],
         "description": description[:DESCRIPTION_MAX_CHARS],
         "job_url": job.get("link") or "",
@@ -388,17 +405,19 @@ def rich_row_to_club_row(r):
         "title": _blank(r.get("title")),
         "description": _blank(r.get("description")),
         "job_type": _blank(r.get("job_type")) or "full_time",
-        "category": _blank(r.get("category")) or "non_clinical",
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": "",
         "max_experience": "",
+        # the board has no structured qualification field — grounded
+        # extraction from the description only, never inferred
+        "qualification": extract_qualification(_blank(r.get("description"))),
         "min_salary": int_str(min_sal) if valid_currency else "",
         "max_salary": int_str(r.get("salary_max")) if valid_currency else "",
         "salary_period": _blank(r.get("salary_period")) if valid_currency and int_str(min_sal) else "",
         "salary_currency": currency if valid_currency and int_str(min_sal) else "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -463,8 +482,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows, review_log = [], []
     page = 1
     pending = []  # (job, ) new in-window jobs before term resolution
@@ -495,6 +515,12 @@ def main(argv=None):
             continue
         if row["posted_date"] and row["posted_date"] < cutoff:
             counters["excluded_old"] += 1
+            continue
+        # Scope gate before the detail fetch: an out-of-scope job costs no
+        # request. The REST content already carries the description, so the
+        # classifier has every signal it will ever get for this row.
+        if not apply_classification(row):
+            counters["excluded_out_of_scope"] += 1
             continue
         if row["needs_review"]:
             counters["needs_review"] += 1
@@ -542,6 +568,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Jobs scanned:          {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

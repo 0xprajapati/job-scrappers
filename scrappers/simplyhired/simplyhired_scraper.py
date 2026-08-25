@@ -65,6 +65,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -73,6 +74,11 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+
+# The one shared classifier (see ../../instructions/taxonomy-migration-spec.md).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 from curl_cffi import requests
 from curl_cffi.requests import exceptions as requests_exceptions
 
@@ -134,19 +140,14 @@ CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 RICH_COLUMNS = [
     "source", "job_id", "title", "company", "location", "city", "state",
     "salary_raw", "salary_min", "salary_max", "salary_period",
-    "job_type", "job_types_raw", "remote_attributes", "category",
+    "job_type", "job_types_raw", "remote_attributes",
+    "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in", "needs_review",
     "company_type", "sponsored", "qualifications", "benefits",
     "company_logo", "posted_date", "description", "job_url", "scraped_at",
 ]
 
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
+OUT_OF_SCOPE_CSV = str(Path(__file__).resolve().parent / "out-of-scope.csv")
 
 log = logging.getLogger("simplyhired_scraper")
 
@@ -248,49 +249,28 @@ def map_job_type(job_types, remote_attributes=(), work_settings=()):
     return "full_time"
 
 
-# Title -> club category. Same conventions as the naukrigulf scraper:
-# unmatched titles are KEPT as non_clinical and flagged needs_review.
-_NURSE_RE = re.compile(r"\b(nurse|nursing|midwif\w*|gnm|anm|sister)\b", re.IGNORECASE)
-_PHARM_RE = re.compile(r"\b(pharmacist|pharmacy|pharm\.?\s?d|b\.? ?pharma?|d\.? ?pharma?)\b", re.IGNORECASE)
-_ALLIED_RE = re.compile(
-    r"\b(audiolog\w*|physiotherap\w*|radiograph\w*|optometr\w*|paramedic\w*|"
-    r"speech|lab ?technician|phlebotom\w*|dental hygien\w*|dialysis technician)\b",
-    re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|mbbs|bhms|bams|bums|md|dentist|bds|mds|"
-    r"medical officer|rmo|duty doctor|gp|[a-z]+ologist|[a-z]{4,}ology|"
-    r"orthop[ae]?edic\w*|intensivist|hospitalist|anaesthetist|anesthetist|"
-    r"an[ae]sthesiolog\w*|obstetric\w*|p[ae]?diatric\w*|p[ae]?ediatric\w*|"
-    r"psychiatrist|neonat\w*|general practitioner|veterinar\w*|ayurved\w*|"
-    r"hom[oe]{1,2}opath\w*|(family|internal|general|emergency) medicine|"
-    r"medical director|medical superintendent|registrar|consultant physician)\b",
-    re.IGNORECASE)
-_NONCLINICAL_RE = re.compile(
-    r"\b(accountant|accounts?|finance|sales|marketing|receptionist|driver|"
-    r"secretary|hr\b|human resources|admin\w*|technician|technologist|"
-    r"therapist|dietician|dietitian|nutritionist|coordinator|executive|"
-    r"manager|officer|engineer|analyst|assistant|biller|billing|coder|coding|"
-    r"insurance|housekeeping|security|store ?keeper|procurement|liaison|"
-    r"counsel(l)?or|telecaller|caretaker|warden|attendant|trainer|tutor|"
-    r"faculty|professor|lecturer|data entry|back office|front office|"
-    r"operations|supervisor|developer|designer|writer|analytics|scientist)\b",
-    re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-
-def classify_category(title):
-    """Return (category, needs_review) for a job title."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _ALLIED_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    return ("non_clinical", True)
+    SimplyHired has no role facet — the crawl is 31 keyword walks, which are
+    a recall device only. The classifier is the whole precision layer: the
+    site's own `qualifications` bullets are the curated `skills` signal (kept
+    in the rich CSV as a raw source column), and the description is the
+    enriched jobDescriptionHtml when --enrich ran, else the listing snippet.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
+    """
+    verdict = classify_job(row.get("title", ""),
+                           (row.get("qualifications", "") or "").replace("|", " , "),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 _PHARMA_COMPANY_RE = re.compile(
@@ -394,7 +374,6 @@ def job_to_rich_row(job, detail=None):
     location = (detail.get("formattedLocation") or job.get("location") or "").strip()
     salary_raw, sal_min, sal_max, sal_per = parse_salary(
         detail.get("compensation") or job.get("salaryInfo"))
-    category, needs_review = classify_category(title)
     job_types = detail.get("jobTypes") or job.get("jobTypes") or []
 
     description = strip_html(detail.get("jobDescriptionHtml") or "") or \
@@ -416,7 +395,15 @@ def job_to_rich_row(job, detail=None):
                                  detail.get("workSettings")),
         "job_types_raw": "|".join(job_types),
         "remote_attributes": "|".join(job.get("remoteAttributes") or []),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
+        "needs_review": False,
         "company_type": classify_company_type(
             detail.get("employerName") or job.get("company")),
         "sponsored": bool(job.get("sponsored")),
@@ -429,7 +416,6 @@ def job_to_rich_row(job, detail=None):
         "description": description[:DESCRIPTION_MAX_CHARS],
         "job_url": SITE_BASE + "/job/" + str(job.get("jobKey") or ""),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "needs_review": needs_review,
     }
 
 
@@ -456,17 +442,21 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": _clean(r.get("job_type")) or "full_time",
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",
         "max_experience": "",
+        # the site's own qualifications bullets first, else grounded
+        # extraction from the description — never inferred
+        "qualification": (extract_qualification(
+                              _clean(r.get("qualifications")).replace("|", " "))
+                          or extract_qualification(_clean(r.get("description")))),
         "min_salary": lo if exportable else "",
         "max_salary": (hi or lo) if exportable else "",
         "salary_period": period if exportable else "",
         "salary_currency": "INR" if exportable else "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -479,6 +469,25 @@ def load_existing(path):
         return pd.read_csv(path, dtype=str)
     except FileNotFoundError:
         return None
+
+
+def append_out_of_scope(rows, path=OUT_OF_SCOPE_CSV):
+    """Append dropped rich rows to out-of-scope.csv, deduped on job_id.
+
+    Reversible by design: rows the taxonomy rules out are moved, never
+    discarded, so widening the scope later can recover them without a
+    re-crawl.
+    """
+    if not rows:
+        return 0
+    df = pd.DataFrame(rows)
+    try:
+        df = pd.concat([pd.read_csv(path, dtype=str), df], ignore_index=True)
+    except FileNotFoundError:
+        pass
+    df = df.fillna("").drop_duplicates(subset="job_id", keep="last")
+    df.to_csv(path, index=False)
+    return len(df)
 
 
 def write_club_csv(rich_df, run_date):
@@ -522,9 +531,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0}
-    new_rows, review_log = [], []
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0}
+    new_rows, review_log, dropped_rows = [], [], []
     stop = False
 
     for query in SEARCH_QUERIES:
@@ -583,7 +592,13 @@ def main(argv=None):
                 log.warning("Skipping malformed job on page %d: %s", page_no, exc)
                 continue
 
-            if row.pop("needs_review", False):
+            # 31 keyword walks are a recall device, not a scope decision:
+            # the classifier is the only precision layer here.
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                dropped_rows.append(row)
+                continue
+            if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({"job_id": row["job_id"], "title": row["title"],
                                    "company": row["company"]})
@@ -628,12 +643,18 @@ def main(argv=None):
         target, n = write_club_csv(combined, args.run_date)
         log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
 
+    if dropped_rows:
+        total = append_out_of_scope(dropped_rows)
+        log.info("Moved %d rows to %s (%d total, kept for review)",
+                 len(dropped_rows), OUT_OF_SCOPE_CSV, total)
+
     if review_log:
         pd.DataFrame(review_log).to_csv(NEEDS_REVIEW_CSV, index=False)
         log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, len(review_log))
 
     print("\n===== Run summary =====")
     print("Jobs scanned:            {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>5,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:    {:>5,}".format(counters["needs_review"]))
     print("New jobs added:          {:>5,}".format(counters["new"]))

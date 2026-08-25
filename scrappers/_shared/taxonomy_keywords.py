@@ -195,7 +195,7 @@ SUBCATEGORIES = {
         "category": "Public Health",
         "titles": r"m ?& ?e (?:officer|specialist|manager)|\bmel officer\b|"
                   r"\bmerl\b|\bmis officer\b|evaluation specialist|"
-                  r"impact assessment|monitoring (?:and|&) evaluation",
+                  r"impact assessment|monitoring,? (?:and |& )?evaluation",
         "strong": ["logframe", "results framework", "indicators",
                    "baseline endline", "DHIS2", "KoboToolbox", "ODK",
                    "data quality audit", "theory of change",

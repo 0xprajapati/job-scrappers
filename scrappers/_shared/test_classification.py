@@ -19,6 +19,28 @@ class TestClassifyJob(unittest.TestCase):
         self.assertEqual(v["category"], "Public Health")
         self.assertEqual(v["sub_category"], "Epidemiology")
 
+    def test_ngo_monitoring_titles_are_public_health(self):
+        # 2026-08-25: the comma forms are the standard NGO title format and
+        # were all being dropped. Found via publichealthcareer, but the gap
+        # suppressed Public Health yield fleet-wide.
+        for title in ("Monitoring, Evaluation and Learning Trainee",
+                      "Monitoring, Evaluation, Accountability and Learning "
+                      "Officer"):
+            v = C.classify_job(title)
+            self.assertTrue(v["in_scope"], title)
+            self.assertEqual(v["category"], "Public Health", title)
+            self.assertEqual(v["sub_category"], "Monitoring & Evaluation",
+                             title)
+
+    def test_meal_acronym_does_not_admit_catering(self):
+        # MEAL = Monitoring, Evaluation, Accountability and Learning. The
+        # acronym must still work, but "Meal Coordinator" is food service
+        # and used to be admitted as Public Health.
+        for title in ("MEAL Officer", "MEAL Manager"):
+            self.assertTrue(C.classify_job(title)["in_scope"], title)
+        for title in ("Meal Coordinator", "Meal Service Coordinator"):
+            self.assertFalse(C.classify_job(title)["in_scope"], title)
+
     def test_staff_nurse_is_vetoed(self):
         v = C.classify_job("Staff Nurse - ICU", "", "")
         self.assertFalse(v["in_scope"])

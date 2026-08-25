@@ -146,9 +146,16 @@ ROLE_FAMILIES = [
      r"disease surveillance|outbreak (?:investigation|response|preparedness)|"
      r"health polic\w*|(?<!occupational )health program\w*|"
      r"health systems? strengthening|"
-     r"monitoring (?:and|&) evaluation|"
+     # "Monitoring, Evaluation and Learning" / "Monitoring, Evaluation,
+     # Accountability and Learning" (MEAL) are the standard NGO title forms;
+     # the old `monitoring (?:and|&) evaluation` missed every comma variant.
+     r"monitoring,? (?:and |& )?evaluation|"
      r"m&e (?:officer|manager|coordinator|specialist|associate|lead|director)|"
-     r"meal (?:officer|coordinator|manager)|"
+     # MEAL = Monitoring, Evaluation, Accountability and Learning. NOT
+     # "coordinator": "Meal Coordinator" is food service, and it was being
+     # admitted as Public Health. The spelled-out form is covered by the
+     # monitoring/evaluation alternative above.
+     r"\bmeal (?:officer|manager|specialist|advisor)\b|"
      r"tuberculosis|\bntep\b|\brntcp\b|hiv/aids|\bhiv\b|malaria|leprosy|"
      r"immuni[sz]ation|vaccinat\w*|"
      r"(?<!animal )(?<!poultry )(?<!cattle )(?<!sports )nutritionist|"

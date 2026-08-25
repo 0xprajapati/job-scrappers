@@ -1,4 +1,4 @@
-"""Unit tests for the publichealthcareer parsers, classifier and time window.
+"""Unit tests for the publichealthcareer parsers, taxonomy wiring and window.
 
 Run with:  python test_filters.py   (or: pytest test_filters.py)
 """
@@ -10,7 +10,7 @@ import pandas as pd
 from scraper import (
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
-    classify_category,
+    apply_classification,
     classify_company_type,
     compute_cutoff,
     map_job_type,
@@ -48,16 +48,38 @@ def test_map_job_type():
     assert map_job_type(None) == "full_time"
 
 
-def test_classify_category():
-    # public-health program roles are non_clinical (and expected, not review-worthy)
-    assert classify_category("Deployment Trainee", "AI integration in public health") == \
-        ("non_clinical", False)
-    assert classify_category("Faculty - Epidemiology", "") == ("non_clinical", False)
-    # explicit clinical titles
-    assert classify_category("Project Research Scientist-III (Medical Officer)", "") == \
-        ("doctors", False)
-    assert classify_category("Staff Nurse", "") == ("nurses", False)
-    assert classify_category("Clinical Pharmacist", "") == ("pharmacists", False)
+def test_apply_classification_in_scope():
+    """Wiring: an in-scope row is stamped with the two-level taxonomy."""
+    row = {"title": "Faculty - Epidemiology", "job_category_raw": "",
+           "description": ""}
+    assert apply_classification(row) is True
+    assert row["category"] == "Public Health"
+    assert row["sub_category"] == "Epidemiology"
+    assert row["role_family"] == "Public Health"
+
+    # The site's job_category term is a signal, not a decision: it reaches the
+    # classifier as `skills`, weighted below the title. One term hit alone
+    # (weight 2) sits under the keep threshold and admits nothing; two do.
+    row = {"title": "Officer", "description": "",
+           "job_category_raw": "Pharmacovigilance"}
+    assert apply_classification(row) is False
+
+    row = {"title": "Officer", "description": "",
+           "job_category_raw": "Pharmacovigilance and Drug Safety"}
+    assert apply_classification(row) is True
+    assert row["category"] == "Non Clinical"
+    assert row["sub_category"] == "Pharmacovigilance"
+    assert row["matched_in"] == "skills"
+
+
+def test_apply_classification_drops_out_of_scope():
+    """Wiring: bedside/clinical posts are dropped, not relabelled."""
+    for title in ("Staff Nurse", "Clinical Pharmacist",
+                  "Project Research Scientist-III (Medical Officer)"):
+        row = {"title": title, "job_category_raw": "", "description": ""}
+        assert apply_classification(row) is False, title
+        assert row["category"] == ""
+        assert row["sub_category"] == ""
 
 
 def test_company_type():
@@ -96,7 +118,8 @@ def test_parse_detail_page():
 
 def test_club_row_currency_gate():
     base = {"country": "India", "city": "Delhi", "company": "X", "title": "T",
-            "description": "d", "job_type": "full_time", "category": "non_clinical",
+            "description": "d", "job_type": "full_time",
+            "category": "Public Health", "sub_category": "Epidemiology",
             "company_type": "hospital", "job_url": "u", "posted_date": "2026-07-01"}
     # INR populates
     r = rich_row_to_club_row({**base, "salary_min": 20000, "salary_max": 30000,

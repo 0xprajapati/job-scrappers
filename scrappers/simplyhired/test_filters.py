@@ -11,7 +11,7 @@ from datetime import date
 import pandas as pd
 
 from simplyhired_scraper import (
-    classify_category,
+    apply_classification,
     classify_company_type,
     compute_cutoff,
     epoch_ms_to_date,
@@ -117,31 +117,44 @@ class TestMapJobType(unittest.TestCase):
 
 
 class TestClassifyCategory(unittest.TestCase):
-    def test_doctors(self):
-        for title in ("bhms doctor", "MD MEDICINE (General Medicine)",
-                      "General Dentist", "Consultant Pathologist",
-                      "Duty Doctor", "Ayurvedic Physician"):
-            self.assertEqual(classify_category(title), ("doctors", False), title)
+    """Wiring into the shared taxonomy — the engine itself is covered by
+    ../_shared/test_classification.py."""
 
-    def test_nurses(self):
-        for title in ("Skin therapist/ nurse practitioner", "Staff Nurse",
-                      "GNM Nursing", "Nursing Sister"):
-            self.assertEqual(classify_category(title), ("nurses", False), title)
+    def _row(self, title, qualifications="", description=""):
+        return {"title": title, "qualifications": qualifications,
+                "description": description}
 
-    def test_pharmacists(self):
-        for title in ("Pharmacist", "B Pharma Fresher", "Pharmacy Incharge"):
-            self.assertEqual(classify_category(title), ("pharmacists", False), title)
+    def test_in_scope_roles_are_stamped(self):
+        for title, cat, sub in (
+                ("Clinical Research Coordinator", "Non Clinical", "Clinical Research"),
+                ("Medical Coder", "Non Clinical", "Medical Coding"),
+                ("Clinical Data Manager", "Non Clinical", "Clinical Data Management"),
+                ("Pharmacovigilance Associate", "Non Clinical", "Pharmacovigilance"),
+                ("Public Health Nutritionist", "Public Health", "Public Health Nutrition")):
+            row = self._row(title)
+            self.assertTrue(apply_classification(row), title)
+            self.assertEqual(row["category"], cat, title)
+            self.assertEqual(row["sub_category"], sub, title)
 
-    def test_known_non_clinical(self):
-        for title in ("Patient Care Executive - Medical Receptionist",
-                      "Home Health Care Manager", "Medical Billing Executive",
-                      "Dialysis Technician", "Healthcare Recruiter Trainer"):
-            self.assertEqual(classify_category(title), ("non_clinical", False), title)
+    def test_bedside_and_admin_titles_are_dropped(self):
+        """The 31 keyword walks are a recall device: "healthcare" pulls in
+        bedside and back-office jobs, and the classifier is what removes
+        them. They are dropped, not relabelled."""
+        for title in ("bhms doctor", "Duty Doctor", "Staff Nurse",
+                      "GNM Nursing", "Pharmacist", "Pharmacy Incharge",
+                      "Medical Billing Executive", "Dialysis Technician",
+                      "Wellness Evangelist"):
+            row = self._row(title)
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "")
 
-    def test_unknown_flagged_never_dropped(self):
-        category, needs_review = classify_category("Wellness Evangelist")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
+    def test_qualifications_reach_classifier_as_skills(self):
+        """The site's qualifications bullets are the curated `skills`
+        signal; pipe-joined in the rich CSV, split before scoring."""
+        row = self._row("Associate", "Pharmacovigilance|Drug Safety")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
+        self.assertEqual(row["matched_in"], "skills")
 
 
 class TestCutoff(unittest.TestCase):
@@ -189,7 +202,10 @@ class TestRowBuilding(unittest.TestCase):
         row = job_to_rich_row(self.LISTING_JOB, None)
         self.assertEqual(row["job_id"], self.LISTING_JOB["jobKey"])
         self.assertEqual(row["city"], "Goa")
-        self.assertEqual(row["category"], "doctors")
+        # the row builder no longer classifies; apply_classification stamps
+        # the taxonomy fields in the main loop
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["sub_category"], "")
         self.assertEqual(row["job_type"], "full_time")
         self.assertEqual(row["salary_min"], "18000")
         self.assertEqual(row["salary_period"], "per_month")
@@ -210,7 +226,8 @@ class TestRowBuilding(unittest.TestCase):
 
     def test_club_row_exports_inr_salary(self):
         rich = job_to_rich_row(self.LISTING_JOB, self.DETAIL)
-        rich.pop("needs_review")
+        rich["category"] = "Non Clinical"
+        rich["sub_category"] = "Clinical Research"
         club = rich_row_to_club_row(rich)
         self.assertEqual(club["country_name"], "India")
         self.assertEqual(club["country_code"], "IN")
@@ -219,14 +236,18 @@ class TestRowBuilding(unittest.TestCase):
         self.assertEqual(club["max_salary"], "25000")
         self.assertEqual(club["salary_period"], "per_month")
         self.assertEqual(club["salary_currency"], "INR")
-        self.assertEqual(club["category"], "doctors")
-        self.assertEqual(club["is_active"], "true")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        # the source's own qualifications bullets win over extraction
+        self.assertEqual(club["qualification"], "Bachelor's degree")
+        # retired columns are gone from the club contract
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
         self.assertEqual(club["posted_at"], "2026-06-24")
 
     def test_club_row_undisclosed_salary_stays_empty(self):
         job = dict(self.LISTING_JOB, salaryInfo=None)
         rich = job_to_rich_row(job, None)
-        rich.pop("needs_review")
         club = rich_row_to_club_row(rich)
         self.assertEqual(club["min_salary"], "")
         self.assertEqual(club["salary_currency"], "")

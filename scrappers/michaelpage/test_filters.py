@@ -15,7 +15,7 @@ from scraper import (
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
     build_row,
-    classify_category,
+    apply_classification,
     classify_company_type,
     compute_cutoff,
     job_type_from,
@@ -126,23 +126,39 @@ class TestSalaryParser(unittest.TestCase):
 
 
 class TestClassifier(unittest.TestCase):
-    def test_sales_head_healthcare_industry(self):
-        category, review = classify_category(
-            "Head of Sales (Ayurveda Healthcare)", "Healthcare", "")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(review)  # healthcare word present
+    """Wiring into the shared taxonomy — the engine itself is covered by
+    ../_shared/test_classification.py."""
 
-    def test_medical_affairs_is_doctor(self):
-        category, _ = classify_category("Director - Medical Affairs",
-                                        "Healthcare", "")
-        self.assertEqual(category, "doctors")
+    def _row(self, title, industry="", description=""):
+        return {"title": title, "site_industry": industry,
+                "description": description}
 
-    def test_no_signal_flagged(self):
-        category, review = classify_category(
-            "Chief Financial Officer", "Banking & Financial Services",
-            "Leads finance for a large corporate.")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(review)
+    def test_medical_affairs_mandate_is_msl(self):
+        row = self._row("Director - Medical Affairs", "Healthcare")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "MSL")
+
+    def test_clinical_research_and_regulatory_mandates_kept(self):
+        for title, sub in (("Clinical Research Manager", "Clinical Research"),
+                           ("Regulatory Affairs Manager", "Regulatory Affairs")):
+            row = self._row(title, "Pharmaceutical")
+            self.assertTrue(apply_classification(row), title)
+            self.assertEqual(row["sub_category"], sub)
+
+    def test_commercial_mandates_are_dropped(self):
+        """A healthcare-SECTOR mandate is not a healthcare ROLE: sales,
+        plant and finance leadership are dropped, not relabelled."""
+        for title, industry in (
+                ("Head of Sales (Ayurveda Healthcare)", "Healthcare"),
+                ("Head of Sales - Medical Devices", "Healthcare"),
+                ("Plant Head", "Healthcare"),
+                ("General Manager", "Healthcare"),
+                ("Chief Financial Officer", "Banking & Financial Services")):
+            row = self._row(title, industry)
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "")
+            self.assertEqual(row["sub_category"], "")
 
     def test_company_type(self):
         self.assertEqual(classify_company_type(

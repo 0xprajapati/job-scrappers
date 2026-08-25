@@ -33,12 +33,12 @@ Almost every scraper follows the same shape:
    sidecar for jobs kept but flagged (nothing in scope is ever silently
    dropped; out-of-scope jobs are dropped with a printed counter).
 
-**⚠️ The migration is partial.** A set of scrapers is excluded from it for now
-and still runs its **own** classifier on the legacy profession enum
-(`doctors | nurses | pharmacists | non_clinical`) with the older club schema —
-`is_active`/`expires_at` present, no `sub_category`, and nothing dropped for
-scope (unplaceable titles fall back to `non_clinical` and are flagged). Steps 2
-and 4 above describe the migrated scrapers and are what any **new** scraper
+**⚠️ The migration is nearly complete.** Three scrapers are still excluded
+from it and each still runs its **own** classifier on the legacy profession
+enum (`doctors | nurses | pharmacists | non_clinical`) with the older club
+schema — `is_active`/`expires_at` present, no `sub_category`, and nothing
+dropped for scope (unplaceable titles fall back to `non_clinical` and are
+flagged). Steps 2 and 4 above describe the migrated scrapers and are what any **new** scraper
 must do. `instructions/taxonomy-migration-status.md` holds the authoritative,
 single-copy list of which scrapers are on which scheme; it is deliberately not
 duplicated here.
@@ -132,7 +132,7 @@ either filter at the source facet or lean on the classifier.
 
 ## Group B — Pharma / niche vertical boards
 
-### pharmabharat
+### pharmabharat *(retired)*
 - **Site:** pharmabharat.com (India pharma). **Fetch:** open **WordPress REST
   API** (`/wp-json/wp/v2/posts`), full article HTML, newest-first (~11.5k
   posts). **Scope:** whole site is pharma, so every post is scraped and the
@@ -212,24 +212,24 @@ either filter at the source facet or lean on the classifier.
   "Competitive"/undisclosed rows (dropped or overridden via detail).
   **Scope:** walks both sector listings (Health & Medicine, Scientific).
 
-### dubizzle
+### dubizzle *(retired)*
 - **Site:** dubai.dubizzle.com (UAE classifieds). **Fetch:** healthcare
   category listing with the full **Algolia** result set in `__NEXT_DATA__`.
   **Scope:** source category; AED salary buckets kept rich-only (club schema
   is INR/USD).
 
-### dubailivejobs
+### dubailivejobs *(retired)*
 - **Site:** dubailivejobs.com (UAE; WordPress content-farm). **Fetch:** posts
   REST endpoint filtered to the **Healthcare category (id 86)**. **Quirk:**
   each post is a *company careers page* (many roles), so company from title and
   category best-effort/flagged.
 
-### hziegler
+### hziegler *(retired)*
 - **Site:** hziegler.com (Helen Ziegler — agency placing into Saudi/UAE/Canada).
   **Fetch:** small hand-built static site (~54 jobs) — server-rendered index +
   detail pages, no API/sitemap. **Scope:** four index pages, merged on URL.
 
-### profco
+### profco *(retired)*
 - **Site:** profco.com (Professional Connections — nursing/medical agency for
   Saudi/Australia/UK). **Fetch:** form-encoded AJAX endpoints
   (`/ajax.php?task=...`) returning small HTML fragments. **Scope:** iterates
@@ -254,10 +254,15 @@ two-level taxonomy most hospital requisitions are bedside/clinical and are
 dropped as out of scope, where the legacy scheme kept them all under a
 profession label. Grouped by the platform they run on.
 
-> **RETIRED 2026-08-25.** The entries marked *(retired)* below yielded 0-3 rows
-> each under the taxonomy and were moved out of the active fleet to
-> `retired-scrappers/`. Their code, tests and stored CSVs are unchanged and
-> they can be revived with one `git mv` — see `retired-scrappers/README.md`.
+> **RETIRED.** Entries marked *(retired)* — here and throughout this file —
+> were moved out of the active fleet to `retired-scrappers/` because they
+> yielded almost nothing under the taxonomy. Two waves: **2026-08-25**, the
+> bedside-only ATS boards, at 0-3 rows each; and **2026-08-26**, seven
+> low-yield sources re-run **live** and scored at 0-0.5%
+> (narayanahealth, kfshrc, zulekhahospitals, dubailivejobs, dubizzle,
+> hziegler, profco), plus `pharmabharat`, retired by user decision despite
+> scoring 78%. Their code, tests and stored CSVs are unchanged and any of
+> them can be revived with one `git mv` — see `retired-scrappers/README.md`.
 > The notes are kept here because they are what makes reviving one cheap.
 
 **Oracle Recruiting Cloud (public token-free CE REST API**,
@@ -280,10 +285,10 @@ JSON, `{}` body):
 - **manipalhospitals** — Manipal Hospitals, India; **Zwayam** platform,
   `public.zwayam.com/manageESQueries/searchJob` returns the whole index in one
   Elasticsearch hit list.
-- **narayanahealth** — Narayana Health, India; SAP **SuccessFactors** — JSON
+- **narayanahealth** *(retired)* — Narayana Health, India; SAP **SuccessFactors** — JSON
   backends are robots-disallowed, so server-rendered `/search/` HTML + detail
   pages are used.
-- **kfshrc** — King Faisal Specialist Hospital, Saudi Arabia; first-party JSON
+- **kfshrc** *(retired)* — King Faisal Specialist Hospital, Saudi Arabia; first-party JSON
   proxy in front of **Sitecore Search** (`GetJobSearchResults`); the listing
   carries the entire posting. (Watch the Riyadh-midnight date boundary.)
 - **hmg** *(retired)* — Dr. Sulaiman Al Habib Medical Group, Saudi Arabia; **Elevatus
@@ -308,15 +313,19 @@ JSON, `{}` body):
 
 - **apna** — apna.co moved to the Next.js App Router; cards are server-rendered
   HTML only (no `__NEXT_DATA__`, no job JSON in the RSC stream, no detail
-  JSON-LD). **Needs a parser rewrite.**
+  JSON-LD). **Needs a parser rewrite**, which is also why it is one of the
+  three scrapers still on the legacy scheme (with **nhm** and **swaasa**) —
+  there is nothing running to migrate.
 - **phcc** *(retired)* — careers.phcc.gov.qa (Oracle EBS iRecruitment) has
   `robots.txt: Disallow: /`; the scraper aborts by design and only runs with
   explicit `--ignore-robots` authorization.
 - **jadarat.sa / MNGHA** (Saudi) — not in this fleet as working scrapers;
   jadarat returns 403 everywhere and MNGHA serves its block page as HTTP 200.
-- **zulekhahospitals** legitimately returns only 0–3 rows per run. The other
-  chronically thin Gulf sources (**moh**, **gulftalent** base, **dubaihealth**)
-  were retired on 2026-08-25 — see `retired-scrappers/README.md`.
+- **zulekhahospitals** *(retired)* — legitimately returned only 0–3 rows per
+  run, and 0 of them were in scope when re-run live; retired 2026-08-26.
+  The other chronically thin Gulf sources (**moh**, **gulftalent** base,
+  **dubaihealth**) were retired on 2026-08-25 — see
+  `retired-scrappers/README.md`.
 
 ---
 

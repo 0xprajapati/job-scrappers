@@ -1,4 +1,30 @@
-# Taxonomy migration — COMPLETE (2026-08-25)
+# Taxonomy migration — COMPLETE (2026-08-25), extended 2026-08-26
+
+> **2026-08-26 update.** Four of the excluded scrapers were migrated at the
+> user's request: `publichealthcareer`, `jobberman`, `michaelpage`,
+> `simplyhired`. The active fleet is now **24 migrated + 3 legacy**
+> (apna, nhm, swaasa), with 22 scrapers retired. Fleet verification after
+> the change: everything compiles, **1,421 scraper tests + 56 `_shared`
+> tests pass, zero failures**.
+>
+> Per-scraper result of the stored-data reclassification:
+>
+> | scraper | kept | of | % | top sub-categories |
+> |---|---:|---:|---:|---|
+> | simplyhired | 111 | 2,011 | 5.5% | Medical Coding 47, Public Health Nutrition 46, IPC 5, MSL 4 |
+> | jobberman | 10 | 197 | 5.1% | Public Health 9, Clinical Research 1 |
+> | publichealthcareer | 3 | 12 | 25% | Monitoring & Evaluation 2, Public Health Research 1 |
+> | michaelpage | 2 | 47 | 4.3% | Regulatory Affairs 1, Pharmacovigilance 1 |
+>
+> **One pattern worth reusing:** `jobberman` and `michaelpage` can only run
+> the scope gate *after* the per-job detail fetch, because the description
+> and the exact date live there. Without a skip list they would re-fetch
+> every dropped card on every run, so both now record dropped rows in
+> `out-of-scope.csv` and consult it before fetching — the same idiom as their
+> existing `seen_old_ids.csv`, and reversible because the full row is kept.
+> `publichealthcareer` and `simplyhired` need no such list: their listing
+> payloads already carry everything the classifier reads.
+
 
 **All 32 in-scope scrapers were migrated, tested and reclassified.** 13 of
 them were retired on 2026-08-25 (decision 5 below), leaving 19 migrated
@@ -142,23 +168,33 @@ all four decisions in `_shared/test_role_families.py` and
 
 ## EXCLUDED from the migration — THE authoritative list
 
-By the user's instruction (2026-08-25) these **15 scrapers are out of scope for
-this migration**. They keep their **old per-scraper classification** (the
-legacy profession enum `doctors | nurses | pharmacists | non_clinical`) and
-their **old club schema**:
+By the user's instruction these scrapers are out of scope for this migration.
+They keep their **old per-scraper classification** (the legacy profession enum
+`doctors | nurses | pharmacists | non_clinical`) and their **old club schema**.
+**3 remain:**
 
 ```
-apna          dubailivejobs   dubizzle       hziegler
-jobberman     kfshrc          michaelpage    narayanahealth
-nhm           pharmabharat    profco         publichealthcareer
-simplyhired   swaasa          zulekhahospitals
+apna          nhm          swaasa
 ```
 
-(15 now: `internshala` was widened and migrated on 2026-08-25, and
-`workindia` was retired to `retired-scrappers/` the same day.)
+`apna`'s parser is broken (it writes no club export at all), `nhm` returns
+0 rows as its steady state, and `swaasa` scored 5.4% live and has not been
+asked for.
 
-Do not migrate them, do not reclassify their stored data, and do not list them
-as outstanding work. `pharmabharat` was additionally reverted to its
+**Migrated 2026-08-26** at the user's instruction: `publichealthcareer`,
+`jobberman`, `michaelpage`, `simplyhired` — see "Migrated 2026-08-26" below.
+`hziegler` and `profco` were considered in the same batch and **deliberately
+skipped**: both were retired the day before on live scores (hziegler 0/61,
+profco 0.5%), and migrating them would have meant reviving them.
+
+(History: on 2026-08-25 `internshala` was widened and migrated; `workindia`,
+`pharmabharat` and seven low-yield sources — kfshrc, narayanahealth, profco,
+dubailivejobs, dubizzle, hziegler, zulekhahospitals — were retired to
+`retired-scrappers/`. `pharmabharat` is **permanently ignored** by user
+decision despite scoring 78%; do not propose reviving it.)
+
+Do not migrate the three above, do not reclassify their stored data, and do
+not list them as outstanding work. `pharmabharat` was additionally reverted to its
 pre-migration state (`git checkout`) after an agent had begun editing it;
 verified compiling, its original 45 tests passing, no shared classifier import.
 

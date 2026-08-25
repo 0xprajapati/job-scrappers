@@ -30,10 +30,17 @@ parse.
 
 ## Filtering & mapping (per ../../instructions/master-scraper-spec.md)
 
-- **Healthcare**: the whole board is public-health domain, so all jobs are
-  kept. Most roles are program/research/faculty → club category
-  `non_clinical` (that's their real nature, not a review flag); explicit
-  Nurse/Pharmacist/Doctor titles map to their enums.
+- **Classification**: the shared two-level taxonomy
+  (`../_shared/classification.py`) — category `Non Clinical` | `Public
+  Health` plus a sub_category. The board is public-health domain, but "whole
+  board is in scope" is not the same as "every post is": generic project
+  admin titles (Project Manager, Project Associate, Consultant – Project
+  Technical Support) carry no role-family signal and are dropped, counted as
+  `excluded_out_of_scope` and moved to `out-of-scope.csv`. The site's own
+  job_category term is passed to the classifier as the `skills` signal and
+  kept in the rich CSV as `job_category_raw` — it never decides the category.
+  Reclassifying the store on 2026-08-26 kept 3 of 12 rows (Monitoring &
+  Evaluation 2, Public Health Research 1).
 - **No salary filter** — salaries captured, never filtered. INR/USD are valid
   club currencies, so club salary fields are populated when the sidebar
   states an amount; anything else stays blank (nothing invented).
@@ -47,7 +54,7 @@ parse.
 
 ```bash
 pip install -r requirements.txt
-python test_filters.py            # unit tests (7)
+python test_filters.py            # unit tests (8)
 
 python scraper.py                 # full run (REST + per-new-job detail pages)
 python scraper.py --no-details    # REST only (no company/salary), faster
@@ -61,7 +68,12 @@ Options: `--output PATH` (rich CSV, default `publichealthcareer_jobs.csv`),
 
 - `publichealthcareer_jobs.csv` — rich cumulative store (dedup key: WP post
   id), watermark source of truth.
-- `../../jobs_csv/<DD-MM-YYYY>/publichealthcareer.csv` — shared
-  `job_samples.csv` schema (country India / IN / +91).
+- `../../jobs_csv/<DD-MM-YYYY>/publichealthcareer.csv` — the club's 22-column
+  schema (`CLUB_COLUMNS` from `../_shared/classification.py`; country India /
+  IN / +91). `is_active`/`expires_at` are retired; `sub_category` and
+  `qualification` are present.
+- `needs_review.csv` — kept but flagged.
+- `out-of-scope.csv` — rows the taxonomy dropped; append-only and deduped on
+  job_id, so a scope change is reversible.
 
 Re-running the same day adds 0 rows (idempotent).

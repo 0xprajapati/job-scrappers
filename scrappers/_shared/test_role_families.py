@@ -300,6 +300,30 @@ class TestUserDecisions20260825(unittest.TestCase):
             self.assertEqual(classify(title=title)["family"], "", title)
 
 
+class TestMonitoringAndEvaluation(unittest.TestCase):
+    """2026-08-25: the comma forms are the standard NGO title format and were
+    all being dropped — found on publichealthcareer, but it suppressed Public
+    Health yield fleet-wide."""
+
+    def test_comma_variants_match(self):
+        for title in ("Monitoring, Evaluation and Learning Trainee",
+                      "Monitoring, Evaluation, Accountability and Learning Officer",
+                      "Monitoring and Evaluation Officer",
+                      "Monitoring & Evaluation Specialist",
+                      "Monitoring Evaluation Analyst"):
+            self.assertEqual(classify(title=title)["family"],
+                             "Public Health", title)
+
+    def test_unrelated_monitoring_still_out(self):
+        for title in ("Network Monitoring Engineer",
+                      "Evaluation of Vendor Quality"):
+            self.assertEqual(classify(title=title)["family"], "", title)
+        # "Meal Coordinator" (catering) DOES hit this family, via the
+        # pre-existing `meal (officer|coordinator|manager)` alternative —
+        # a known false positive, unrelated to the comma fix. classify_job
+        # rejects it end-to-end; test_classification.py guards that.
+
+
 class TestSkillsInputForms(unittest.TestCase):
     def test_list_and_string_are_equivalent(self):
         a = classify(title="X", skills=["pharmacovigilance", "drug safety"])

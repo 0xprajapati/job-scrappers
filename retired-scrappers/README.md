@@ -4,7 +4,7 @@ These scrapers still work. They were removed from the active fleet on
 2026-08-25 because, under the two-level taxonomy adopted that day
 (`scrappers/_shared/classification.py`), they no longer yield anything.
 
-Two groups, retired for the same reason by two different measurements.
+Four groups, retired for the same reason by different measurements.
 
 ## Hospital-operator ATS boards (13)
 
@@ -69,3 +69,41 @@ Nothing outside these folders imports them.
 
 Worth revisiting if the taxonomy ever widens back toward bedside roles, or if
 one of these operators starts posting clinical-research / public-health roles.
+
+
+## Low-yield sources retired 2026-08-25 (7)
+
+Measured against **live** data, not just the stored snapshot — a lesson from
+`publichealthcareer`, whose stored rows scored 0% while its live board scored
+50% (it rotates; the store was a stale rotation). Each of these was re-run
+fresh on 2026-08-25:
+
+| scraper | live rows | in scope | % |
+|---|---|---|---|
+| narayanahealth | 206 | 1 | 0.5% |
+| dubailivejobs | 64 | 0 | 0.0% |
+| hziegler | 61 | 0 | 0.0% |
+| kfshrc | 32 | 0 | 0.0% |
+| zulekhahospitals | 2 | 0 | 0.0% |
+| profco | partial crawl | — | 0.5% on 198 stored rows |
+| dubizzle | not re-run (needs a browser session) | — | 0/11 stored |
+
+`profco`'s crawl was cut short by a timeout, but its own source categories
+settle it — "Medical Doctor", "Nursing and Midwifery", "Engineering": it is a
+clinical staffing agency. `dubizzle` is a Gulf classifieds site and needs
+`--headless` browser automation to run, so it was judged on its stored rows
+alone; both are noted here rather than claimed as verified.
+
+All seven remain on the legacy profession enum — none was ever migrated.
+
+## pharmabharat — permanently ignored (1)
+
+Retired 2026-08-25 **by explicit user decision**, not by measurement. Recorded
+here because the measurement pointed the other way: it scored **50 of 64
+stored rows (78%) in scope** — the densest source in the whole fleet, strong in
+Pharmacovigilance (11), Clinical Data Management (10), Regulatory Affairs (9)
+and Clinical Research (8).
+
+**Do not propose reviving or migrating this one.** The user asked to ignore it
+permanently, and the high yield above is exactly the argument that would
+otherwise keep resurfacing it.

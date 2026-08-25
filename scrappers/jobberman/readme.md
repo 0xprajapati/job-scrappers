@@ -39,10 +39,22 @@ maintains the per-source rich CSV plus the HealthCareers.club export, per
 - Salaries are **NGN**; the club schema's `salary_currency` enum only
   allows INR/USD, so club CSV salary columns stay blank while the rich CSV
   keeps the NGN amounts (`salary_raw`, `salary_min/max`, period, currency).
-- The vertical includes sector back-office roles (accountants, drivers,
-  sales reps). They are kept as `non_clinical`; titles with no healthcare
-  signal in title+company+function are flagged `needs_review` (see
-  `needs_review.csv`), never dropped.
+- **Classification** is the shared two-level taxonomy
+  (`../_shared/classification.py`) — category `Non Clinical` | `Public
+  Health` plus a sub_category. The healthcare vertical is a **sector**
+  facet, not a role facet: it carries back-office jobs (accountants,
+  drivers, sales reps) *and* bedside clinical ones, and neither is in scope.
+  The facet only scopes the crawl; `classify_job` makes the keep/drop call.
+  The site's `occupationalCategory` and `industry` are passed to it as the
+  `skills` signal and kept in the rich CSV as `site_function` /
+  `site_industry` — they never decide the category.
+  Reclassifying the store on 2026-08-26 kept **10 of 197** rows (5.1%):
+  Public Health 9, Non Clinical 1.
+- Because the description only exists on the **detail** page, the scope gate
+  can only run after that fetch. Dropped slugs are therefore recorded in
+  `out-of-scope.csv` and skipped on later runs — without it a vertical that
+  is ~95% out of scope would re-fetch every dropped card every run. The full
+  row is kept, so widening the taxonomy can recover it.
 - `PostalAddress` fields are shuffled (`streetAddress` holds the state,
   e.g. "Lagos"); the card's location chip is used as the city.
 - Contract / "Internship & Graduate" roles map to `full_time` in the club
@@ -66,7 +78,8 @@ python test_filters.py            # offline unit tests
 | `jobberman_jobs.csv` | Rich cumulative store, dedup key = listing slug |
 | `../../jobs_csv/<DD-MM-YYYY>/jobberman.csv` | HealthCareers.club 22-column export |
 | `seen_old_ids.csv` | Out-of-window slugs (skip re-fetching their details) |
-| `needs_review.csv` | Kept-but-unclassified titles for manual review |
+| `needs_review.csv` | Kept but flagged, for manual review |
+| `out-of-scope.csv` | Rows the taxonomy dropped; also the skip list for later runs |
 
 Time window: first run keeps the last 30 days; later runs keep jobs newer
 than the newest stored `posted_date` minus 2 days of overlap (dedup absorbs
