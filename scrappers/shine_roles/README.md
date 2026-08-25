@@ -1,7 +1,10 @@
-# shine.com healthcare job scraper
+# shine.com role-scoped job scraper (`shine_roles`)
 
-Scrapes healthcare job listings from [shine.com](https://www.shine.com)
+Scrapes the in-scope role families from [shine.com](https://www.shine.com)
 (HT Media's India job board) per `instructions/master-scraper-spec.md`.
+The `shine` sibling crawls healthcare broadly; this variant asks the site
+for the specific roles instead of crawling all of healthcare and
+discarding ~85% of it.
 
 ## Data source
 
@@ -23,14 +26,23 @@ No detail-page fetches and no headless browser are needed.
   `ind=13` selects the "Medical / Healthcare" industry facet and works as
   a URL param (~21k jobs vs ~26k for the bare keyword search; the param
   is `ind`, **not** the facet field name `jIndID`, which is ignored).
-- **Queries**: the `healthcare?ind=13` industry browse first (guaranteed
-  coverage of everything filed under Medical / Healthcare, spec §2
-  "filter at the source"), then a broad `healthcare` net plus
-  role-specific slugs (`staff-nurse`, `doctor`, `pharmacist`,
-  `physiotherapist`, `lab-technician`, `hospital`, `medical`) to recover
-  healthcare jobs filed under other industries. Dedup by job id makes the
-  overlap free. Override with `--queries a,b,c` (a query may carry extra
-  params after `?`).
+- **Queries** (`SEARCH_QUERIES`, ~45 slugs): four industry-facet browses
+  first — `jobs?ind=13` Medical / Healthcare, `ind=63` Pharma / Biotech,
+  `ind=31` NGO / Social Work, `ind=61` KPO / Analytics — which catch
+  garbage-titled jobs no keyword query can find and let the classifier's
+  skills/description rescue do the reading. `ind=20` (BPO / Call Center,
+  19k rows of telecalling) is deliberately **not** browsed: the
+  medical-coding keyword queries already search across all industries.
+  Then one keyword slug per role family plus the synonyms each family is
+  advertised under (`clinical-research`, `pharmacovigilance`,
+  `regulatory-affairs`, `medical-coding`, `heor`, `trial-master-file`, …)
+  and the Public Health slug set. Every PH slug was probed live on
+  2026-08-24 and only those with real PH density on page 1 were kept —
+  shine's multi-word matching is erratic (`health-program` → 69,829
+  OR-noise results, `monitoring-and-evaluation` → 46,585 rows of IT
+  monitoring, `community-health` → 5,684 with zero in-scope on page 1).
+  Dedup by job id makes query overlap free. Override with
+  `--queries a,b,c` (a query may carry extra params after `?`).
 
 ## Quirks (verified live)
 
@@ -43,32 +55,51 @@ No detail-page fetches and no headless browser are needed.
 - Newest-first ordering is only approximate (promoted cards interleave),
   so early-stop triggers only when an **entire page** is older than the
   cutoff.
-- Every record carries its industry name in `jInd`; the healthcare gate
-  uses it for cards found via the keyword queries (cards returned by the
+- Every record carries its industry name in `jInd` (cards returned by the
   `ind=13` browse all carry `jInd = "Medical / Healthcare"`, verified).
+  Since the taxonomy migration this is a **raw source column only** — it is
+  stored in the rich CSV's `industry` field and decides nothing.
 - Salary strings: `Rs 4.0 - 4.5 Lakh/Yr`, `< Rs 50,000 - 2.5 Lakh/Yr`
   (mixed absolute + lakh in one string) or `[Salary Hidden]` (majority).
   Comma-numbers are absolute rupees; bare numbers < 1000 are lakhs.
 - `jLoc` may be `["All India"]` — exported as city "All India" rather than
   inventing a city.
 
-## Healthcare filter (spec §2)
+## Classification (taxonomy migration 2026-08-25)
 
-1. `DENY_TITLE_KEYWORDS` (telesales, counsellors, IT/engineering, …) →
-   excluded, even at a healthcare employer.
-2. `ALLOW_TITLE_KEYWORDS` (clinical + healthcare-business vocabulary) → kept.
-3. `jInd == "Medical / Healthcare"` → kept.
-4. `jInd` empty or `"Others"` with an unreadable title → kept, flagged
-   `needs_review` (never silently dropped).
-5. Any other named industry (IT, BFSI, BPO, …) → excluded.
+The only keep/drop and labeling decision is the shared
+`_shared/classification.py`:
+
+```python
+classify_job(jJT, jKwd, strip_html(jJD))
+```
+
+- `title` = `jJT`, `skills` = `jKwd`, `description` = the HTML-stripped
+  `jJD`. All three matter: title-only matching drops roughly a third of
+  genuine hits, because Indian CRO listings often carry a generic title
+  ("Senior Executive") and name the domain only in the keyword tags.
+- `in_scope == False` → dropped and counted `excluded_out_of_scope`.
+- In-scope rows get `category` (`Non Clinical` | `Public Health`) and
+  `sub_category`. **The role family moved out of `category` into its own
+  `role_family` column** in this migration; `all_families`,
+  `family_scores`, `family_confidence` and `matched_in` still carry the
+  score trace so any admission can be audited.
+- `needs_review == True` → kept **and** appended to `needs_review.csv`.
+
+The club CSV's 22 columns come from `CLUB_COLUMNS` in
+`_shared/classification.py` (`is_active`/`expires_at` retired;
+`qualification` is a grounded extraction from the description only).
 
 ## Outputs
 
-- `shine_jobs.csv` — rich cumulative store, dedup key `job_id`; watermark
-  source of truth.
-- `needs_review.csv` — titles the classifier could not confidently place.
-- `../../jobs_csv/<DD-MM-YYYY>/shine.csv` — HealthCareers.club 22-column
-  schema, rewritten every run.
+- `shine_roles_jobs.csv` — rich cumulative store, dedup key `job_id`;
+  watermark source of truth.
+- `needs_review.csv` — in-scope rows whose title looks like a different
+  profession (kept, flagged).
+- `out-of-scope.csv` — rows the classifier rejected during the one-off
+  migration of the stored data; nothing is silently discarded.
+- `../../jobs_csv/<DD-MM-YYYY>/shine_roles.csv` — HealthCareers.club
+  22-column schema, rewritten every run.
 
 ## Usage
 
@@ -82,7 +113,7 @@ No detail-page fetches and no headless browser are needed.
 # recover a window (e.g. after downtime)
 ../../.venv/bin/python shine_scraper.py --since 2026-08-01
 
-# unit tests (salary/experience parsers, classifier, cutoff)
+# unit tests (salary/experience parsers, classifier wiring, cutoff)
 ../../.venv/bin/python test_filters.py
 ```
 

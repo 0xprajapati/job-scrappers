@@ -39,6 +39,7 @@ Run `python scraper.py --help` for options.
 """
 
 import argparse
+import html
 import json
 import logging
 import re
@@ -50,6 +51,11 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+# The shared two-level taxonomy classifier — the ONLY categorization allowed
+# (see ../../instructions/taxonomy-migration-spec.md).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -83,27 +89,25 @@ BACKOFF_BASE_SECONDS = 3.0
 DESCRIPTION_MAX_CHARS = 3_000
 
 RICH_CSV = "nextenti_jobs.csv"
+NEEDS_REVIEW_CSV = str(Path(__file__).resolve().parent / "needs_review.csv")
 # jobs_csv/ lives at the repo root, two levels up from scrappers/nextenti/.
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 # Rich (source-of-truth) columns — superset, keeps everything the API gives.
+# `profession` is the raw source field (a classification *signal* only);
+# category/sub_category + the trace columns come from the shared classifier.
 RICH_COLUMNS = [
     "source", "job_id", "title", "company", "profession", "city", "country",
     "salary_raw", "salary_min", "salary_max", "salary_period",
     "experience_raw", "experience_min_years", "experience_max_years",
-    "job_type", "category", "company_type", "verified_organization",
+    "job_type", "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in", "needs_review",
+    "company_type", "verified_organization",
     "company_logo", "posted_date", "description", "job_url", "scraped_at",
 ]
 
-# Shared HealthCareers.club import schema (must match job_samples.csv exactly).
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
+# The club CSV schema is the shared 22-column CLUB_COLUMNS contract imported
+# from _shared/classification.py (is_active/expires_at are retired).
 
 # India-only board; map country name -> (ISO code, dial code).
 COUNTRY_META = {"india": ("IN", "+91")}
@@ -165,64 +169,35 @@ def map_job_type(job_type):
     return "full_time"  # default (the board is overwhelmingly Full Time)
 
 
-# profession is a source-provided field — the primary category signal.
-_DOCTOR_PROF = {
-    "doctor", "medical doctor", "general physician", "mbbs", "dentist",
-    "surgeon", "consultant", "physician", "medical officer", "radiologist",
-}
-_NURSE_PROF = {"nurse", "nursing", "gnm", "anm", "midwife"}
-_PHARM_PROF = {"pharmacist", "pharmacy"}
-
-# Title fallbacks when profession is generic ("Others", "trainee", blank).
-_DOCTOR_TITLE_RE = re.compile(
-    r"\b(doctor|physician|surgeon|mbbs|bds|dentist|medical officer|rmo|"
-    r"consultant|[a-z]+ologist|intensivist|anaesthet|anesthet|physician)\b",
-    re.IGNORECASE)
-_NURSE_TITLE_RE = re.compile(r"\b(nurse|nursing|gnm|anm|midwife)\b", re.IGNORECASE)
-_PHARM_TITLE_RE = re.compile(r"\b(pharmacist|pharmacy|pharm\.?d)\b", re.IGNORECASE)
+_TAG_RE = re.compile(r"<[^>]+>")
 
 
-# Professions that map cleanly to non_clinical — these are authoritative and
-# must NOT be overridden by the title fallback (e.g. "Speech Language
-# Pathologist" is allied health despite the "-ologist" in the title).
-_NONCLINICAL_PROF_KEYWORDS = (
-    "physiotherapy", "therapist", "technician", "paramedical", "dietit",
-    "dietician", "audiolog", "human resources", "hr", "marketing", "sales",
-    "management", "administrator", "finance", "account", "engineering",
-    "maintanence", "maintenance", "facility", "research", "analytics",
-    "call center", "pr &", "speech")
-
-# Generic profession values that carry no signal — fall back to the title.
-_GENERIC_PROF = {"", "others", "other", "trainee", "general"}
+def strip_html(text):
+    """Strip HTML tags/entities and collapse whitespace (classifier input)."""
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", html.unescape(_TAG_RE.sub(" ", str(text)))).strip()
 
 
-def classify_category(profession, title):
-    """Map to the club category enum: doctors | nurses | pharmacists | non_clinical.
+def apply_classification(row):
+    """Run the shared classifier over one rich row and fill the taxonomy columns.
 
-    Precedence: the source `profession` field is authoritative. Only when it is
-    generic/blank do we consult the title. Returns (category, needs_review);
-    needs_review flags jobs that resolved to non_clinical purely by default so
-    the mapping can be refined — nothing is dropped (the board is healthcare).
+    The source `profession` field no longer decides the category — it is passed
+    to classify_job as the `skills` signal only (and kept in the rich CSV as a
+    raw source column). Returns the classify_job verdict; the caller drops the
+    row when verdict["in_scope"] is False (counted as excluded_out_of_scope).
     """
-    prof = (profession or "").strip().lower()
-    if prof in _NURSE_PROF or "nurse" in prof:
-        return ("nurses", False)
-    if prof in _PHARM_PROF or "pharmac" in prof:
-        return ("pharmacists", False)
-    if prof in _DOCTOR_PROF or any(w in prof for w in ("doctor", "physician", "surgeon", "dentist")):
-        return ("doctors", False)
-    # Authoritative non-clinical profession — do not let the title override it.
-    if any(w in prof for w in _NONCLINICAL_PROF_KEYWORDS):
-        return ("non_clinical", False)
-
-    # profession is generic/unknown — consult the title.
-    if _NURSE_TITLE_RE.search(title or ""):
-        return ("nurses", False)
-    if _PHARM_TITLE_RE.search(title or ""):
-        return ("pharmacists", False)
-    if _DOCTOR_TITLE_RE.search(title or ""):
-        return ("doctors", False)
-    return ("non_clinical", True)  # pure default -> flag for review
+    verdict = classify_job(row.get("title", ""), row.get("profession", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = "true" if verdict["needs_review"] else "false"
+    return verdict
 
 
 _PHARMA_RE = re.compile(
@@ -339,8 +314,7 @@ def job_to_rich_row(job):
     profession = (job.get("profession") or "").strip()
     sal_min, sal_max = parse_salary(job.get("salaryRange"))
     exp_min, exp_max = parse_range(job.get("experience"))
-    category, needs_review = classify_category(profession, title)
-    description = re.sub(r"\s+", " ", job.get("jobDescription") or "").strip()
+    description = strip_html(job.get("jobDescription"))
 
     return {
         "source": SITE,
@@ -358,7 +332,8 @@ def job_to_rich_row(job):
         "experience_min_years": int(exp_min) if exp_min is not None else "",
         "experience_max_years": int(exp_max) if exp_max is not None else "",
         "job_type": map_job_type(job.get("jobType")),
-        "category": category,
+        # category/sub_category + trace columns are filled by
+        # apply_classification() once the full description is known.
         "company_type": classify_company_type(company),
         "verified_organization": bool(job.get("verifiedOrganization")),
         "company_logo": job.get("organizationLogo") or "",
@@ -366,7 +341,6 @@ def job_to_rich_row(job):
         "description": description[:DESCRIPTION_MAX_CHARS],
         "job_url": build_job_url(job),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "needs_review": needs_review,
     }
 
 
@@ -377,7 +351,7 @@ def apply_detail(row, detail):
     the full text plus cleaner integer experience bounds. Only non-empty
     detail values override (the listing stays the fallback).
     """
-    full_desc = re.sub(r"\s+", " ", detail.get("jobDescription") or "").strip()
+    full_desc = strip_html(detail.get("jobDescription"))
     if len(full_desc) > len(row.get("description") or ""):
         row["description"] = full_desc[:DESCRIPTION_MAX_CHARS]
     exp_min, exp_max = detail.get("experienceMin"), detail.get("experienceMax")
@@ -416,17 +390,19 @@ def rich_row_to_club_row(r):
         "title": r.get("title", ""),
         "description": r.get("description", ""),
         "job_type": r.get("job_type", "full_time"),
-        "category": r.get("category", "non_clinical"),
+        "category": r.get("category", ""),
+        "sub_category": r.get("sub_category", ""),
         "application_url": r.get("job_url", ""),
         "posted_at": r.get("posted_date", ""),
         "min_experience": _int_str(r.get("experience_min_years")),
         "max_experience": _int_str(r.get("experience_max_years")),
+        # nextenti has no structured qualification field — grounded extraction
+        # from the description only (never inferred).
+        "qualification": extract_qualification(r.get("description", "")),
         "min_salary": min_salary,
         "max_salary": _int_str(r.get("salary_max")),
         "salary_period": (r.get("salary_period", "") or "") if min_salary else "",
         "salary_currency": "INR" if min_salary else "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -453,6 +429,24 @@ def load_existing(path):
         return pd.read_csv(path, dtype=str)
     except FileNotFoundError:
         return None
+
+
+NEEDS_REVIEW_COLUMNS = ["job_id", "title", "profession", "category",
+                        "sub_category"]
+
+
+def append_needs_review(entries):
+    """Append flagged rows to needs_review.csv, deduped on job_id."""
+    new_df = pd.DataFrame(entries, columns=NEEDS_REVIEW_COLUMNS, dtype=str)
+    try:
+        old = pd.read_csv(NEEDS_REVIEW_CSV, dtype=str, keep_default_na=False)
+        new_df = pd.concat([old, new_df], ignore_index=True)
+    except FileNotFoundError:
+        pass
+    new_df = new_df.reindex(columns=NEEDS_REVIEW_COLUMNS).fillna("")
+    new_df = new_df.drop_duplicates(subset="job_id", keep="last")
+    new_df.to_csv(NEEDS_REVIEW_CSV, index=False)
+    return len(new_df)
 
 
 def write_club_csv(rich_df, run_date):
@@ -496,8 +490,8 @@ def main(argv=None):
     token, user_id = get_anonymous_token(session)
     log.info("Obtained anonymous token (userId %s...)", user_id[:8])
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0, "detail_failed": 0}
     new_rows, review_log = [], []
     page, total = 0, None
 
@@ -528,10 +522,6 @@ def main(argv=None):
             else:
                 counters["excluded_old"] += 1
                 continue
-            if row.pop("needs_review", False):
-                counters["needs_review"] += 1
-                review_log.append({"job_id": row["job_id"], "title": row["title"],
-                                   "profession": row["profession"]})
             if row["job_id"] in known_ids:
                 counters["duplicates"] += 1
                 continue
@@ -543,6 +533,18 @@ def main(argv=None):
                     apply_detail(row, detail)
                 else:
                     counters["detail_failed"] += 1
+            # Classify AFTER the detail overlay so the full description is
+            # available as a signal, not the listing's 250-char stub.
+            verdict = apply_classification(row)
+            if not verdict["in_scope"]:
+                counters["excluded_out_of_scope"] += 1
+                continue
+            if verdict["needs_review"]:
+                counters["needs_review"] += 1
+                review_log.append({"job_id": row["job_id"], "title": row["title"],
+                                   "profession": row["profession"],
+                                   "category": row["category"],
+                                   "sub_category": row["sub_category"]})
             known_ids.add(row["job_id"])
             new_rows.append(row)
             counters["new"] += 1
@@ -580,11 +582,13 @@ def main(argv=None):
         club_csv_path = None
 
     if review_log:
-        pd.DataFrame(review_log).to_csv("needs_review.csv", index=False)
+        n_review = append_needs_review(review_log)
+        log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, n_review)
 
     print("\n===== Run summary =====")
     print("Jobs scanned:          {:>5,}".format(counters["scanned"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))
     print("Duplicates skipped:    {:>5,}".format(counters["duplicates"]))

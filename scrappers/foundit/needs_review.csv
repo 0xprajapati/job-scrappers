@@ -1,52 +1,16 @@
-job_id,title,company,industries,functions,match_signal
-61043128,IBR Reviwer,Zelis,Other,Healthcare,healthcare:taxonomy
-61536422,NOC Senior Engineer,Availity,Other,Healthcare Technology,healthcare:taxonomy
-61536774,NOC Engineer - Network,Availity,Other,Healthcare Technology,healthcare:taxonomy
-61546618,Dean | School of Healthcare Management,fyndbridge consultants & advisors,Other,Healthcare Management,healthcare:title
-61662271,Chief of Staff,xpress health,Other,Healthcare Technology,healthcare:taxonomy
-61226783,SMA II,ICON plc,Chemicals/Petrochemicals,Healthcare,healthcare:taxonomy
-61284093,Quality Assurance Engineer,Availity,Other,Healthcare Technology,healthcare:taxonomy
-61318382,Clinical Data Management,Iqvia,Other,Healthcare,medical:title
-61321005,US HR - Healthcare Onboarding,infireex,Other,Healthcare,medical:title
-61488225,Vertical Head (President) – Strategic Business & Marketing,Cadila Pharmaceuticals Limited,,Others,medical:needs_review
-61610910,Senior Manager,Resource Management Group Plus Private Limited,,Others,medical:needs_review
-61688672,CRA II (Mumbai location),"inVentiv Health Clinical SRE, LLC",Hospitals/Healthcare/Diagnostics,Clinical Research,medical:taxonomy
-61787528,"Senior Engineer, Systems Engineering",cencora,Other,Healthcare,medical:taxonomy
-61788029,Product Owner (AI-enabled Medical Imaging Solutions ),Siemens,Other,Healthcare It,medical:title
-61790711,Contracts & Pricing Execution Mgr,Amgen,Other,Healthcare,medical:taxonomy
-61793975,"Research Assoc II, R&D - CPD",baxter international inc.,Other,Pharmaceutical,medical:taxonomy
-61807071,Quality Control Inspector,United Placement Solutions,Recruitment/Staffing/RPO,Pharmaceutical,medical:taxonomy
-61843198,AVP - Private Equity - HC - Healthcare Fund - Mumbai - Lower Parel - MM,Tata Mutual Fund,Banking/Accounting/Financial Services,Investment,medical:title
-61843545,"Mgr, Quality & Regulatory Affairs",Baxter Medical Devices,Hospitals/Healthcare/Diagnostics,Healthcare,medical:title
-61843547,"Sr. Eng, Test",Baxter Medical Devices,Hospitals/Healthcare/Diagnostics,Healthcare,medical:taxonomy
-61935780,AI Harness Engineer,tilda research,Other,Healthcare Technology,medical:taxonomy
-61938438,Management Trainee - Sales,HaystackAnalytics,Other,Healthcare Sales,medical:taxonomy
-61939715,"Technology SME - Compliance, Legal & People Systems",Jobgether,Other,Healthcare It,medical:taxonomy
-61943400,Business Process Architect,Accenture,Other,Pharmaceutical Regulatory Compliance,medical:taxonomy
-62047222,AI Solution Engineer,virtual labs,Other,Pharmaceutical,medical:taxonomy
-62048072,IT Applications Engineer - Technology IT,Signant Health,Other,Healthcare Technology,medical:taxonomy
-62048270,Payment Posting,shoreline healthcare technologies,Other,Medical Billing,healthcare:taxonomy
-62048720,Newpage - Creative Builder AI Innovation,NewPage Solutions,Other,Healthcare Technology,medical:taxonomy
-62049046,Apprentice Production,Polypeptide Group,Other,Pharmaceutical Manufacturing,medical:taxonomy
-62050235,Healthcare Co-founder | FemLyra,apna family,Other,Healthcare,medical:title
-62050290,Business Finance,ima india,Other,Healthcare,medical:taxonomy
-62050333,Senior Staff Solution Architect - AI & Cloud,Ge Healthcare,Other,Healthcare Technology,medical:taxonomy
-62050483,Platform Developer,Siemens,Other,Healthcare,medical:taxonomy
-62052478,SAP ME/MII developer,Siemens,Other,Healthcare,medical:taxonomy
-62052715,Quality Engineer,RxLogix Corporation,Other,Bio Pharmaceutical,medical:taxonomy
-62054087,AI Builders,Brillio,Other,Healthcare,medical:taxonomy
-62054117,Middle Python Engineer with GCP experience,N-iX,Other,Healthcare,medical:taxonomy
-62054393,QC Lab Chemist,amster microcell private limited,Other,Pharmaceutical,medical:title
-62054464,Quality Control Inspector,pharmaceutical company,Other,Pharmaceutical,medical:taxonomy
-62055378,CRA II,Icon Strategic Solutions,Other,Healthcare,medical:taxonomy
-62101258,Chat Process,Artech Infosystems Private Limited,,Others,medical:needs_review
-62133063,Urologist,Sanat Kumar Mishra (Proprietor of HireXpert),,Others,medical:needs_review
-61216527,labour room and nicu staff,Ajay Kumar Singh Proprietor of (ARC Manpower),"Nutraceutical, Fertility, Psychology, Wellness, Hospital, Veterinary, Biopharma",Others,nurse:taxonomy
-61217311,Labour room staff,Ajay Kumar Singh Proprietor of (ARC Manpower),,Others,nurse:needs_review
-61232057,Nurses,Mother's Speciality Hospital,,Others,nurse:needs_review
-61298086,Optometrist,abate as,Other,Healthcare,doctor:title
-61465939,SH Anesthesiology,Aditya Birla Group,,Healthcare,doctor:title
-61556728,Optometrist,k k eye institute,Other,Healthcare,doctor:title
-61688920,Optometrist,medplus health services limited,Other,Healthcare,doctor:title
-61795886,Optometrist,lenskart.com,Other,Optometry,doctor:title
-62055214,Veterinary Doctors,animal rights fund,Other,Veterinary,doctor:taxonomy
+job_id,title,company,category,sub_category,match_signal,role_family
+62296939,Custom Software Engineer,Accenture,Pharmacovigilance,Pharmacovigilance,"pharmacovigilance,drug-safety:skills|description",
+62691187,General Counsel,Wingify,Regulatory Affairs,Regulatory Affairs,"drug-safety,regulatory-affairs:skills|description",
+63144313,"Data Engineer, Translational Data Management, Automation & AI",Amgen,Clinical Data Management,Clinical Data Management,clinical-data-management:title|skills|description,
+63245080,US Pharma / Scientific Recruiter,Us Tech Solutions,Clinical Research,Clinical Research,medical-writing:description,
+63635238,Custom Software Engineer,Accenture,Clinical Data Management,Clinical Data Management,clinical-data-management:skills|description,
+63641019,Sr. US Pharma Recruiter for Pune office (Remote Work),"pioneer data systems, inc.",Regulatory Affairs,Regulatory Affairs,"drug-safety,regulatory-affairs:skills|description",
+63645853,AI Data Architect / Senior Data Engineer - DaAI,Infosys Limited,Clinical Data Management,Clinical Data Management,clinical-data-management:skills|description,
+63894319,Renewal Sales Specialist,Rubrik,Clinical Data Management,Clinical Data Management,clinical-data-management:skills|description,
+63898238,Custom Software Engineer,Accenture,Clinical Data Management,Clinical Data Management,clinical-data-management:skills|description,
+64020812,Data Engineer,Accenture,Non Clinical,Clinical Data Management,regulatory-affairs:skills|description,Clinical Data Management
+64021198,Senior Software Engineer,Atos India,Non Clinical,Regulatory Affairs,"medical,drug-safety:skills|description",Regulatory Affairs
+64037107,Custom Software Engineer,Accenture,Non Clinical,Clinical Data Management,clinical-data-management:skills|description,Clinical Data Management
+64055394,Data Engineer (Informatica IDMC),vericence,Non Clinical,Clinical Data Management,clinical-data-management:skills|description,Clinical Data Management
+64056064,Senior Data Engineer (Informatica IDMC),univedge consulting llc,Non Clinical,Clinical Data Management,clinical-data-management:skills|description,Clinical Data Management
+64058324,Key Account Manager - Oncology- Ahmedabad,Takeda,Non Clinical,HEOR,"medical,market-access:skills|description",HEOR

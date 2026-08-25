@@ -1,3 +1,1 @@
-job_id,title,category_original,requisition_type,category_assigned
-CM0062,Physician - Pediatric Cardiology,Join Our Talent Pool - Future opportunities,Campaigns,doctors
-CM0063,Physician – Cardiology-Echocardiography,Join Our Talent Pool - Future opportunities,Campaigns,doctors
+job_id,title,category_original,requisition_type,talent_pool,category_assigned,sub_category

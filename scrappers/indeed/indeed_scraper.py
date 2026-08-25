@@ -48,19 +48,21 @@ breadth: one page each of QUERIES (healthcare, nurse, doctor, physician,
 pharmacist, ...) on https://in.indeed.com/jobs?q=<q>&l=Remote, then dedup by
 jobkey. l=Remote on in.indeed.com == remote-within-India listings.
 
-Healthcare filter (master spec §2)
-----------------------------------
-Search queries are healthcare-shaped but Indeed match is fuzzy —
-"counsellor" returns admission/visa counsellors, "medical transcriptionist"
-returns generic AI-data transcription gigs. Gate on the title:
+Classification (shared two-level taxonomy)
+------------------------------------------
+Every candidate card goes through the shared classifier
+`classify_job(title, skills, description)` from `_shared/classification.py`
+(the ONLY categorization allowed — no per-scraper keyword lists). The card's
+taxonomy-attribute labels (job types + benefits) travel as the `skills`
+signal and the SERP snippet as `description`:
 
-1. DENY_TITLE_KEYWORDS (clearly non-healthcare: admission/academic/visa
-   counsellor, data annotation, voice-over, generic transcription, ...)
-   -> excluded_non_healthcare.
-2. ALLOW_TITLE_KEYWORDS (clinical + healthcare-business vocabulary)
-   -> kept.
-3. Neither -> KEPT, flagged needs_review, logged to needs_review.csv —
-   never silently dropped.
+* `in_scope` False -> dropped, counted excluded_out_of_scope.
+* in scope -> `category` ("Non Clinical" | "Public Health") and
+  `sub_category` (one of the 20 splits) plus the role_family/score trace
+  columns in the rich CSV.
+* `needs_review` True -> kept AND appended to needs_review.csv (in-scope
+  but the title looks like a different profession) — never silently
+  dropped.
 
 Remote-only gate: a card is remote when remoteWorkModel is REMOTE_* or
 formattedLocation == "Remote" (city + REMOTE_ALWAYS means "remote, employer
@@ -85,7 +87,7 @@ Outputs (repo README + instructions/master-scraper-spec.md)
                            watermark source for incremental runs.
 * ../../jobs_csv/<DD-MM-YYYY>/indeed.csv
                          — HealthCareers.club 22-column schema.
-* needs_review.csv       — titles the classifier could not place.
+* needs_review.csv       — in-scope rows whose title the classifier flags.
 
 Time window: first run keeps jobs posted in the last INITIAL_WINDOW_DAYS
 (30 — Indeed page-1 listings are all currently-active postings, so the
@@ -98,12 +100,17 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -120,6 +127,27 @@ QUERIES = [
     "pharmacovigilance", "medical writer", "telemedicine", "dietitian",
     "psychologist", "physiotherapist", "counsellor",
     "medical transcriptionist",
+    # 2026-08-25 role-family widening (fetch wide, filter at the gate).
+    # No pagination means each extra query costs exactly one allowed SERP
+    # load in the capture; these cover the eleven-family scope the original
+    # broad-healthcare list barely touched.
+    "regulatory affairs", "clinical data management", "drug safety",
+    "medical affairs", "medical science liaison", "clinical trials",
+    "health economics", "market access", "trial master file",
+    "public health", "epidemiology",
+    # 2026-08-25 Public Health widening: cover all ten PH sub-categories,
+    # mirroring the shine_roles list (terms proven to carry PH density on
+    # Indian boards). Each query costs one allowed SERP load in the capture.
+    "epidemiologist", "disease surveillance",
+    "public health program",
+    "monitoring and evaluation",
+    "community health officer", "asha",
+    "health educator", "health promotion",
+    "tuberculosis", "hiv", "malaria", "immunization", "vaccination",
+    "public health nutrition", "nutritionist",
+    "infection control",
+    "health informatics", "hmis",
+    "public health research",
 ]
 
 INITIAL_WINDOW_DAYS = 30       # page-1 cards are live posts; see docstring
@@ -134,17 +162,10 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_rating", "location",
     "salary_raw", "salary_min", "salary_max", "salary_currency",
     "salary_period", "employment_types", "work_mode", "benefits", "category",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in", "needs_review",
     "company_type", "search_query", "posted_date", "relative_time",
     "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 # extractedSalary.type -> normalized period. Club enums only allow
@@ -156,109 +177,31 @@ SALARY_PERIODS = {"MONTHLY": "per_month", "YEARLY": "per_annum",
 log = logging.getLogger("indeed_scraper")
 
 # ----------------------------------------------------------------------------
-# Healthcare classification (master spec §2)
+# Classification — all through the shared taxonomy engine
 # ----------------------------------------------------------------------------
 
-# Applied to titles only (snippets mention "healthcare" too loosely).
-ALLOW_TITLE_KEYWORDS = re.compile(
-    r"(?:^|[^a-z])(?:"
-    r"nurse|nursing|midwif\w*|"
-    r"physician|doctor|surgeon|dentist|dental|mbbs|\bmd\b|intensivist|"
-    r"practitioner|"
-    r"pediatric\w*|paediatric\w*|geriatric\w*|obstetric\w*|gyn[ae]?colog\w*|"
-    r"[a-z]{4,}ologist|diabetolog\w*|ayurved\w*|homeopath\w*|unani|"
-    r"psychiatr\w*|psycholog\w*|psychotherap\w*|psychometri\w*|therapist|"
-    r"mental[- ]?health|behaviou?ral[- ]?health|listener|"
-    r"clinical|clinician|clinic|medical|medicine|healthcare|health[- ]?care|"
-    r"health\b|patient|telehealth|telemedicine|tele[- ]?consult\w*|"
-    r"pharmac\w*|pharma\b|drug[- ]?safety|regulatory[- ]?affairs|"
-    r"radiolog\w*|sonograph\w*|phlebotom\w*|patholog\w*|"
-    r"paramedic\w*|epidemiolog\w*|oncolog\w*|cardiolog\w*|neurolog\w*|"
-    r"dermatolog\w*|endocrinolog\w*|an[ae]sthes\w*|"
-    r"dietit\w*|dietic\w*|nutrition\w*|optometr\w*|ophthalmolog\w*|"
-    r"physiotherap\w*|occupational[- ]?therap\w*|speech[- ]?(?:therap|language)\w*|"
-    r"audiolog\w*|respiratory[- ]?therap\w*|"
-    r"caregiver|care[- ]?giver|home[- ]?health|hospice|hospital|"
-    r"wellness|\brcm\b|revenue[- ]?cycle|prior[- ]?auth\w*|"
-    r"\bicd(?:-10)?\b|\bcpt\b|coder|coding|claims?\b|"
-    r"lab\b|laboratory|\bdmlt\b|"
-    r"life[- ]?science|biotech|pharmacovigilance|\bhme\b|\bdme\b|"
-    r"\bemr\b|\behr\b|\boet\b"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
+def card_skills(card):
+    """Curated taxonomy-attribute labels of a card -> `skills` signal.
 
-# Clearly non-healthcare titles that healthcare-shaped queries drag in.
-DENY_TITLE_KEYWORDS = re.compile(
-    r"(?:^|[^a-z])(?:"
-    r"admissions?[- ]?counsell?or|academic[- ]?counsel\w*|"
-    r"education[- ]?counsel\w*|visa[- ]?counsell?or|career[- ]?counsel\w*|"
-    r"telecaller|sales[- ]?executive|"
-    r"data[- ]?annotat\w*|voice[- ]?(?:over|collection)|"
-    r"(?:hindi|telugu|tamil|marathi|manipuri|legal|multilingual|audio|data)"
-    r"[- ][a-z ]*?(?:transcrib\w*|transcription\w*|annotation)|"
-    r"transcriber\b|"
-    r"software[- ]?engineer|frontend|backend|full[- ]?stack|devops|"
-    r"(?:igcse|a[- ]?level)[- ][a-z ]*tutor"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
+    Indeed's SERP model exposes taxonomy attributes (job types, benefits)
+    per card; they are the closest thing to a curated skills/attributes
+    field this source has, so they travel in classify_job's `skills` slot.
+    """
+    parts = []
+    for key in ("jt", "ben"):
+        raw = str(card.get(key) or "")
+        parts.extend(p.strip() for p in raw.split("|") if p.strip())
+    return " | ".join(parts)
 
 
-def is_healthcare(title):
-    """Return (keep, signal). DENY wins over ALLOW; neither -> review."""
-    title = title or ""
-    if DENY_TITLE_KEYWORDS.search(title):
-        return (False, "deny")
-    if ALLOW_TITLE_KEYWORDS.search(title):
-        return (True, "title")
-    return (True, "needs_review")
+def classify_card(card):
+    """Run the shared classifier over one compact SERP card.
 
-
-# Title -> club category enum.
-_NURSE_RE = re.compile(
-    r"(?:^|[^a-z])(?:nurse|nursing|midwif\w*|\brn\b|\bgnm\b|\banm\b|"
-    r"nursing[- ]?attendant)(?:[^a-z]|$)", re.IGNORECASE)
-_PHARM_RE = re.compile(
-    r"(?:^|[^a-z])(?:pharmacist|pharmacy|pharm\.?\s?d|dispenser|"
-    r"pharmacolog\w*)(?:[^a-z]|$)", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"(?:^|[^a-z])(?:physician|doctor|surgeon|dentist|\bmd\b|\bdo\b|mbbs|"
-    r"psychiatrist|medical[- ]?director|medical[- ]?officer|intensivist|"
-    r"[a-z]{4,}ologist|diabetolog\w*|general[- ]?practitioner|"
-    r"p[ae]diatrician|"
-    r"(?:family|internal|emergency)[- ]?medicine|\bgp\b)(?:[^a-z]|$)",
-    re.IGNORECASE)
-# Psychology-family clinicians are non_clinical in the club schema (no
-# allied-health bucket) but "...ologist" would drag them into doctors —
-# includes the real-card misspelling "Pschyologist". Checked before doctors.
-_PSYCH_RE = re.compile(r"ps[cy]{1,2}h\w*olog|psychotherap", re.IGNORECASE)
-_NONCLINICAL_RE = re.compile(
-    r"(?:^|[^a-z])(?:therapist|therapy|counselor|counsellor|psycholog\w*|"
-    r"psychometri\w*|listener|coach|caregiver|attendant|technician|"
-    r"technologist|dietit\w*|dietic\w*|nutrition\w*|physiotherap\w*|"
-    r"coder|coding|biller|billing|claims|transcription\w*|scribe|"
-    r"coordinator|specialist|manager|director|analyst|administrator|"
-    r"assistant|associate|executive|representative|consultant|advisor|"
-    r"recruiter|scientist|researcher|writer|editor|educator|trainer|tutor|"
-    r"faculty|grader|reviewer|auditor|support|operations|lead|supervisor|"
-    r"liaison|student|intern\w*|fellow\w*"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
-
-
-def classify_category(title):
-    """Return (club category, ambiguous) for a kept title."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _PSYCH_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    return ("non_clinical", True)
+    Returns the classify_job verdict dict; in_scope False means the card
+    must be DROPPED (counted excluded_out_of_scope).
+    """
+    return classify_job(str(card.get("t") or ""), card_skills(card),
+                        str(card.get("sn") or ""))
 
 
 _PHARMA_COMPANY_RE = re.compile(
@@ -439,9 +382,9 @@ def _clean(value):
     return "" if text.lower() in ("nan", "none") else text
 
 
-def card_to_rich_row(card, signal):
+def card_to_rich_row(card, verdict):
+    """Compact card + in-scope classify_job verdict -> rich CSV row."""
     title = _clean(card.get("t"))
-    category, ambiguous = classify_category(title)
     raw, lo, hi, cur, period = parse_salary(card.get("mn"), card.get("mx"),
                                             card.get("st"))
     jobkey = _clean(card.get("k"))
@@ -460,7 +403,14 @@ def card_to_rich_row(card, signal):
         "employment_types": _clean(card.get("jt")),
         "work_mode": "remote",
         "benefits": _clean(card.get("ben")),
-        "category": category,
+        "category": verdict["category"],
+        "sub_category": verdict["sub_category"],
+        "role_family": verdict["role_family"],
+        "all_families": verdict["all_families"],
+        "family_scores": verdict["family_scores"],
+        "family_confidence": verdict["family_confidence"],
+        "matched_in": verdict["matched_in"],
+        "needs_review": "true" if verdict["needs_review"] else "false",
         "company_type": classify_company_type(card.get("c")),
         "search_query": _clean(card.get("q")),
         "posted_date": epoch_ms_to_date(card.get("pd")),
@@ -468,7 +418,6 @@ def card_to_rich_row(card, signal):
         "description": _clean(card.get("sn"))[:DESCRIPTION_MAX_CHARS],
         "job_url": VIEWJOB_URL.format(jobkey),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "needs_review": ambiguous or signal == "needs_review",
     }
 
 
@@ -499,17 +448,19 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": "remote",
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",
         "max_experience": "",
+        # No structured qualification field in the SERP card model, so this
+        # is always grounded extraction from the description — never inferred.
+        "qualification": extract_qualification(_clean(r.get("description"))),
         "min_salary": lo if exportable else "",
         "max_salary": (hi or lo) if exportable else "",
         "salary_period": period if exportable else "",
         "salary_currency": "INR" if exportable else "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -591,7 +542,7 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_non_healthcare": 0,
+    counters = {"scanned": 0, "excluded_out_of_scope": 0,
                 "excluded_not_remote": 0, "excluded_old": 0,
                 "needs_review": 0, "new": 0, "duplicates": 0}
     new_rows, review_log = [], []
@@ -606,9 +557,10 @@ def main(argv=None):
                 log.debug("not remote: %s (%s)", card.get("t"), card.get("loc"))
                 continue
 
-            keep, signal = is_healthcare(card.get("t"))
-            if not keep:
-                counters["excluded_non_healthcare"] += 1
+            verdict = classify_card(card)
+            if not verdict["in_scope"]:
+                counters["excluded_out_of_scope"] += 1
+                log.debug("out of scope: %s", card.get("t"))
                 continue
 
             posted = epoch_ms_to_date(card.get("pd"))
@@ -620,12 +572,12 @@ def main(argv=None):
                 counters["duplicates"] += 1
                 continue
 
-            row = card_to_rich_row(card, signal)
+            row = card_to_rich_row(card, verdict)
         except Exception as exc:      # one bad card must never crash the run
             log.warning("Skipping malformed card %r: %s", card.get("k"), exc)
             continue
 
-        if row.pop("needs_review", False):
+        if row["needs_review"] == "true":
             counters["needs_review"] += 1
             review_log.append({"job_id": row["job_id"], "title": row["title"],
                                "company": row["company"],
@@ -674,7 +626,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Cards scanned:             {:>6,}".format(counters["scanned"]))
-    print("Excluded (non-healthcare): {:>6,}".format(counters["excluded_non_healthcare"]))
+    print("Excluded (out of scope):   {:>6,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (not remote):     {:>6,}".format(counters["excluded_not_remote"]))
     print("Excluded (older than {}): {:>4,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:      {:>6,}".format(counters["needs_review"]))

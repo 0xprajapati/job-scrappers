@@ -90,9 +90,31 @@ SCRAPER_IDENTITY = "HealthCareersJobScraper/1.0"
 CONTACT = "https://github.com/0xprajapati/job-scrappers"
 IMPERSONATE = "chrome"  # Indeed-family bot protection wants browser TLS
 
-# Search filters (agreed): healthcare keyword, all-India, newest-first,
-# posted within the last 15 days (server-side date filter).
-SEARCH_PARAMS = {"q": "healthcare", "l": "india", "s": "d", "t": "15"}
+# Search filters (agreed): all-India, newest-first, posted within the last
+# 15 days (server-side date filter). Each keyword below runs as its own
+# search; the per-query early stop keeps repeat runs cheap.
+SEARCH_PARAMS_BASE = {"l": "india", "s": "d", "t": "15"}
+
+SEARCH_QUERIES = [
+    "healthcare",
+    # Non Clinical role families
+    "clinical research", "clinical data management", "pharmacovigilance",
+    "drug safety", "regulatory affairs", "medical writer", "medical coding",
+    "medical affairs", "market access",
+    # Public Health — 2026-08-25 widening to cover all ten PH sub-categories,
+    # mirroring the shine_roles list (terms proven to carry PH density on
+    # Indian boards).
+    "public health", "epidemiology", "epidemiologist", "disease surveillance",
+    "public health program",
+    "monitoring and evaluation",
+    "community health officer", "asha",
+    "health educator", "health promotion",
+    "tuberculosis", "hiv", "malaria", "immunization", "vaccination",
+    "public health nutrition", "nutritionist",
+    "infection control",
+    "health informatics", "hmis",
+    "public health research",
+]
 
 INITIAL_WINDOW_DAYS = 15       # matches the t=15 source filter
 WATERMARK_GRACE_DAYS = 2
@@ -342,10 +364,10 @@ def _get_html(session, url, params=None):
     return None
 
 
-def search_page(session, cursor=None):
-    """Fetch one SERP page. Returns (jobs, page_cursors, result_count) or
-    (None, None, None) on failure."""
-    params = dict(SEARCH_PARAMS)
+def search_page(session, query, cursor=None):
+    """Fetch one SERP page for one keyword query. Returns
+    (jobs, page_cursors, result_count) or (None, None, None) on failure."""
+    params = dict(SEARCH_PARAMS_BASE, q=query)
     if cursor:
         params["cursor"] = cursor
     html = _get_html(session, SEARCH_URL, params=params)
@@ -475,7 +497,8 @@ def main(argv=None):
     parser.add_argument("--output", default=RICH_CSV,
                         help="rich cumulative CSV path (default: %(default)s)")
     parser.add_argument("--max-pages", type=int, default=None, metavar="N",
-                        help="stop after N listing pages (for test runs)")
+                        help="stop after N listing pages per query"
+                             " (for test runs)")
     parser.add_argument("--limit", type=int, default=None, metavar="N",
                         help="stop after N new jobs (for test runs)")
     parser.add_argument("--enrich", action="store_true",
@@ -502,20 +525,28 @@ def main(argv=None):
     counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
                 "new": 0, "duplicates": 0}
     new_rows, review_log = [], []
-    page_no, cursor, cursors = 1, None, {}
-    total, empty_pages, stop = None, 0, False
+    stop = False
 
-    while not stop:
+    for query in SEARCH_QUERIES:
+      if stop:
+          break
+      log.info("Query %r (%d of %d)", query,
+               SEARCH_QUERIES.index(query) + 1, len(SEARCH_QUERIES))
+      page_no, cursor, cursors = 1, None, {}
+      total, empty_pages = None, 0
+
+      while not stop:
         if args.max_pages is not None and page_no > args.max_pages:
             break
-        jobs, page_cursors, result_count = search_page(session, cursor)
+        jobs, page_cursors, result_count = search_page(session, query, cursor)
         if jobs is None:
-            log.error("Page %d failed after retries — stopping", page_no)
+            log.error("Page %d of %r failed after retries — next query",
+                      page_no, query)
             break
         if total is None and result_count is not None:
             total = result_count
-            log.info("Site reports %d matching jobs (~%d pages)",
-                     total, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+            log.info("Site reports %d jobs for %r (~%d pages)",
+                     total, query, (total + PAGE_SIZE - 1) // PAGE_SIZE)
         cursors.update(page_cursors or {})
         if not jobs:
             empty_pages += 1

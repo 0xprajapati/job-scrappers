@@ -104,6 +104,123 @@ class TestMultiLabel(unittest.TestCase):
         self.assertEqual(v["family"], "TMF")
 
 
+class TestPublicHealthSubCategories(unittest.TestCase):
+    """Every PH sub-category (taxonomy 2026-08-24) must be reachable."""
+
+    TITLES = {
+        "Epidemiology": "Field Epidemiologist - Disease Surveillance",
+        "Program Management": "Public Health Programme Manager",
+        "Monitoring & Evaluation": "M&E Officer - Health Projects",
+        "Community Health": "Community Health Worker Supervisor",
+        "Health Promotion & Education": "Health Education Specialist",
+        "Disease Programs": "District Tuberculosis Coordinator (NTEP)",
+        "Nutrition": "Public Health Nutritionist",
+        "IPC": "Infection Prevention and Control Nurse",
+        "Health Informatics & Data": "HMIS / DHIS2 Data Analyst",
+        "PH Research": "Health Systems Research Associate",
+        "MCH fold-in": "Maternal and Child Health Consultant",
+        "WASH fold-in": "WASH Officer",
+    }
+
+    def test_each_sub_category_title_lands_in_public_health(self):
+        for sub, title in self.TITLES.items():
+            self.assertEqual(classify(title=title)["family"],
+                             "Public Health", "{}: {}".format(sub, title))
+
+    def test_monitoring_and_evaluation_spelled_out(self):
+        v = classify(title="Manager - Monitoring and Evaluation")
+        self.assertEqual(v["family"], "Public Health")
+
+    def test_health_economics_is_heor_not_public_health(self):
+        # taxonomy fold-in rule: never double-tag health economics as PH
+        v = classify(title="Health Economics and Market Access Manager")
+        self.assertEqual(v["family"], "HEOR")
+
+    def test_vaccine_cra_stays_clinical_research(self):
+        # "vaccinat*" not "vaccin*": vaccine-product trial roles are CR
+        v = classify(title="Clinical Research Associate - Vaccine Trials")
+        self.assertEqual(v["family"], "Clinical Research")
+
+    def test_surgery_degree_mch_is_not_public_health(self):
+        self.assertEqual(
+            classify(title="Consultant Urologist (M.Ch)")["family"], "")
+
+    def test_media_and_entertainment_is_not_public_health(self):
+        self.assertEqual(
+            classify(title="Account Director, Media & Entertainment (M&E)"
+                     )["family"], "")
+
+    def test_washing_machine_sales_is_not_public_health(self):
+        self.assertEqual(
+            classify(title="Territory Manager - Washing Machines")["family"],
+            "")
+
+    def test_poultry_nutrition_is_not_public_health(self):
+        # real shine card from the 2026-08-24 backfill
+        self.assertEqual(
+            classify(title="Poultry Nutrition Specialist")["family"], "")
+        self.assertEqual(
+            classify(title="Animal Nutritionist")["family"], "")
+
+    def test_ph_needs_more_than_one_skill_tag(self):
+        # FAMILY_MIN_SCORE: a phlebotomist tagged "infection control"
+        # (skill 2 + description 1 = 3) must NOT become Public Health
+        v = classify(title="Sitting Phlebotomist",
+                     skills="phlebotomy, blood collection, infection control",
+                     description="Maintains infection control protocols.")
+        self.assertNotEqual(v["family"], "Public Health")
+
+    def test_ph_title_hit_still_qualifies(self):
+        self.assertEqual(classify(title="Epidemiologist")["family"],
+                         "Public Health")
+
+    def test_ph_skill_cluster_plus_description_qualifies(self):
+        # the real "Health Officer (Coimbatore)" card: 2 skill terms (4)
+        # + description mention (1) clears the PH bar of 5
+        v = classify(title="Health Officer",
+                     skills="public health, health promotion, data collection",
+                     description="District-level public health programmes.")
+        self.assertEqual(v["family"], "Public Health")
+
+    def test_ph_two_skill_terms_alone_do_not_qualify(self):
+        # score 4 < FAMILY_MIN_SCORE["Public Health"]
+        v = classify(title="Analyst",
+                     skills="epidemiology, health data")
+        self.assertEqual(v["family"], "")
+
+    def test_ehs_is_not_public_health(self):
+        # real shine cards: EHS is workplace safety, not public health
+        for title in ("Remote Environmental Health and Safety Coordinator",
+                      "Senior Environmental Health & Safety Specialist"):
+            self.assertNotEqual(classify(title=title)["family"],
+                                "Public Health", title)
+        # bare "environmental health" (no safety) still counts
+        self.assertEqual(
+            classify(title="Environmental Health Officer")["family"],
+            "Public Health")
+
+    def test_occupational_health_programs_is_not_ph(self):
+        v = classify(title="Occupational Health Physician",
+                     skills="Occupational Health Programs, Compliance")
+        self.assertNotEqual(v["family"], "Public Health")
+
+    def test_ph_description_only_never_qualifies(self):
+        # an HR role scored 5 on scattered description boilerplate
+        v = classify(title="Associate Director, HR Operations",
+                     description="Supports public health programmes, "
+                                 "community health drives, immunization "
+                                 "camps, nutrition officer coordination and "
+                                 "health promotion events.")
+        self.assertEqual(v["family"], "")
+
+    def test_other_families_keep_the_lower_bar(self):
+        # PV: one skill tag + one description mention (score 3) still keeps
+        v = classify(title="Senior Executive",
+                     skills="pharmacovigilance",
+                     description="Handles pharmacovigilance case intake.")
+        self.assertEqual(v["family"], "Pharmacovigilance")
+
+
 class TestBoundaries(unittest.TestCase):
     """Real false positives that shaped the patterns."""
 

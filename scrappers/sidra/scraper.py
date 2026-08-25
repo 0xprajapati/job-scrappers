@@ -27,13 +27,17 @@ default, `--no-details` skips it):
         ?expand=all&onlyData=true&finder=ById;Id="<id>",siteNumber=Sidra-Career-Site
 
 Salary is never exposed by this portal -> `salary_raw = "Not Disclosed"`.
-Sidra Medicine is a single specialist hospital, so every requisition it posts is
-healthcare-sector employment; the healthcare filter reduces to mapping Oracle's
-category facet (Physician / Nursing / Allied Health / Enabling Function: …)
-onto the club category enum, with the title classifier as backup. Anything that
-cannot be placed — and every "Join Our Talent Pool" campaign requisition, which
-is an expression of interest rather than a live vacancy — is kept and flagged
-`needs_review` (master spec §2 — never silently dropped).
+
+Classification is the shared two-level taxonomy (scrappers/_shared/
+classification.py): category "Non Clinical" | "Public Health" plus a
+sub_category. Sidra Medicine is a specialist hospital, so most requisitions
+(physicians, nursing, allied health) are out of scope and dropped (counted as
+excluded_out_of_scope). Oracle's category facet (Physician / Nursing / Allied
+Health / Enabling Function: …), the requisition type and the JobFunction stay
+in the rich CSV as raw source columns and feed the classifier as its curated
+`skills` signal — they never decide the category themselves. Every "Join Our
+Talent Pool" campaign requisition (an expression of interest rather than a live
+vacancy) that survives the classifier is kept AND flagged `needs_review`.
 
 Time window: an ATS only lists OPEN requisitions, so the first run keeps ALL of
 them (`INITIAL_WINDOW_DAYS = None`); later runs use the master-spec watermark
@@ -55,6 +59,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -64,6 +69,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -118,20 +127,13 @@ RICH_COLUMNS = [
     "work_location", "city", "country",
     "salary_raw", "salary_min_monthly", "salary_max_monthly",
     "salary_period_original", "job_type", "job_schedule_original", "job_shift",
-    "category", "category_original", "requisition_type", "job_function",
+    "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in",
+    "category_original", "requisition_type", "job_function",
     "education", "experience_min_years", "experience_max_years",
     "nationals_only", "talent_pool",
     "needs_review", "posted_date", "expires_at", "description", "job_url",
     "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("sidra_scraper")
@@ -272,122 +274,45 @@ def parse_experience_years(text):
 
 
 # ----------------------------------------------------------------------------
-# Category mapping (club enum: doctors | nurses | pharmacists | non_clinical)
+# Classification (shared two-level taxonomy)
 # ----------------------------------------------------------------------------
 
-# Oracle CATEGORIES facet values seen on the Sidra tenant -> club category.
-# "Allied Health" has no club bucket of its own, so it lands in non_clinical
-# (same treatment SEHA and medcare give it). "Enabling Function: <X>" is Sidra's
-# name for corporate/support functions (Admin, Finance, IT, …) and is matched by
-# prefix so a new sub-function still maps.
-CATEGORY_MAP = {
-    "physician": "doctors",
-    "physicians": "doctors",
-    "medical": "doctors",
-    "dental": "doctors",
-    "nursing": "nurses",
-    "pharmacy": "pharmacists",
-    "allied health": "non_clinical",
-    "research": "non_clinical",
-    "education": "non_clinical",
-    "administration": "non_clinical",
-}
-_ENABLING_FUNCTION_PREFIX = "enabling function"
-
 # Campaign requisitions ("Join Our Talent Pool - Future opportunities") are
-# open-ended expressions of interest, not a specific vacancy.
+# open-ended expressions of interest, not a specific vacancy. This is NOT a
+# category decision — an in-scope talent-pool row is kept and flagged for a
+# human.
 _TALENT_POOL_RE = re.compile(r"talent\s*pool|future\s+opportunit", re.IGNORECASE)
-
-_NURSE_RE = re.compile(r"\bnurs(e|es|ing)\b|\bmidwi(fe|ves|fery)\b|\blpn\b",
-                       re.IGNORECASE)
-_PHARM_RE = re.compile(r"\bpharmac(y|ist|ists|ies|eutical)\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|surgery|dentist|general practitioner|"
-    r"consultant|specialist|registrar|medical officer|attending|fellow|"
-    r"intensivist|anaesthetist|anesthetist|anesthesiologist|anaesthesiologist|"
-    r"obstetrician|gynecologist|gynaecologist|p(a?)ediatrician|psychiatrist|"
-    r"radiologist|pathologist|neonatologist|oncologist|cardiologist|"
-    r"dermatologist|endocrinologist|gastroenterologist|neurologist|"
-    r"ophthalmologist|otolaryngologist|rheumatologist|urologist|nephrologist|"
-    r"pulmonologist|hematologist|haematologist|geneticist|"
-    # Sidra heads its clinical divisions with physician leadership titles
-    # (JobFunction "1260 - DIV CHIEF/PHY")
-    r"division\s+chief|division\s+head|chair\s+of\s+department)\b",
-    re.IGNORECASE)
-# Allied-health / technical roles: clinical-adjacent at most, and checked BEFORE
-# _DOCTOR_RE so "Specialist" in "Specialist - Poison Control Center" or
-# "Technologist" titles can't win a doctors bucket.
-_ALLIED_RE = re.compile(
-    r"\b(sonographer|radiographer|technologist|technician|therapist|therapy|"
-    r"physiotherapist|dietit(ian|ician)|nutritionist|embryologist|"
-    r"phlebotomist|optometrist|audiologist|paramedic|perfusionist|"
-    r"pathologist\s+assistant|speech\s+and\s+language|child\s+life|"
-    r"scientist|coder)\b",
-    re.IGNORECASE)
-# Corporate-function words — Sidra titles head-office roles "Specialist - …" /
-# "Manager - …" too, so these are tested alongside _ALLIED_RE.
-_CORPORATE_RE = re.compile(
-    r"\b(auditor|accountant|finance|financial|procurement|supply\s+chain|"
-    r"human\s+resources|talent|recruitment|payroll|legal|compliance|ethics|"
-    r"marketing|communications|engineer|architect|developer|"
-    r"coordinator|administrator|secretary|clerk|receptionist|officer|"
-    r"housekeeping|catering|security|facilities|information\s+technology|"
-    r"biomedical\s+engineering|counselling|counseling)\b",
-    re.IGNORECASE)
-# Titles no club bucket fits (psychology / physiology clinicians). Kept as
-# non_clinical AND flagged so a human decides (master spec §2).
-_AMBIGUOUS_RE = re.compile(
-    r"\b(psychologist|physiologist|counsell?or|analyst|"
-    r"health\s*care\s*assistant|patient\s+care\s+assistant)\b",
-    re.IGNORECASE)
-
-
-def classify_category(title, oracle_category="", requisition_type=""):
-    """Return (club_category, needs_review).
-
-    Oracle's category facet is authoritative when present (populated on every
-    live Sidra requisition); the title decides otherwise. A pharmacy title
-    overrides the coarse "Allied Health" facet, and a nursing title overrides a
-    corporate/administrative one. Talent-pool campaign requisitions and titles
-    that match nothing are kept as their best-guess category and flagged
-    needs_review — never dropped.
-    """
-    facet = clean_text(oracle_category).lower()
-    mapped = CATEGORY_MAP.get(facet)
-    if mapped is None and facet.startswith(_ENABLING_FUNCTION_PREFIX):
-        mapped = "non_clinical"
-    talent_pool = bool(_TALENT_POOL_RE.search(facet)
-                       or _TALENT_POOL_RE.search(clean_text(requisition_type))
-                       or clean_text(requisition_type).lower() == "campaigns")
-    if mapped and not talent_pool:
-        # the facet is department-level, so an unmistakable title still wins
-        if mapped != "pharmacists" and _PHARM_RE.search(title):
-            return ("pharmacists", False)
-        if mapped == "non_clinical" and _NURSE_RE.search(title):
-            return ("nurses", False)
-        return (mapped, False)
-    category, needs_review = _classify_title(title)
-    return (category, True if talent_pool else needs_review)
-
-
-def _classify_title(title):
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _AMBIGUOUS_RE.search(title):
-        return ("non_clinical", True)
-    if _ALLIED_RE.search(title) or _CORPORATE_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    return ("non_clinical", True)
 
 
 def is_talent_pool(oracle_category="", requisition_type=""):
     return bool(_TALENT_POOL_RE.search(clean_text(oracle_category))
                 or _TALENT_POOL_RE.search(clean_text(requisition_type))
                 or clean_text(requisition_type).lower() == "campaigns")
+
+
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
+
+    Oracle's category facet (`category_original`), the requisition type and
+    the JobFunction are the curated `skills` signal; all three raw values stay
+    in the rich CSV as source columns only.  A talent-pool campaign row that
+    stays in scope is always flagged needs_review.  Returns in_scope — False
+    means DROP the row (excluded_out_of_scope).
+    """
+    skills = " ".join(x for x in (row.get("category_original", ""),
+                                  row.get("requisition_type", ""),
+                                  row.get("job_function", "")) if x)
+    verdict = classify_job(row.get("title", ""), skills,
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = bool(verdict["needs_review"] or row.get("talent_pool"))
+    return verdict["in_scope"]
 
 
 # Sidra's portal is bilingual: a few requisitions carry the Arabic schedule
@@ -512,7 +437,6 @@ def fetch_detail(session, job_id):
 def requisition_to_rich_row(req):
     raw_title = clean_text(req.get("Title") or "")
     title = normalise_title(raw_title)
-    category, needs_review = classify_category(title)
 
     return {
         "source": SITE,
@@ -531,7 +455,14 @@ def requisition_to_rich_row(req):
         "job_type": map_job_type(req.get("JobSchedule")),
         "job_schedule_original": clean_text(req.get("JobSchedule") or ""),
         "job_shift": clean_text(req.get("JobShift") or ""),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "category_original": "",
         "requisition_type": "",
         "job_function": clean_text(req.get("JobFunction") or ""),
@@ -540,7 +471,7 @@ def requisition_to_rich_row(req):
         "experience_max_years": "",
         "nationals_only": is_nationals_only(raw_title),
         "talent_pool": False,
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": clean_text(req.get("PostedDate") or "")[:10],
         "expires_at": clean_text(req.get("PostingEndDate") or "")[:10],
         "description": strip_html(req.get("ShortDescriptionStr") or "")[:DESCRIPTION_MAX_CHARS],
@@ -563,9 +494,10 @@ def build_description(detail):
 
 
 def apply_detail(row, detail):
-    """Overlay detail-endpoint fields (Oracle category facet, requisition type,
-    schedule, study level, posting end date, full description) onto a listing
-    row, and re-run the classifier with the authoritative category."""
+    """Overlay detail-endpoint fields (raw Oracle category facet, requisition
+    type, schedule, study level, posting end date, full description) onto a
+    listing row.  Classification runs afterwards, once these richer signals are
+    in place."""
     if not detail:
         return row
     oracle_category = clean_text(detail.get("Category") or "")
@@ -575,8 +507,6 @@ def apply_detail(row, detail):
     if requisition_type:
         row["requisition_type"] = requisition_type
     row["talent_pool"] = is_talent_pool(oracle_category, requisition_type)
-    row["category"], row["needs_review"] = classify_category(
-        row["title"], oracle_category, requisition_type)
     if detail.get("JobSchedule"):
         row["job_type"] = map_job_type(detail["JobSchedule"])
         row["job_schedule_original"] = clean_text(detail["JobSchedule"])
@@ -629,18 +559,21 @@ def rich_row_to_club_row(r):
         "title": _s("title"),
         "description": _s("description"),
         "job_type": _s("job_type", "full_time"),
-        "category": _s("category", "non_clinical"),
+        "category": _s("category"),
+        "sub_category": _s("sub_category"),
         "application_url": _s("job_url"),
         "posted_at": _s("posted_date"),
         "min_experience": _s("experience_min_years"),
         "max_experience": _s("experience_max_years"),
+        # structured source field (Oracle StudyLevel) first, else grounded
+        # extraction from the description — never inferred
+        "qualification": _s("education") or extract_qualification(
+            _s("description")),
         # no salary data on the Oracle portal — left blank, never invented
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        "expires_at": _s("expires_at"),
     }
 
 
@@ -719,8 +652,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; cutoff: %s",
              len(known_ids), cutoff or "none (keeping all open requisitions)")
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows, review_log = [], []
     offset, page = 0, 1
 
@@ -769,13 +703,19 @@ def main(argv=None):
                         counters["detail_failed"] += 1
                 else:
                     counters["detail_failed"] += 1
+            # classify only once the detail signals (facet, description) are in
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                continue
             if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({"job_id": row["job_id"],
                                    "title": row["raw_title"],
                                    "category_original": row["category_original"],
                                    "requisition_type": row["requisition_type"],
-                                   "category_assigned": row["category"]})
+                                   "talent_pool": row["talent_pool"],
+                                   "category_assigned": row["category"],
+                                   "sub_category": row["sub_category"]})
             known_ids.add(row["job_id"])
             new_rows.append(row)
             counters["new"] += 1
@@ -817,6 +757,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Requisitions scanned:  {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(
         cutoff or "no cutoff", counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))

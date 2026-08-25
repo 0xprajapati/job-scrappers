@@ -21,11 +21,15 @@ default) and its serialized Taleo state blob parsed for: description,
 department, education, contract type, job level, required nationality,
 monthly salary and schedule (full/part time) plus the unposting date.
 
-Because the source is filtered to the Dubai Health organization, every row is
-healthcare-sector by construction (spec section 2: filter at the source).
-Titles are still classified into the club category enum; roles that resolve
-to non_clinical purely by default are flagged ``needs_review`` — never
-dropped.
+Classification is the shared two-level taxonomy (scrappers/_shared/
+classification.py): ``category`` is "Non Clinical" | "Public Health" plus a
+``sub_category``. The source filter (organization = Dubai Health) is a
+crawl-side saver only — it makes every row healthcare-sector, but a Dubai
+Health board is mostly bedside/clinical, so most requisitions are dropped as
+``excluded_out_of_scope``. The Taleo detail ``department`` is passed to the
+classifier as its curated ``skills`` signal and stays in the rich CSV as a
+raw source column; it never decides the category itself. Jobs are classified
+AFTER the detail fetch so the description and department can be scored.
 
 Salaries are in **AED**; the shared HealthCareers.club schema only allows
 INR/USD, so AED amounts stay in the rich CSV and the club CSV salary fields
@@ -49,6 +53,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -59,6 +64,10 @@ from urllib.parse import unquote
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -103,17 +112,9 @@ RICH_COLUMNS = [
     "city", "country", "salary_raw", "salary_min_monthly", "salary_max_monthly",
     "salary_currency_original", "salary_period", "job_type", "contract_type",
     "job_level", "education", "nationality_requirement", "category",
-    "company_type", "needs_review", "posted_date", "expires_at",
-    "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in", "company_type", "needs_review",
+    "posted_date", "expires_at", "description", "job_url", "scraped_at",
 ]
 
 log = logging.getLogger("dubaihealth_scraper")
@@ -151,42 +152,28 @@ def decode_taleo_text(raw):
 
 
 # ----------------------------------------------------------------------------
-# Category / company classification (club enums)
+# Classification (shared two-level taxonomy)
 # ----------------------------------------------------------------------------
 
-_NURSE_RE = re.compile(r"\b(nurse|nursing|midwif)", re.IGNORECASE)
-_PHARM_RE = re.compile(r"\b(pharmac)", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|dentist|consultant|specialist|resident|"
-    r"registrar|[a-z]+ologist|medical officer|\bgp\b)", re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-# Allied-health and admin/support roles that map cleanly to non_clinical —
-# checked AFTER the clinical buckets, so e.g. "Medical Officer" stays a doctor.
-_NONCLINICAL_RE = re.compile(
-    r"\b(dietit|dietic|nutrition|physiother|therapist|technician|technolog|"
-    r"paramedic|audiolog|speech|analyst|coordinator|administrat|admin|officer|"
-    r"assistant|executive|manager|director|lead|head|specialist support|"
-    r"media|marketing|communica|finance|account|hr\b|human resources|legal|"
-    r"procurement|supply|it\b|engineer|maintenance|facility|security|driver|"
-    r"receptionist|clerk|secretary|educat|research|quality|planner|architect)",
-    re.IGNORECASE)
-
-
-def classify_category(title, department=""):
-    """Map to the club category enum: doctors | nurses | pharmacists |
-    non_clinical. Returns (category, needs_review); jobs that resolve to
-    non_clinical purely by default are flagged for review, never dropped
-    (the employer is a healthcare organization, so every job is kept)."""
-    text = "{} {}".format(title or "", department or "")
-    if _NURSE_RE.search(text):
-        return ("nurses", False)
-    if _PHARM_RE.search(text):
-        return ("pharmacists", False)
-    if _DOCTOR_RE.search(text):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(text):
-        return ("non_clinical", False)
-    return ("non_clinical", True)  # pure default -> flag for review
+    The Taleo ``department`` field is the curated `skills` signal; the raw
+    value stays in the rich CSV as a source column only.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
+    """
+    verdict = classify_job(row.get("title", ""),
+                           row.get("department", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 # ----------------------------------------------------------------------------
@@ -397,7 +384,6 @@ def listing_to_rich_row(req):
     column = req.get("column") or []
     title = clean_text(column[0] if len(column) > 0 else "")
     job_number = str(req.get("contestNo") or "").strip()
-    category, needs_review = classify_category(title)
     return {
         "source": SITE,
         "job_id": job_number,
@@ -417,9 +403,16 @@ def listing_to_rich_row(req):
         "job_level": "",
         "education": "",
         "nationality_requirement": clean_text(column[2] if len(column) > 2 else ""),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": "hospital",
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": ddmmyyyy_to_iso(column[1] if len(column) > 1 else ""),
         "expires_at": "",
         "description": "",
@@ -438,10 +431,6 @@ def apply_detail(row, detail):
         row.update({"salary_raw": raw, "salary_min_monthly": lo,
                     "salary_max_monthly": hi, "salary_currency_original": cur,
                     "salary_period": "per_month" if cur else ""})
-    # department may sharpen the category (e.g. dept "Nursing Services")
-    category, needs_review = classify_category(row["title"], row["department"])
-    row["category"] = category
-    row["needs_review"] = needs_review
     return row
 
 
@@ -458,19 +447,22 @@ def rich_row_to_club_row(r):
         "title": r.get("title", ""),
         "description": r.get("description", ""),
         "job_type": r.get("job_type", "full_time"),
-        "category": r.get("category", "non_clinical"),
+        "category": r.get("category", ""),
+        "sub_category": r.get("sub_category", ""),
         "application_url": r.get("job_url", ""),
         "posted_at": r.get("posted_date", ""),
         "min_experience": "",
         "max_experience": "",
+        # structured source field (Taleo education level) first, else
+        # grounded extraction from the description — never inferred
+        "qualification": (r.get("education", "")
+                          or extract_qualification(r.get("description", ""))),
         # Salary is AED (not in the club INR/USD enum) -> left blank on
         # purpose; the raw AED amount is preserved in the rich CSV.
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        "expires_at": r.get("expires_at", ""),
     }
 
 
@@ -537,8 +529,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows, review_log = [], []
     page_no, total_count = 1, None
 
@@ -577,6 +570,11 @@ def main(argv=None):
                     row = apply_detail(row, detail)
                 else:
                     counters["detail_failed"] += 1
+            # classify only after the detail fetch, so department and
+            # description can be scored alongside the title
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                continue
             if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({"job_id": row["job_id"], "title": row["title"],
@@ -619,6 +617,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Jobs scanned:          {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

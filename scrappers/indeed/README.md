@@ -123,13 +123,20 @@ must click it — do not automate that.
 - **Remote gate**: `remoteWorkModel` `REMOTE_*` or location `Remote`
   ("Remote in ‹city›" cards count; the city goes to `city_name`).
   The SERP occasionally pads in a non-remote card → `excluded_not_remote`.
-- **Healthcare gate** (title-based; queries alone are too fuzzy —
-  "counsellor" returns admission counsellors, "medical transcriptionist"
-  returns AI-data gigs): DENY list → excluded; ALLOW list → kept; neither →
-  kept + `needs_review.csv` (never silently dropped).
-- **Category**: nurses / pharmacists / doctors / non_clinical by title
-  regex. Psychology-family clinicians → non_clinical (no allied-health
-  bucket in the club schema).
+- **Scope gate & category — the shared classifier only.** Every card runs
+  through `_shared/classification.classify_job` (title = card title, skills =
+  the card's taxonomy attributes via `card_skills()`, description = the card
+  snippet). The scraper keeps no ALLOW/DENY or category regexes of its own.
+  - `in_scope == False` → dropped, counted `excluded_out_of_scope` and
+    printed in the run summary. The broad remote queries surface a lot of
+    non-healthcare noise (admission counsellors, audio-annotation gigs) and
+    plenty of bedside clinical work — all of it out of scope now.
+  - In-scope cards get `category` = `Non Clinical` | `Public Health` and
+    `sub_category` (one of the 20 sub-categories), plus the rich-CSV trace
+    columns `role_family`, `all_families`, `family_scores`,
+    `family_confidence`, `matched_in`.
+  - `needs_review == True` → kept **and** appended to `needs_review.csv`
+    (never silently dropped).
 - **Salary**: captured verbatim, never filtered/invented. Club columns only
   for `per_month`/`per_annum` INR; hourly/daily/weekly stay in the rich CSV.
 - **Window**: first run keeps 30 days (`--window-days`; page-1 cards are
@@ -140,8 +147,14 @@ must click it — do not automate that.
 ## Outputs
 
 - `indeed_jobs.csv` — rich cumulative store (dedup key `jobkey`)
-- `../../jobs_csv/<DD-MM-YYYY>/indeed.csv` — club 22-column schema
-- `needs_review.csv` — titles the classifier couldn't place
+- `../../jobs_csv/<DD-MM-YYYY>/indeed.csv` — exactly the 22 `CLUB_COLUMNS`
+  imported from `_shared/classification.py`, including `sub_category` and
+  `qualification`; the old `is_active`/`expires_at` columns are retired.
+  The SERP card model has no structured qualification field, so
+  `qualification` is `extract_qualification(description)` — never inferred.
+- `needs_review.csv` — in-scope rows the classifier flagged for review
+- `out-of-scope.csv` — rows the classifier dropped from the rich store during
+  the one-off taxonomy migration (reversible archive)
 
 ## Quirks learned the hard way
 
@@ -159,5 +172,5 @@ must click it — do not automate that.
 ## Tests
 
 ```bash
-python test_filters.py    # 27 tests, worked examples from real cards
+python test_filters.py    # 25 tests, worked examples from real cards
 ```

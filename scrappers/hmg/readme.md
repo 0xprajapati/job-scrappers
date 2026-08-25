@@ -54,19 +54,41 @@ spanning 10 internal company uuids); the rest hold their own small sets, and
 none of them overlap. `company` is therefore the portal's brand — the API
 exposes no company-name lookup for the internal uuids.
 
+## Classification
+
+Every candidate posting goes through the shared two-level taxonomy in
+`scrappers/_shared/classification.py` — the scraper defines **no** category
+regexes, profession enums or ATS-category maps of its own:
+
+* `category` is `Non Clinical` or `Public Health`, `sub_category` one of the
+  20 sub-categories; `role_family` plus the score trace (`all_families`,
+  `family_scores`, `family_confidence`, `matched_in`) land in the rich CSV.
+* Signals: the job title, the description (`description` + `requirements`,
+  HTML stripped), and — as the curated `skills` signal — the Elevatus
+  `category`, `career_level`, `industry` and `major` facets joined together.
+  All of those stay in the rich CSV as raw source columns
+  (`category_original`, `career_level`, `industry`, `major`); none of them
+  decides the category.
+* The posting's own `skills` array is deliberately **excluded** from the
+  classifier signal: HMG fills it from a generic corporate competency
+  framework ("data management & record keeping", "process management") that
+  describes no role, and feeding it in admitted a radiologist and a
+  secretary as *Clinical Data Management*. It is still stored verbatim in
+  the rich CSV.
+* Out-of-scope postings are **dropped**, not exported, and counted as
+  `Excluded (out of scope)` in the run summary. Being a hospital group's ATS,
+  most postings (physicians, nursing, pharmacy dispensing, paramedical) and
+  the WRASS / Cloud Solutions support roles fall out this way.
+* `needs_review = True` rows are kept and logged to `needs_review.csv`.
+
 ## Quirks
 
 * **ATS category is unreliable.** Real clinical roles ("Registered Nurse",
-  "Consultant IVF") are filed under the literal category `Default`, so the
-  **title decides** the club category and the ATS category (`Physicians`,
-  `Doctor`, `Nursing`, `Pharmacy`, `Paramedical`, `Administration`, `Default`)
-  is only the fallback (master spec §2).
-* **needs_review**: anything that lands in `non_clinical` without a healthcare
-  signal in its title / ATS category / major / industry is kept and logged to
-  `needs_review.csv` — never dropped. In practice that is the WRASS and Cloud
-  Solutions support roles (graphic designer, AC technician, developer). A
-  hospital housekeeper tagged with the `Hospital & Health Care` industry passes
-  unflagged, which is intended.
+  "Consultant IVF") are filed under the literal category `Default`, so the ATS
+  taxonomy (`Physicians`, `Doctor`, `Nursing`, `Pharmacy`, `Paramedical`,
+  `Administration`, `Default`) may not decide anything. It is stored verbatim
+  as `category_original` and only feeds the classifier's `skills` signal (see
+  **Classification**).
 * **No salary anywhere.** Every posting carries `salary: {min: 0, max: 0}` →
   `salary_raw = "Not Disclosed"`, numeric fields empty (master spec §3 — never
   invent). `parse_salary()` still normalises a real monthly SAR range if HMG
@@ -123,9 +145,12 @@ Tests:
 ## Outputs
 
 * `hmg_jobs.csv` — rich cumulative store (portal, company, city, ATS category,
-  career level, major, degree, skills, experience, description, …).
-* `needs_review.csv` — postings kept but flagged for a human look.
-* `../../jobs_csv/<DD-MM-YYYY>/hmg.csv` — HealthCareers.club 22-column schema.
-
-First full run (2026-07-27): **86 jobs** — 31 doctors, 12 nurses, 2 pharmacists,
-41 non_clinical; 9 flagged `needs_review`.
+  career level, major, degree, skills, experience, description, taxonomy +
+  score trace, …).
+* `needs_review.csv` — in-scope postings the classifier flagged.
+* `out-of-scope.csv` — postings the classifier dropped during the one-off
+  stored-data reclassification (reversible; nothing is silently discarded).
+* `../../jobs_csv/<DD-MM-YYYY>/hmg.csv` — HealthCareers.club 22-column schema
+  (`CLUB_COLUMNS` imported from `_shared/classification.py`;
+  `is_active`/`expires_at` are retired — the rich CSV keeps the source
+  `expires_at`).

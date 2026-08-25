@@ -1,6 +1,10 @@
-"""Unit tests for the DoctHub salary parser, classifier and time window.
+"""Unit tests for the DoctHub salary parser, time window and taxonomy wiring.
 
 Run with:  python test_filters.py   (or: pytest test_filters.py)
+
+The shared classifier's internals are covered by
+_shared/test_classification.py — these tests only check that this scraper
+is wired to it correctly.
 """
 
 from datetime import date, timedelta
@@ -8,13 +12,16 @@ from datetime import date, timedelta
 import pandas as pd
 
 from docthub_scraper import (
+    CLUB_COLUMNS,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
     classify_job,
-    classify_title,
     compute_cutoff,
+    job_to_row,
     normalize_salary_object,
     parse_salary_string,
+    rich_row_to_club_row,
+    strip_html,
 )
 
 
@@ -52,27 +59,80 @@ def test_salary_object_normalization():
     assert normalize_salary_object({}) is None
 
 
-def test_title_classifier():
-    for title in ("Staff Nurse - ICU", "Medical Superintendent", "Dialysis Technician",
-                  "Physiotherapist", "X-Ray Technician", "Pharmacist", "MBBS Doctor",
-                  "Phlebotomist", "Optometrist", "Ward Boy", "Paramedic",
-                  "Biomedical Engineer"):
-        assert classify_title(title) == "allow", title
+def test_classifier_wiring_in_scope():
+    """An in-scope role gets the right two-level category + sub_category."""
+    verdict = classify_job("Pharmacovigilance Associate")
+    assert verdict["in_scope"] is True
+    assert verdict["category"] == "Non Clinical"
+    assert verdict["sub_category"] == "Pharmacovigilance"
 
-    for title in ("Software Developer", "Mechanical Engineer", "Civil Engineer",
-                  "Full Stack Developer", "Accountant", "Graphic Designer",
-                  "Digital Marketing Executive", "HR Executive", "Telecaller"):
-        assert classify_title(title) == "deny", title
-
-    assert classify_title("Zonal Manager") == "unknown"
+    verdict = classify_job("Epidemiologist")
+    assert verdict["in_scope"] is True
+    assert verdict["category"] == "Public Health"
+    assert verdict["sub_category"] == "Epidemiology"
 
 
-def test_classify_job_decision_table():
-    assert classify_job("Dermatologist", "Doctor / Surgeon") == (True, False)
-    assert classify_job("Software Developer", "Paramedical / Technician") == (False, False)
-    assert classify_job("Staff Nurse", "Housekeeping Department") == (False, False)
-    assert classify_job("Clinical Pharmacist", "Pharmaceuticals") == (True, False)
-    assert classify_job("Zonal Manager", "Pharmaceuticals") == (True, True)
+def test_classifier_wiring_out_of_scope():
+    """Out-of-scope / vetoed titles are dropped (in_scope False)."""
+    for title in ("Software Developer", "Staff Nurse - ICU", "Accountant"):
+        assert classify_job(title)["in_scope"] is False, title
+
+
+def test_job_to_row_carries_taxonomy():
+    """Rich rows carry the two-level split + trace columns, and the raw
+    docthub facet lands in source_category only."""
+    verdict = classify_job("Clinical Data Manager")
+    job = {
+        "code": "clinical-data-manager-J120239", "title": "Clinical Data Manager",
+        "organization": {"name": "Acme CRO"},
+        "location": {"location": "Pune, Maharashtra"},
+        "publishedDate": "2026-08-24T10:00:00Z",
+    }
+    row = job_to_row(job, "Clinical Research/ Data Science", verdict)
+    assert row["job_id"] == "J120239"
+    assert row["source_category"] == "Clinical Research/ Data Science"
+    assert row["category"] == "Non Clinical"
+    assert row["sub_category"] == "Clinical Data Management"
+    assert row["role_family"] == "Clinical Data Management"
+    assert row["needs_review"] is False
+    for trace in ("all_families", "family_scores", "family_confidence", "matched_in"):
+        assert trace in row
+
+
+def test_club_row_schema():
+    """rich_row_to_club_row emits exactly the shared CLUB_COLUMNS."""
+    rich = {
+        "title": "Pharmacovigilance Associate", "company": "Acme CRO",
+        "location": "Pune, Maharashtra", "job_type": "Full Time",
+        "category": "Non Clinical", "sub_category": "Pharmacovigilance",
+        "salary_min_monthly": "30000", "salary_max_monthly": "50000",
+        "experience_min_years": "1", "experience_max_years": "3",
+        "posted_date": "2026-08-24",
+        "job_url": "https://jobs.docthub.com/pv-associate-J1",
+        "description": "Requires B.Pharm or PharmD.",
+    }
+    club = rich_row_to_club_row(rich)
+    assert list(club.keys()) == CLUB_COLUMNS
+    assert club["category"] == "Non Clinical"
+    assert club["sub_category"] == "Pharmacovigilance"
+    assert club["city_name"] == "Pune"
+    assert club["job_type"] == "full_time"
+    assert club["min_salary"] == "30000"
+    assert club["max_salary"] == "50000"
+    assert club["salary_period"] == "per_month"
+    assert club["salary_currency"] == "INR"
+    assert "is_active" not in club and "expires_at" not in club
+
+    # Undisclosed salary -> all four salary fields blank.
+    rich["salary_min_monthly"] = rich["salary_max_monthly"] = ""
+    club = rich_row_to_club_row(rich)
+    assert (club["min_salary"], club["max_salary"],
+            club["salary_period"], club["salary_currency"]) == ("", "", "", "")
+
+
+def test_strip_html():
+    assert strip_html("<p>Clinical&nbsp;<b>research</b> role</p>") == "Clinical research role"
+    assert strip_html(None) == ""
 
 
 def test_compute_cutoff():

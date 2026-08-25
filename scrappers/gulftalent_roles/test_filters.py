@@ -7,12 +7,13 @@ are trimmed verbatim from real www.gulftalent.com pages observed on
 """
 
 import unittest
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 
 from scraper import (
-    build_row, city_from, classify_category, classify_company_type,
+    CLUB_COLUMNS, INITIAL_WINDOW_DAYS, apply_classification,
+    build_row, city_from, classify_company_type,
     compute_cutoff, country_meta, job_type_from, parse_about_company,
     parse_base_salary, parse_detail_attributes, parse_experience,
     parse_job_posting, parse_last_page, parse_listing_date,
@@ -335,33 +336,44 @@ class TestExperience(unittest.TestCase):
         self.assertEqual(parse_experience(""), ("", "", ""))
 
 
+class TestTaxonomyWiring(unittest.TestCase):
+    """The keep/drop + labeling decision belongs to _shared/classification.
+
+    Only the wiring is tested here — the engine itself is covered by
+    _shared/test_classification.py.
+    """
+
+    def test_in_scope_role_is_kept_and_labelled(self):
+        row = {"title": "Clinical Research Associate",
+               "job_function": "Healthcare",
+               "description": "Monitor clinical trial sites across the GCC."}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+        self.assertTrue(row["family_scores"])
+
+    def test_public_health_role_is_kept(self):
+        row = {"title": "Epidemiologist", "job_function": "Healthcare",
+               "description": "Outbreak surveillance for the ministry."}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Epidemiology")
+
+    def test_bedside_title_is_dropped(self):
+        row = {"title": "Registered Home Care Nurse", "job_function": "Healthcare",
+               "description": "Provide bedside patient care at home."}
+        self.assertFalse(apply_classification(row))
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["sub_category"], "")
+
+    def test_commercial_role_with_no_family_signal_is_dropped(self):
+        row = {"title": "Commercial Manager", "job_function": "Sales - Retail",
+               "description": "Join EVA Pharma, a leading pharmaceutical company."}
+        self.assertFalse(apply_classification(row))
+
+
 class TestClassification(unittest.TestCase):
-
-    def test_clinical_titles(self):
-        self.assertEqual(classify_category("Registered Home Care Nurse")[0], "nurses")
-        self.assertEqual(classify_category("Consultant Dermatologist")[0], "doctors")
-        self.assertEqual(classify_category("Aesthetic General Practitioner")[0],
-                         "doctors")
-        self.assertEqual(classify_category("Clinical Pharmacist")[0], "pharmacists")
-
-    def test_healthcare_job_function_is_not_flagged(self):
-        category, needs_review = classify_category(
-            "Senior Receptionist (Healthcare) - Filipino", "Healthcare", "Tanizze")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(needs_review)
-
-    def test_commercial_role_at_a_pharma_company_is_kept(self):
-        category, needs_review = classify_category(
-            "Commercial Manager", "Sales - Retail", "Eva Pharma",
-            "Join EVA Pharma, a leading pharmaceutical company.")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(needs_review)   # "Pharma" in the employer name
-
-    def test_signal_free_title_is_flagged_not_dropped(self):
-        category, needs_review = classify_category(
-            "Finance Manager", "Accounting & Audit", "Confidential", "")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
 
     def test_company_type(self):
         self.assertEqual(classify_company_type("Eva Pharma", "Commercial Manager",
@@ -411,9 +423,13 @@ class TestClassification(unittest.TestCase):
 
 class TestTimeWindow(unittest.TestCase):
 
-    def test_first_run_keeps_everything(self):
-        self.assertIsNone(compute_cutoff(None))
-        self.assertIsNone(compute_cutoff(pd.DataFrame(columns=["posted_date"])))
+    def test_first_run_uses_the_initial_window(self):
+        # This fork narrows the first run to INITIAL_WINDOW_DAYS = 2 (the
+        # parent gulftalent scraper keeps every live posting instead).
+        expected = (date.today() - timedelta(days=INITIAL_WINDOW_DAYS)).isoformat()
+        self.assertEqual(compute_cutoff(None), expected)
+        self.assertEqual(compute_cutoff(pd.DataFrame(columns=["posted_date"])),
+                         expected)
         self.assertTrue(within_window("2025-01-01", None))
 
     def test_watermark_with_grace(self):
@@ -450,7 +466,9 @@ class TestRowBuilding(unittest.TestCase):
         self.assertEqual(row["job_type_original"], "Full Time")
         self.assertEqual(row["salary_raw"], "Not Disclosed")
         self.assertEqual(row["salary_min_monthly"], "")
-        self.assertEqual(row["category"], "non_clinical")
+        # build_row leaves the taxonomy blank; apply_classification stamps it.
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["sub_category"], "")
         self.assertEqual(row["company_type"], "pharma")
         self.assertFalse(row["needs_review"])
         self.assertEqual(row["experience_min_years"], 7)
@@ -458,26 +476,25 @@ class TestRowBuilding(unittest.TestCase):
         self.assertNotIn("<", row["description"])
 
     def test_club_row(self):
-        club = rich_row_to_club_row(self._kuwait_row())
+        row = self._kuwait_row()
+        row["title"] = "Clinical Research Associate"
+        apply_classification(row)
+        club = rich_row_to_club_row(row)
         self.assertEqual(club["country_name"], "Kuwait")
         self.assertEqual(club["country_code"], "KW")
         self.assertEqual(club["country_dial_code"], "+965")
         # Country-wide posting: the country stands in for the missing city.
         self.assertEqual(club["city_name"], "Kuwait")
         self.assertEqual(club["company_name"], "Eva Pharma")
-        self.assertEqual(club["category"], "non_clinical")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
         self.assertEqual(club["job_type"], "full_time")
         self.assertEqual(club["posted_at"], "2026-05-13")
         self.assertEqual(club["min_experience"], "7")
-        self.assertEqual(club["is_active"], "true")
-        self.assertEqual(club["expires_at"], "2026-08-11")
-        self.assertEqual(sorted(club), sorted([
-            "country_name", "country_code", "country_dial_code", "city_name",
-            "company_name", "company_type", "company_logo", "company_about",
-            "title", "description", "job_type", "category", "application_url",
-            "posted_at", "min_experience", "max_experience", "min_salary",
-            "max_salary", "salary_period", "salary_currency", "is_active",
-            "expires_at"]))
+        # Grounded credential extraction from the description.
+        self.assertEqual(club["qualification"], "Bachelor's degree")
+        # The shared 22-column contract — is_active/expires_at are retired.
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
 
     def test_gulf_currency_stays_out_of_the_club_csv(self):
         listing_row = parse_listing_rows(UAE_LISTING)[0]

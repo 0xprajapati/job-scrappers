@@ -97,10 +97,16 @@ python test_filters.py                          # unit tests
 
 - **`naukri_jobs.csv`** — rich cumulative store, dedup key `job_id`, the source
   of truth for the incremental watermark.
-- **`../../jobs_csv/<DD-MM-YYYY>/naukri.csv`** — the same jobs mapped to the
-  HealthCareers.club 22-column schema.
-- **`needs_review.csv`** — titles the classifier could not confidently place
-  (kept as `non_clinical`, never dropped — master-spec §2).
+- **`../../jobs_csv/<DD-MM-YYYY>/naukri_roles.csv`** — exactly the 22
+  `CLUB_COLUMNS` imported from `_shared/classification.py`, including
+  `category`, `sub_category` and `qualification`; the old
+  `is_active`/`expires_at` columns are retired. naukri cards carry no
+  structured qualification field, so `qualification` is
+  `extract_qualification(description)` — never inferred.
+- **`needs_review.csv`** — in-scope rows the classifier flagged (kept, never
+  dropped — master-spec §2).
+- **`out-of-scope.csv`** — rows the classifier dropped from the rich store
+  during the one-off taxonomy migration (reversible archive).
 
 ## Quirks & conventions
 
@@ -109,10 +115,20 @@ python test_filters.py                          # unit tests
   placeholder (`"45-60 Lacs PA"`) is kept verbatim as `salary_raw`. Hidden or
   absent pay → `Not Disclosed`, numeric fields empty. The club CSV only
   represents INR/USD, so non-INR pay leaves the club salary columns empty.
-- **Category**: classified from the title into `doctors | nurses | pharmacists
-  | non_clinical`. Allied-health (physio, lab tech, optometrist) and back-office
-  roles (medical coders, AR callers, admin) map to `non_clinical` by convention.
-  `roleCategoryGid` is retained in the rich CSV as a cross-check.
+- **Classification — the shared taxonomy only.** Every card runs through
+  `_shared/classification.classify_job` with three signals: `title`,
+  `tagsAndSkills` as `skills`, and the HTML-stripped `jobDescription`. The
+  scraper defines no category regexes or enums of its own.
+  - `in_scope == False` → the card is **dropped**, counted as
+    `excluded_out_of_scope` and printed in the run summary. Even the
+    role-family searches return plenty of bedside and non-healthcare noise:
+    the scope is **Non Clinical + Public Health** roles only.
+  - In-scope cards get `category` = `Non Clinical` | `Public Health` and
+    `sub_category` (one of the 20 sub-categories), plus the rich-CSV trace
+    columns `role_family`, `sub_category_basis`, `all_families`,
+    `family_scores`, `family_confidence`, `matched_in`.
+  - `roleCategoryGid` is retained in the rich CSV as raw source data only —
+    it never decides the category.
 - **Company**: for consultant postings that don't hide the client, the client
   name is captured in `hiring_for`; `company` stays the posting/recruiter name.
 - **Country**: naukri is India-first (`India / IN / +91` default); overseas

@@ -1,22 +1,104 @@
-# `_shared/` — the eleven role families
+# `_shared/` — the one classifier every scraper must use
 
-`role_families.py` is the single definition of the in-scope role families,
-imported by every re-scoped scraper. Eleven regexes copy-pasted into four
-files would drift the first time one was tuned.
+Three modules live here. Only one of them is a scraper-facing API:
+
+| Module | Role |
+|---|---|
+| **`classification.py`** | **The mandatory entry point.** `classify_job`, `extract_qualification`, `CLUB_COLUMNS`. |
+| `role_families.py` | Engine: weighted in-scope scoring across the eleven role families. |
+| `taxonomy_keywords.py` | Engine: negative-keyword veto + the finer sub-category split. |
+
+Scrapers import **`classification.py` only** — never `role_families` or
+`taxonomy_keywords` directly, and never a local copy of either's regexes.
+
+> This is the standard for migrated scrapers and mandatory for new ones. A set
+> of scrapers has **not** been migrated and still runs its own classifier on
+> the legacy profession enum (`doctors | nurses | pharmacists | non_clinical`)
+> with the older club schema; `instructions/taxonomy-migration-status.md` is
+> the authoritative list.
+
+## `classification.py` — the contract
+
+```python
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
+
+verdict = classify_job(title, skills, description)   # title required
+if not verdict["in_scope"]:
+    counters["excluded_out_of_scope"] += 1
+    continue                       # dropped — never exported
+```
+
+`classify_job(title, skills="", description="")` returns a dict:
+
+| Key | Type | Meaning |
+|---|---|---|
+| `in_scope` | bool | `False` → **drop** the job, count it as `excluded_out_of_scope` |
+| `category` | str | `"Non Clinical"` or `"Public Health"` (`""` when out of scope) |
+| `sub_category` | str | one of the 20 sub-category names; `""` only for a Public Health job the finer split could not place |
+| `sub_category_basis` | str | `"title"` \| `"skills"` \| `"family"` \| `""` — what decided the sub-category |
+| `role_family` | str | the winning role family — rich-CSV trace |
+| `needs_review` | bool | in scope, but the title reads like a different profession → **keep AND flag** into `needs_review.csv` |
+| `vetoed_by` | str | the negative keyword that blocked the row, else `""` |
+| `all_families` / `family_scores` / `family_confidence` / `matched_in` | str | score trace from `role_families` — rich CSV, so every admission stays auditable |
+
+The two-level taxonomy it emits (keyword lists:
+`Jobs_keywords/keywords_for_jobs.md`):
+
+| `category` | `sub_category` values |
+|---|---|
+| Non Clinical | Clinical Data Management · Clinical Research · Medical Writer · TMF · Medical Coding · Pharmacovigilance · Regulatory Affairs · Medical Reviewer · MSL · HEOR |
+| Public Health | Epidemiology · Public Health Program Management · Monitoring & Evaluation · Community Health · Health Promotion & Education · Disease Programs · Public Health Nutrition · Infection Prevention & Control · Health Informatics & Data · Public Health Research |
+
+The ten Non Clinical family names *are* their sub-categories, so a Non Clinical
+job always gets both. Public Health is one family but ten sub-categories, so a
+Public Health job whose finer split is undecidable keeps `category` and leaves
+`sub_category` blank rather than guessing.
+
+### `CLUB_COLUMNS`
+
+The same module owns the one club-CSV contract — the 22 columns of
+`jobs_csv/<DD-MM-YYYY>/<site>.csv`:
+
+```
+country_name, country_code, country_dial_code, city_name, company_name,
+company_type, company_logo, company_about, title, description, job_type,
+category, sub_category, application_url, posted_at, min_experience,
+max_experience, qualification, min_salary, max_salary, salary_period,
+salary_currency
+```
+
+Import the list; never hand-copy it — a copy is how a header drifts. The old
+`is_active`/`expires_at` columns are retired (rich CSVs may keep source expiry
+data in their own columns). `qualification` is the source's structured field
+when it has one, else `extract_qualification(description)` — never inferred.
+
+### `extract_qualification(description)`
+
+Re-exported from `role_families` so everything classification-related comes
+from one import. Lifts credentials (MBBS, PharmD, MPH, CPC, …) verbatim.
+
+---
+
+## The engines
+
+`role_families.py` is the single definition of the eleven in-scope role
+families. Eleven regexes copy-pasted into four scrapers would drift the first
+time one was tuned.
 
     Public Health · Clinical Data Management · Clinical Research ·
     Medical Writer · TMF · Medical Coding · Pharmacovigilance ·
     Regulatory Affairs · Medical Reviewer · MSL · HEOR
 
-These strings are the club CSV's `category` values verbatim (repo README →
-*Allowed enum values*), so no scraper has to translate.
+### Scoring, not a yes/no title match
 
-## Scoring, not a yes/no title match
-
-The `himalayas` scraper gates on the job title alone. Precise, but it leaves
-yield behind: in a 307-job Naukri reference set, only **9 rows matched on
-title alone** and **106 (35%) had no title match at all**, surfacing purely
-through skills tags or the description body.
+Gating on the job title alone is precise, but it leaves yield behind: in a
+307-job Naukri reference set, only **9 rows matched on title alone** and
+**106 (35%) had no title match at all**, surfacing purely through skills tags
+or the description body. Hence `skills` and `description` are passed to
+`classify_job` whenever the source provides them.
 
 Matching those fields naively floods the results with boilerplate
 ("…supports our clinical research division…"), so fields are weighted and a
@@ -39,11 +121,13 @@ Measured against that reference set, the multi-field scorer keeps **252 of
 
 ## What every scraper records
 
-Not just the winner, so a questionable row can always be traced:
+Not just the winner, so a questionable row can always be traced. `category`
+and `sub_category` go to both CSVs; the trace columns are rich-CSV only:
 
 | Column | Example |
 |---|---|
-| `category` / `role_family` | `Pharmacovigilance` |
+| `category` / `sub_category` | `Non Clinical` / `Pharmacovigilance` |
+| `role_family` | `Pharmacovigilance` |
 | `all_families` | `Pharmacovigilance\|Clinical Research` |
 | `family_scores` | `Pharmacovigilance=19;Clinical Research=3` |
 | `family_confidence` | `high` (≥5) / `medium` (≥3) |
@@ -68,9 +152,17 @@ dropped — master spec §2.
 ## Tests
 
 ```bash
-cd scrappers/_shared && python test_role_families.py
+cd scrappers/_shared
+python test_classification.py     # 9  — the classify_job contract
+python test_role_families.py      # 38 — the in-scope scoring engine
+python test_taxonomy_keywords.py  # the sub-category split + veto list
 ```
 
-22 tests, including one asserting the set is exactly the eleven and one
-proving every family is reachable from a real listing title — so a declared
-category can never become unemittable.
+`test_role_families.py` includes one test asserting the set is exactly the
+eleven and one proving every family is reachable from a real listing title, so
+a declared family can never become unemittable; `test_taxonomy_keywords.py`
+asserts every one of the 20 sub-categories is reachable from a canonical title.
+
+The engines are covered here, so a **scraper's** `test_*.py` should not
+re-test them — it needs only two wiring tests: an in-scope role gets the right
+`category`/`sub_category`, and an out-of-scope title is dropped.

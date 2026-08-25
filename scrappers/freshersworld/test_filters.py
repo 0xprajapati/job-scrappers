@@ -11,9 +11,11 @@ from datetime import date
 import pandas as pd
 
 from freshersworld_scraper import (
+    CLUB_COLUMNS,
+    apply_classification,
     build_row,
-    classify_category,
     classify_company_type,
+    humanize_fw_categories,
     compute_cutoff,
     parse_ago_days,
     parse_card_salary,
@@ -107,30 +109,59 @@ class AgoTests(unittest.TestCase):
         self.assertIsNone(parse_ago_days(None))
 
 
-class ClassifierTests(unittest.TestCase):
-    """Titles from the two live category pages."""
+class TaxonomyWiringTests(unittest.TestCase):
+    """The keep/drop + labeling decision belongs to _shared/classification.
 
-    def test_confident_buckets(self):
-        self.assertEqual(classify_category("Staff Nurse"), ("nurses", False))
+    Only the wiring is tested here — the engine itself is covered by
+    _shared/test_classification.py.
+    """
+
+    def test_in_scope_role_is_kept_and_labelled(self):
+        row = {"title": "Pharmacovigilance Associate",
+               "fw_categories": "pharma-job-vacancies",
+               "description": "Process ICSRs and author safety narratives."}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
+        self.assertEqual(row["role_family"], "Pharmacovigilance")
+        self.assertTrue(row["family_scores"])
+
+    def test_category_slug_rescues_a_generic_title(self):
+        # The whole point of the regulatory-affairs crawl slug: real RA
+        # openings are advertised as plain "Executive" / "Manager".
+        row = {"title": "Executive",
+               "fw_categories": "regulatory-affairs-job-vacancies",
+               "description": "Prepare and file regulatory dossiers and "
+                              "submissions with CDSCO for drug registration."}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Regulatory Affairs")
+        # The slug alone (skills x2) is not enough — the description carries it.
+        self.assertIn("skills", row["matched_in"])
+
+    def test_bedside_title_is_dropped(self):
+        row = {"title": "Staff Nurse",
+               "fw_categories": "health-care-job-vacancies",
+               "description": "Ward duty, patient care."}
+        self.assertFalse(apply_classification(row))
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["sub_category"], "")
+
+    def test_non_healthcare_noise_is_dropped(self):
+        row = {"title": "Zumba Instructor",
+               "fw_categories": "health-care-job-vacancies",
+               "description": "Lead group fitness classes."}
+        self.assertFalse(apply_classification(row))
+
+    def test_humanize_fw_categories(self):
         self.assertEqual(
-            classify_category("Pharmacist Wanted For Global Organisation"),
-            ("pharmacists", False))
-        self.assertEqual(classify_category("Dermatologist"), ("doctors", False))
-        self.assertEqual(classify_category("Physiotherapist"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Medical Sales Representative"),
-                         ("non_clinical", False))
+            humanize_fw_categories(
+                "pharma-job-vacancies; regulatory-affairs-job-vacancies"),
+            "pharma, regulatory affairs")
+        self.assertEqual(humanize_fw_categories(""), "")
 
-    def test_unrecognised_title_is_kept_but_flagged(self):
-        category, needs_review = classify_category("Zumba Instructor")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
 
-    def test_deny_list_forces_review(self):
-        category, needs_review = classify_category(
-            "Software Engineer - Pharma Analytics")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
+class ClassifierTests(unittest.TestCase):
 
     def test_company_type(self):
         self.assertEqual(classify_company_type("Sun Pharma Ltd"), "pharma")
@@ -274,13 +305,22 @@ class RowBuildingTests(unittest.TestCase):
         self.assertEqual(club["country_dial_code"], "+91")
         self.assertEqual(club["city_name"], "Bangalore")
         self.assertEqual(club["job_type"], "full_time")
-        self.assertEqual(club["category"], "non_clinical")
         self.assertEqual(club["min_salary"], "100000")
         self.assertEqual(club["max_salary"], "150000")
         self.assertEqual(club["salary_period"], "per_month")
         self.assertEqual(club["salary_currency"], "INR")
         self.assertEqual(club["posted_at"], "2026-07-10")
-        self.assertEqual(club["expires_at"], "2026-09-08")
+        self.assertEqual(club["qualification"], "BPT")
+        # The shared 22-column contract — is_active/expires_at are retired.
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
+
+    def test_club_row_carries_the_stamped_taxonomy(self):
+        row = build_row(self.CARD, self.POSTING, {"pharma-job-vacancies"})
+        row["title"] = "Clinical Data Manager"
+        self.assertTrue(apply_classification(row))
+        club = rich_row_to_club_row(row)
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Data Management")
 
     def test_club_row_yearly_salary_restores_annual_amounts(self):
         # Dermatologist (job 2936474): INR 100000 - 500000 Year. The monthly

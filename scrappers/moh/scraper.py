@@ -65,14 +65,20 @@ Quirks
 * **`application_url` is the announcement page**, not the "click here" apply
   link: that link points at `erp.moh.gov.sa`, which is unreachable outside the
   Ministry's network. It is still captured verbatim in `apply_url`.
-* **Everything MoH advertises is healthcare-sector employment**, so the master
-  spec §2 filter is not about dropping non-healthcare jobs (the Ministry also
-  hires IT and cyber-security staff — legitimate `non_clinical` hospital jobs);
-  it decides the club category and flags what it cannot map. Announcements that
-  are *not* recruitment at all (tenders, e-consultations, results) are excluded
-  and counted as `excluded_non_job`; recruitment-adjacent ones the classifier is
-  unsure about are KEPT, flagged `needs_review` and logged to
-  `needs_review.csv` — never silently dropped.
+* **Two independent filters, in this order.**
+  1. `classify_announcement()` answers "is this even a job ad?" — a crawl-side
+     filter over the media-centre archive, which also carries tenders,
+     e-consultations and results pages. Non-recruitment announcements are
+     excluded and counted as `excluded_non_job`; recruitment-adjacent ones
+     (training tracks, scholarships) are KEPT and flagged `needs_review`.
+  2. `classify_job()` from `scrappers/_shared/classification.py` — the one
+     shared two-level taxonomy — then decides scope and labels. `category` is
+     "Non Clinical" | "Public Health" plus a `sub_category`; anything out of
+     scope is dropped and counted as `excluded_out_of_scope`. The parsed
+     `specialties` list is passed as the classifier's `skills` signal and stays
+     in the rich CSV as a raw source column. Because MoH recruits mostly
+     clinical staff Kingdom-wide, most announcements now fall out of scope.
+  Both `needs_review` flags are OR'd together and logged to `needs_review.csv`.
 * **Time window (master spec §4).** The archive goes back to 2011, so the first
   run keeps `INITIAL_WINDOW_DAYS = 365` days; later runs use the watermark
   (newest stored `posted_date` minus `WATERMARK_GRACE_DAYS = 2`). Because every
@@ -83,13 +89,25 @@ Quirks
 * **`is_active`** is `true` while the parsed application window is still open (or
   the plan row says "Still Running"), `false` once it has closed; when no window
   is stated, an announcement counts as open for `ASSUMED_OPEN_DAYS = 30` days
-  after its publish date.
+  after its publish date. It is a **rich-CSV-only** lifecycle column now: the
+  club schema retired `is_active`/`expires_at` fleet-wide, so neither is
+  exported. `refresh_activity()` still re-evaluates it on every run, and the
+  archive crawl still uses it to keep "Still Running" plan rows.
 
 Outputs
 -------
-* moh_jobs.csv                          — rich cumulative store (key: job_id)
+* moh_jobs.csv                          — rich cumulative store of the
+                                          IN-SCOPE announcements (key: job_id)
+* out-of-scope.csv                      — announcements classify_job rejected,
+                                          archived verbatim so the decision
+                                          stays reversible
 * ../../jobs_csv/<DD-MM-YYYY>/moh.csv   — HealthCareers.club 22-column schema
-* needs_review.csv                      — kept-but-unclassified announcements
+* needs_review.csv                      — kept-but-flagged announcements
+
+Migration note (25-08-2026): the 2 stored announcements were re-run through
+the shared classifier — 0 kept, 2 moved to out-of-scope.csv ("Physicians &
+Nursing" and a health-diploma graduate enrolment call). A 0-row steady state
+is expected: the Ministry recruits almost entirely clinical staff.
 
 Run `python scraper.py --help` for options.
 """
@@ -97,6 +115,7 @@ Run `python scraper.py --help` for options.
 import argparse
 import html as html_lib
 import logging
+import os
 import re
 import sys
 import time
@@ -107,6 +126,10 @@ from urllib.parse import urljoin, urlparse
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -163,20 +186,13 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "company", "announcement_type",
     "specialties", "qualification", "region", "city", "country",
     "salary_raw", "salary_min_monthly", "salary_max_monthly",
-    "salary_period_original", "job_type", "category", "needs_review",
+    "salary_period_original", "job_type", "category", "sub_category",
+    "role_family", "all_families", "family_scores", "family_confidence",
+    "matched_in", "needs_review",
     "posted_date", "application_opens", "application_closes",
     "application_window_raw", "experience_raw", "experience_min_years",
     "experience_max_years", "status", "is_active", "description",
     "apply_url", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("moh_scraper")
@@ -188,6 +204,14 @@ log = logging.getLogger("moh_scraper")
 _WS_RE = re.compile(r"\s+")
 _TAG_RE = re.compile(r"<[^>]+>")
 _SCRIPT_RE = re.compile(r"(?is)<(script|style)[^>]*>.*?</\1>")
+# SharePoint renders its field labels ("Page Content") and the news date inside
+# the content area as display:none blocks — invisible on the page, so they must
+# never reach the body text.
+_HIDDEN_RE = re.compile(
+    r"""(?is)<(div|span|p)\b[^>]*style\s*=\s*['"][^'"]*"""
+    r"""display\s*:\s*none[^'"]*['"][^>]*>.*?</\1\s*>""")
+# A fragment cut at a length cap can end mid-tag; that stub is not text.
+_TRUNCATED_TAG_RE = re.compile(r"<(?:/?[A-Za-z][^>]*)?$")
 # SharePoint's rich-text fields are littered with zero-width joiners.
 _ZERO_WIDTH_RE = re.compile(r"[​-‏﻿]")
 
@@ -201,10 +225,15 @@ def clean_text(text):
 def html_to_text(fragment):
     """Flatten an HTML fragment to one plain-text paragraph.
 
-    Scripts/styles are removed first (the announcement body ships an inline
-    jQuery slider), then tags become spaces so sentences never run together.
+    Invisible markup goes first — scripts/styles (the announcement body ships
+    an inline jQuery slider) and display:none blocks (SharePoint's field
+    labels) — then a dangling half-tag from a truncated fragment, and finally
+    tags become spaces so sentences never run together.
     """
-    return clean_text(_TAG_RE.sub(" ", _SCRIPT_RE.sub(" ", str(fragment or ""))))
+    markup = _SCRIPT_RE.sub(" ", str(fragment or ""))
+    markup = _HIDDEN_RE.sub(" ", markup)
+    markup = _TRUNCATED_TAG_RE.sub(" ", markup)
+    return clean_text(_TAG_RE.sub(" ", markup))
 
 
 # ----------------------------------------------------------------------------
@@ -406,49 +435,35 @@ def classify_announcement(title, body=""):
 
 
 # ----------------------------------------------------------------------------
-# Category mapping (club enum: doctors | nurses | pharmacists | non_clinical)
+# Scope & labelling (shared two-level taxonomy)
 # ----------------------------------------------------------------------------
 
-_NURSE_RE = re.compile(r"\bnurs(e|es|ing)\b|\bmidwif|\bnursery nurse\b",
-                       re.IGNORECASE)
-_PHARM_RE = re.compile(r"\bpharmac(y|ist|ists|ies|eutical)\b", re.IGNORECASE)
-# "-ologist" catches radiologist/cardiologist/…; psychologist, technologist and
-# audiologist are allied health, not physicians, so they are excluded.
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|doctors|physician|physicians|surgeon|dentist|dentistry|dental "
-    r"consultant|deputy doctor|resident|consultant|general practitioner|"
-    r"medical officer|intensivist|an(a)?esthetist|obstetrician|"
-    r"p(a)?ediatrician|psychiatrist|medicine)\b|"
-    r"(?<!psych)(?<!audi)(?<!techn)ologist\b", re.IGNORECASE)
-# Clinical support / allied health and the Ministry's corporate posts: both are
-# non_clinical in the club schema, but recognising them keeps them off the
-# needs_review list.
-_ALLIED_RE = re.compile(
-    r"technician|technologist|therapy|therapist|prosthetic|physiotherap|"
-    r"laborator|radiograph|paramedic|health security|sterilization|"
-    r"patient care|perfusion|non[- ]physician specialist|specialist|"
-    r"cyber ?security|\bit\b|information technology|engineer|"
-    r"documents & archives|archives|administrat", re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
+    Runs AFTER `classify_announcement()` has established that the page is a
+    job ad at all. The parsed `specialties` list is the curated `skills`
+    signal; it stays in the rich CSV as a raw source column and never decides
+    the category by itself.
 
-def classify_category(title, specialties=""):
-    """Return (club_category, needs_review) for a recruitment announcement.
+    `needs_review` already carries the announcement classifier's own flag
+    (recruitment-adjacent training/scholarship tracks), so the classifier's
+    flag is OR'd onto it rather than replacing it.
 
-    The Ministry is a healthcare employer, so nothing is dropped here (master
-    spec §2): clinical titles map to doctors/nurses/pharmacists, allied-health
-    and corporate posts to `non_clinical`, and a title neither pattern
-    recognises is still kept as `non_clinical` + `needs_review`.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
     """
-    haystack = "{} {}".format(clean_text(title), clean_text(specialties))
-    if _PHARM_RE.search(haystack):
-        return ("pharmacists", False)
-    if _NURSE_RE.search(haystack):
-        return ("nurses", False)
-    if _DOCTOR_RE.search(haystack):
-        return ("doctors", False)
-    if _ALLIED_RE.search(haystack):
-        return ("non_clinical", False)
-    return ("non_clinical", True)
+    verdict = classify_job(row.get("title", ""),
+                           row.get("specialties", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = bool(verdict["needs_review"]) or bool(row.get("needs_review"))
+    return verdict["in_scope"]
 
 
 # ----------------------------------------------------------------------------
@@ -759,10 +774,17 @@ def merge_candidates(sitemap_entries, listing_items):
 _TITLE_TAG_RE = re.compile(r"(?is)<title>(.*?)</title>")
 _PAGE_DATE_TAG_RE = re.compile(
     r'(?is)id="(?:pageDate|[^"]*lblDate)"[^>]*>(.*?)</span>')
-_CONTENT_START_RE = re.compile(r'(?i)class="newscontent"')
-_CONTENT_END_RE = re.compile(r'(?i)class="(?:ms-hide|left_conts)"')
+# Both boundaries span whole tags: the opening one has to swallow the rest of
+# `<div class="newscontent">` (otherwise its stray ">" opens the body text) and
+# the closing one has to start back at "<" (otherwise a bare "<div" trails it).
+_CONTENT_START_RE = re.compile(r'(?i)class="[^"]*\bnewscontent\b[^"]*"[^>]*>')
+_CONTENT_END_RE = re.compile(
+    r'(?is)<[A-Za-z][^>]*\bclass="(?:ms-hide|left_conts)"')
 _APPLY_LINK_RE = re.compile(
     r'(?i)href="([^"]*(?:erp\.moh\.gov\.sa|IrcVisitor|employment[^"]*)[^"]*)"')
+# Leading breadcrumb/label chrome: "> Page Content ", "Page Content: ", ...
+_PAGE_LABEL_RE = re.compile(r"(?i)^[\s>|:.\u00b7\u2022\-\u2013]*"
+                            r"(?:page content\b[\s>|:.\u00b7\u2022\-\u2013]*)+")
 
 
 def parse_announcement(page_html, url, fallback_title="", fallback_date=""):
@@ -792,7 +814,8 @@ def parse_announcement(page_html, url, fallback_title="", fallback_date=""):
         end = _CONTENT_END_RE.search(page_html, start.end())
         fragment = page_html[start.end():end.start() if end else start.end() + 12_000]
         body = html_to_text(fragment)
-        body = re.sub(r"^Page Content\s*", "", body)
+        # Belt and braces: some pages render the field label visibly.
+        body = _PAGE_LABEL_RE.sub("", body)
 
     apply_url = ""
     if start:
@@ -810,7 +833,6 @@ def build_rich_row(candidate, parsed, needs_review):
     title = parsed["title"]
     specialties = parse_specialties(body)
     opens, closes, window_raw = parse_application_window(body)
-    category, category_review = classify_category(title, specialties)
     experience_raw, exp_min, exp_max = parse_experience(body)
     posted_date = parsed["posted_date"]
     active = compute_is_active(closes, posted_date)
@@ -833,8 +855,17 @@ def build_rich_row(candidate, parsed, needs_review):
         "salary_max_monthly": "",
         "salary_period_original": "",
         "job_type": parse_job_type(title, body),
-        "category": category,
-        "needs_review": bool(needs_review or category_review),
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
+        # seeded with classify_announcement()'s flag; apply_classification()
+        # ORs the shared classifier's own needs_review onto it
+        "needs_review": bool(needs_review),
         "posted_date": posted_date,
         "application_opens": opens,
         "application_closes": closes,
@@ -916,7 +947,6 @@ def build_plan_row(plan, first_seen):
     the nhm/profco scrapers use for date-less sources.
     """
     title = plan["announcement"]
-    category, category_review = classify_category(title)
     active = compute_is_active(plan["closes"], plan["opens"] or first_seen,
                                plan["status"])
     window_raw = " ".join(part for part in
@@ -941,8 +971,15 @@ def build_plan_row(plan, first_seen):
         "salary_max_monthly": "",
         "salary_period_original": "",
         "job_type": "full_time",
-        "category": category,
-        "needs_review": bool(category_review),
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
+        "needs_review": False,
         "posted_date": plan["opens"] or first_seen,
         "application_opens": plan["opens"],
         "application_closes": plan["closes"],
@@ -986,20 +1023,25 @@ def rich_row_to_club_row(row):
         "title": val("title"),
         "description": val("description"),
         "job_type": val("job_type") or "full_time",
-        "category": val("category") or "non_clinical",
+        "category": val("category"),
+        "sub_category": val("sub_category"),
         # the "click here" apply link points at erp.moh.gov.sa, which is not
         # reachable from outside the Ministry — the announcement page is
         "application_url": val("job_url"),
         "posted_at": val("posted_date"),
         "min_experience": val("experience_min_years"),
         "max_experience": val("experience_max_years"),
+        # the announcement's own stated qualification level, else a grounded
+        # extraction from the body — never inferred
+        "qualification": val("qualification") or extract_qualification(
+            val("description")),
         # no salary is ever stated (master spec §3)
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": val("is_active") or "false",
-        "expires_at": val("application_closes"),
+        # is_active / application_closes stay in the rich CSV only: the club
+        # schema retired is_active and expires_at fleet-wide
     }
 
 
@@ -1120,7 +1162,8 @@ def main(argv=None):
              len(known_ids), cutoff or "none (whole archive)")
 
     counters = {"candidates": 0, "fetched": 0, "excluded_old": 0,
-                "excluded_non_job": 0, "needs_review": 0, "new": 0,
+                "excluded_non_job": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0,
                 "duplicates": 0, "errors": 0, "plan_rows": 0}
     new_rows, review_log = [], []
     today_iso = date.today().isoformat()
@@ -1147,11 +1190,14 @@ def main(argv=None):
                         and not within_window(row["posted_date"], cutoff)):
                     counters["excluded_old"] += 1
                     continue
+                if not apply_classification(row):
+                    counters["excluded_out_of_scope"] += 1
+                    continue
                 if row["needs_review"]:
                     counters["needs_review"] += 1
                     review_log.append({"job_id": row["job_id"],
                                        "title": row["title"],
-                                       "reason": "category unmapped",
+                                       "reason": "out-of-scope-looking title",
                                        "job_url": row["job_url"]})
                 known_ids.add(row["job_id"])
                 new_rows.append(row)
@@ -1237,11 +1283,16 @@ def main(argv=None):
                 counters["errors"] += 1
                 continue
 
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                log.debug("Out of scope: %s", parsed["title"])
+                continue
+
             if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({
                     "job_id": row["job_id"], "title": row["title"],
-                    "reason": "recruitment-adjacent or unmapped category",
+                    "reason": "recruitment-adjacent or out-of-scope-looking title",
                     "job_url": row["job_url"]})
             known_ids.add(job_id)
             new_rows.append(row)
@@ -1284,6 +1335,8 @@ def main(argv=None):
     print("Detail pages fetched:     {:>5,}".format(counters["fetched"]))
     print("Recruitment-plan rows:    {:>5,}".format(counters["plan_rows"]))
     print("Excluded (not a job):     {:>5,}".format(counters["excluded_non_job"]))
+    print("Excluded (out of scope):  {:>5,}".format(
+        counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff or "no cutoff",
                                                     counters["excluded_old"]))
     print("Flagged needs_review:     {:>5,}".format(counters["needs_review"]))

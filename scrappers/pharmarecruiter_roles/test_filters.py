@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for the pharmarecruiter.in scraper's parsers.
+"""Unit tests for the pharmarecruiter.in role-targeted scraper.
 
 Run with plain:  python test_filters.py
 """
@@ -10,7 +10,7 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
-    classify_category,
+    apply_classification,
     classify_company_type,
     classify_job_type,
     compute_cutoff,
@@ -20,6 +20,8 @@ from scraper import (
     parse_salary,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
+    SEARCH_TERMS,
+    _NEWSY_TITLE_RE,
 )
 
 
@@ -135,27 +137,72 @@ class TestParseExperience(unittest.TestCase):
         self.assertEqual(parse_experience("As per role"), ("", ""))
 
 
+class TestApplyClassification(unittest.TestCase):
+    """Wiring tests for the shared two-level classifier.
+
+    The engine itself is covered by _shared/test_classification.py; these
+    only assert that this scraper feeds it the right signals and stamps
+    the verdict onto the rich row.
+    """
+
+    @staticmethod
+    def _row(title, site_categories="", description="", needs_review=False):
+        return {"title": title, "site_categories": site_categories,
+                "description": description, "needs_review": needs_review}
+
+    def test_in_scope_role_is_kept_and_labelled(self):
+        row = self._row("Senior Medical Writer - Regulatory Documents", "jobs")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Medical Writer")
+        self.assertEqual(row["role_family"], "Medical Writer")
+
+    def test_public_health_role(self):
+        row = self._row("Epidemiologist - District Surveillance Unit", "jobs")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Epidemiology")
+
+    def test_bedside_title_is_dropped(self):
+        row = self._row("Staff Nurse Openings in Mumbai", "jobs")
+        self.assertFalse(apply_classification(row))
+
+    def test_search_term_does_not_rescue_an_out_of_scope_post(self):
+        # SEARCH_TERMS is crawl-side only: a production walk-in surfaced by
+        # the "clinical research" full-text query is still dropped.
+        row = self._row(
+            "Walk-in Interview: Production, QC, ADL & R&D Jobs at Ami Lifesciences",
+            "jobs; production-jobs; qc-jobs",
+            "Clinical research department is not involved.")
+        self.assertFalse(apply_classification(row))
+
+    def test_local_needs_review_flag_survives(self):
+        row = self._row("Clinical Data Manager", "jobs", needs_review=True)
+        self.assertTrue(apply_classification(row))
+        self.assertTrue(row["needs_review"])
+
+
+class TestSearchTerms(unittest.TestCase):
+    def test_terms_are_lowercase_and_unique(self):
+        self.assertEqual(len(SEARCH_TERMS), len(set(SEARCH_TERMS)))
+        for term in SEARCH_TERMS:
+            self.assertEqual(term, term.lower().strip())
+
+    def test_every_role_family_has_a_query(self):
+        joined = " | ".join(SEARCH_TERMS)
+        for needle in ("clinical data management", "clinical research",
+                       "medical writ", "trial master file", "medical coding",
+                       "pharmacovigilance", "regulatory affairs",
+                       "medical monitor", "medical science liaison",
+                       "health economics", "public health"):
+            self.assertIn(needle, joined)
+
+
 class TestClassifiers(unittest.TestCase):
-    def test_production_roles_are_non_clinical(self):
-        category, review = classify_category(
-            "Walk-in Interview: Production, QC, ADL & R&D Jobs at Ami Lifesciences")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(review)
-
-    def test_pharmacist_title(self):
-        self.assertEqual(classify_category("Pharmacist Jobs at Apollo Pharmacy")[0],
-                         "pharmacists")
-
-    def test_doctor_title(self):
-        self.assertEqual(classify_category("Medical Officer Vacancy at CDSCO")[0],
-                         "doctors")
-
-    def test_nurse_title(self):
-        self.assertEqual(classify_category("Staff Nurse Openings in Mumbai")[0],
-                         "nurses")
-
-    def test_newsy_title_flagged(self):
-        self.assertTrue(classify_category("Top 10 Pharma Companies in India")[1])
+    def test_newsy_title_is_junk_detection_only(self):
+        # feeds needs_review; it is not a category decider
+        self.assertTrue(_NEWSY_TITLE_RE.search("Top 10 Pharma Companies in India"))
+        self.assertFalse(_NEWSY_TITLE_RE.search("Clinical Data Manager"))
 
     def test_company_type_defaults_to_pharma(self):
         self.assertEqual(classify_company_type("Macleods Pharmaceuticals", ""),

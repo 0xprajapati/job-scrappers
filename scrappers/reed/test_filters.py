@@ -11,7 +11,7 @@ from datetime import date
 import pandas as pd
 
 from reed_scraper import (
-    classify_category,
+    apply_classification,
     classify_company_type,
     compute_cutoff,
     extract_page_props,
@@ -22,6 +22,7 @@ from reed_scraper import (
     parse_display_salary,
     rich_row_to_club_row,
     strip_html,
+    CLUB_COLUMNS,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
 )
@@ -98,32 +99,60 @@ class TestMapJobType(unittest.TestCase):
         self.assertEqual(map_job_type("On-Site", True, True), "full_time")
 
 
-class TestClassifyCategory(unittest.TestCase):
-    def test_nurses(self):
-        for title in ("School Nurse", "Clinical Nurse Advisor",
-                      "Registered Midwife", "Ward Matron",
-                      "Health Visitor", "RGN Nights"):
-            self.assertEqual(classify_category(title), ("nurses", False), title)
+class TestClassificationWiring(unittest.TestCase):
+    """Reed had NO scope gate before the 2026-08-25 taxonomy migration.
 
-    def test_doctors(self):
-        for title in ("General Practitioner", "Consultant Psychiatrist",
-                      "Speciality Doctor", "Cardiologist"):
-            self.assertEqual(classify_category(title), ("doctors", False), title)
+    Engine internals live in _shared/test_classification.py; these tests
+    only prove reed hands it the right signals and honours the verdict.
+    """
 
-    def test_pharmacists(self):
-        for title in ("Pharmacist", "Pharmacy Dispenser"):
-            self.assertEqual(classify_category(title), ("pharmacists", False), title)
+    @staticmethod
+    def _row(title, l1="", l2="", sector="", description=""):
+        return {"title": title, "taxonomy_l1": l1, "taxonomy_l2": l2,
+                "sector": sector, "description": description}
 
-    def test_uk_care_roles_non_clinical(self):
+    def test_in_scope_role_is_kept_and_labelled(self):
+        row = self._row("Senior Clinical Research Associate",
+                        l1="Clinical Research")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+
+    def test_public_health_role(self):
+        row = self._row("Consultant in Public Health")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+
+    def test_reed_taxonomy_is_the_skills_signal(self):
+        # taxonomyLevel1/2 + jobSector name the discipline where the title
+        # does not; they are joined and passed as `skills` (weight 2).
+        row = self._row("Senior Associate", l1="Drug Safety",
+                        l2="Pharmacovigilance")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["role_family"], "Pharmacovigilance")
+        self.assertIn("skills", row["matched_in"])
+
+    def test_uk_care_role_is_dropped(self):
+        # Reed's Health & Medicine sector is mostly this; all out of scope
+        # now, where the old scraper kept every one as non_clinical.
         for title in ("Care Assistant", "Support Worker",
-                      "Theatre Scrub Practitioner", "Occupational Therapist",
-                      "Registered Home Manager", "Healthcare Assistant"):
-            self.assertEqual(classify_category(title), ("non_clinical", False), title)
+                      "Theatre Scrub Practitioner", "Healthcare Assistant",
+                      "Registered Home Manager"):
+            row = self._row(title)
+            self.assertFalse(apply_classification(row), title)
 
-    def test_unknown_flagged_never_dropped(self):
-        category, needs_review = classify_category("Wellbeing Champion")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
+    def test_nurse_and_doctor_titles_are_dropped(self):
+        for title in ("School Nurse", "RGN Nights", "General Practitioner",
+                      "Consultant Psychiatrist", "Pharmacy Dispenser"):
+            row = self._row(title)
+            self.assertFalse(apply_classification(row), title)
+
+    def test_dropped_row_carries_no_category(self):
+        row = self._row("Care Assistant")
+        self.assertFalse(apply_classification(row))
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["sub_category"], "")
 
 
 class TestCutoff(unittest.TestCase):
@@ -216,26 +245,30 @@ class TestRowBuilding(unittest.TestCase):
         self.assertIn("Ophthalmology", row["description"])
         self.assertNotIn("<p>", row["description"])
 
-    def test_club_row_uk_fields_and_expiry(self):
+    def test_club_row_uk_fields(self):
         rich = job_to_rich_row(self.LISTING_JOB, self.DETAIL)
-        rich.pop("needs_review")
+        rich["category"] = "Non Clinical"
+        rich["sub_category"] = "Clinical Research"
         club = rich_row_to_club_row(rich)
         self.assertEqual(club["country_name"], "United Kingdom")
         self.assertEqual(club["country_code"], "GB")
         self.assertEqual(club["country_dial_code"], "+44")
-        self.assertEqual(club["expires_at"], "2026-08-23")
         self.assertEqual(club["posted_at"], "2026-07-12")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
         # GBP can't be represented by the club enum -> salary empty
         self.assertEqual(club["min_salary"], "")
         self.assertEqual(club["salary_currency"], "")
-        self.assertEqual(club["is_active"], "true")
+        # is_active / expires_at retired by the taxonomy migration
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
 
     def test_club_salary_stays_empty_even_when_disclosed_gbp(self):
         job = dict(self.LISTING_JOB, salaryDescription=1,
                    salaryFrom=41000, salaryTo=42000)
         rich = job_to_rich_row(job, None)
         self.assertEqual(rich["salary_min"], "41000")  # rich keeps it
-        rich.pop("needs_review")
         club = rich_row_to_club_row(rich)
         self.assertEqual(club["min_salary"], "")       # club can't hold GBP
 

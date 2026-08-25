@@ -34,10 +34,20 @@ exposes the standard public Oracle CE REST API:
   `(Br of Aster DM…)`) are stripped and run-together names re-spaced.
   The club CSV's `company_name` is the facility when one is named, else the
   Medcare group name.
-- **Category**: Oracle's facet (Nursing / Clinicians / Paramedical / Enabling
-  & Support / …) maps onto the club enum; titles decide when the facet is
-  missing or ambiguous; unmatched titles are kept as `non_clinical` and
+- **Classification**: the shared two-level taxonomy
+  (`scrappers/_shared/classification.py`) decides everything — `category` is
+  `Non Clinical` | `Public Health`, plus a `sub_category` (Medical Coding,
+  Clinical Research, Infection Prevention & Control, …). Oracle's own facet
+  (Nursing / Clinicians / Paramedical / Enabling & Support / …) is kept in the
+  rich CSV as the raw source column `category_original` and is fed to the
+  classifier as its `skills` signal together with the parsed department — it
+  can no longer decide the category. Medcare is a hospital operator, so most
+  requisitions (bedside nursing, clinicians, paramedical) are **out of scope
+  and dropped**, counted as `excluded_out_of_scope` in the run summary.
+  In-scope rows whose title still looks like another profession are kept and
   flagged `needs_review` (→ `needs_review.csv`).
+- **Qualification**: Oracle's structured `StudyLevel` when present, else a
+  grounded extraction from the description — never inferred.
 - **Time window**: the ATS lists only *open* requisitions and Medcare keeps
   postings live for years, so unlike feed-style sources the **first run keeps
   all open jobs** (`INITIAL_WINDOW_DAYS = None`); later runs use the standard
@@ -50,11 +60,16 @@ exposes the standard public Oracle CE REST API:
 python scraper.py                # incremental daily run
 python scraper.py --no-details   # listing data only (no per-job requests)
 python scraper.py --max-pages 1 --verbose
-python test_filters.py           # unit tests
+python test_filters.py           # 19 unit tests (title parsing, classification
+                                 # wiring, cutoff, club row)
 ```
 
 ## Outputs
 
 - `medcare_jobs.csv` — rich cumulative store, dedup key `(source, job_id)`.
-- `../../jobs_csv/<DD-MM-YYYY>/medcare.csv` — HealthCareers.club 22-column CSV.
-- `needs_review.csv` — titles the classifier couldn't place.
+- `../../jobs_csv/<DD-MM-YYYY>/medcare.csv` — HealthCareers.club 22-column CSV
+  (`CLUB_COLUMNS` imported from `_shared/classification.py`; `is_active` /
+  `expires_at` are retired, `sub_category` and `qualification` are in).
+- `needs_review.csv` — in-scope rows whose title looks like another profession.
+- `out-of-scope.csv` — rows the shared classifier rejected during the one-off
+  stored-data reclassification (reversible; never silently discarded).

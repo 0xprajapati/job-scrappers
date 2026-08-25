@@ -38,9 +38,27 @@ carries everything public.
   fixed by a small alias map.
 - **No public per-job URL** — Apply Now is login-gated, so `job_url` /
   `application_url` point at the public board.
-- The board is healthcare-only, so there is no extra healthcare filter;
-  junk/test postings ("test", "testing") are kept but flagged
-  `needs_review` and logged to `needs_review.csv`.
+- Junk/test postings ("test", "testing") score no family hits in the shared
+  classifier and fall out as out-of-scope like any other non-taxonomy row.
+
+## Classification (taxonomy migration 2026-08-25)
+
+Every candidate job goes through the shared two-level classifier —
+`_shared/classification.classify_job(title, skills, description)` — with the
+API's curated `keySkills` list as the `skills` signal. The verdict fills
+`category` ("Non Clinical" | "Public Health"), `sub_category` (20-way split)
+and the rich-CSV trace columns (`role_family`, `all_families`,
+`family_scores`, `family_confidence`, `matched_in`, `needs_review`).
+
+This is a clinical board, so MOST listings (nurses, doctors, technicians,
+tele callers, sales) are out of scope for the taxonomy and are dropped,
+counted `excluded_out_of_scope` in the run summary — that is intended.
+The 2026-08-25 stored-data reclassification moved all 106 stored rows to
+`out-of-scope.csv` (reversible; nothing was discarded). `needs_review ==
+True` rows are kept AND appended to `needs_review.csv` (dedup on job_id).
+The club CSV uses exactly the 22 `CLUB_COLUMNS` imported from
+`_shared/classification.py` (`is_active` / `expires_at` retired;
+`qualification` is extracted from the description, never inferred).
 
 ## Usage
 

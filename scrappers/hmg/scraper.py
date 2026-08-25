@@ -35,9 +35,15 @@ Quirks
   brand, not the internal uuid (the API exposes no company-name lookup).
 * `category` is the ATS' own taxonomy (Physicians / Doctor / Nursing / Pharmacy
   / Paramedical / Administration / **Default**) and "Default" is used for real
-  clinical roles, so the TITLE decides the club category and the ATS category is
-  only the fallback (master spec §2). Anything neither can place is KEPT,
-  flagged `needs_review` and logged to `needs_review.csv`.
+  clinical roles, so it may NOT decide anything. It is stored verbatim as
+  `category_original` (a raw source column) and, together with major/industry/
+  career level/skills, is passed to the shared classifier as its curated
+  `skills` signal.
+* Classification is the shared two-level taxonomy (scrappers/_shared/
+  classification.py): category "Non Clinical" | "Public Health" plus a
+  sub_category. Being a hospital group's ATS, most postings (physicians,
+  nursing, pharmacy dispensing, paramedical) are out of scope and dropped
+  (counted as excluded_out_of_scope).
 * `salary` is `{"min": 0, "max": 0}` on every posting -> `salary_raw =
   "Not Disclosed"`, numeric fields empty (master spec §3). The parser still
   handles a real range if HMG ever publishes one.
@@ -70,6 +76,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -79,6 +86,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -215,19 +226,12 @@ RICH_COLUMNS = [
     "source", "portal", "job_id", "title", "company", "company_type",
     "location_label", "city", "country", "salary_raw", "salary_min_monthly",
     "salary_max_monthly", "salary_period_original", "salary_currency",
-    "job_type", "career_level", "category", "category_original", "industry",
+    "job_type", "career_level", "category", "sub_category", "role_family",
+    "all_families", "family_scores", "family_confidence", "matched_in",
+    "category_original", "industry",
     "major", "education", "skills", "experience_min_years",
     "experience_max_years", "needs_review", "posted_date", "expires_at",
     "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("hmg_scraper")
@@ -368,71 +372,46 @@ def parse_experience(years_of_experience):
 
 
 # ----------------------------------------------------------------------------
-# Classification (club enum: doctors | nurses | pharmacists | non_clinical)
+# Classification — delegated to _shared/classification.py
 # ----------------------------------------------------------------------------
 
-_PHARM_RE = re.compile(r"\bpharmac(y|ist|ists|ies|eutical)\b", re.IGNORECASE)
-_NURSE_RE = re.compile(r"\bnurs(e|es|ing)\b|\bmidwi(fe|ves|fery)\b", re.IGNORECASE)
-# "-ologist" catches radiologist/cardiologist/…; psychologist, technologist and
-# audiologist are allied-health roles, not physicians, so they are excluded.
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|dentist|dentistry|endodontics|"
-    r"orthodontic\w*|periodontic\w*|prosthodontic\w*|maxillofacial|"
-    r"general practitioner|consultant|specialist|registrar|medical officer|"
-    r"intensivist|an(a)?esthesiologist|an(a)?esthetist|obstetrician|"
-    r"p(a)?ediatrician|psychiatrist|resident physician)\b|"
-    r"(?<!psych)(?<!audi)(?<!techn)ologist\b",
-    re.IGNORECASE)
+def classification_skills(row):
+    """The curated `skills` signal: the Elevatus category, career level,
+    industry and major joined together.
 
-# Elevatus category values -> club category, used only when the title is silent.
-_ATS_CATEGORY_MAP = {
-    "physicians": "doctors",
-    "doctor": "doctors",
-    "doctors": "doctors",
-    "nursing": "nurses",
-    "nurses": "nurses",
-    "pharmacy": "pharmacists",
-    "paramedical": "non_clinical",
-    "allied health": "non_clinical",
-    "administration": "non_clinical",
-    "support services": "non_clinical",
-}
+    The ATS category ("Physicians", "Nursing", ... and the literal
+    "Default" it also files real clinical roles under) is a raw source
+    column — it feeds the classifier but never decides anything.
 
-# Anything that shows no healthcare signal at all (a graphic designer at a
-# support-services subsidiary) is kept but flagged (master spec §2).
-_HEALTHCARE_SIGNAL_RE = re.compile(
-    r"medical|health|hospital|clinic|patient|nurs|doctor|physician|pharmac|"
-    r"dental|dentist|surg|therap|physio|radiol|radiograph|imaging|ultrasound|"
-    r"echo|patholog|laborator|\blab\b|diagnost|dialysis|an(a)?esthes|"
-    r"cardio|neuro|dietit|nutrition|optometr|paramedic|emergency|midwif|"
-    r"pharma|sonograph|phlebotom|respiratory|icu\b|cath ?lab|ivf|"
-    r"tamheer",
-    re.IGNORECASE)
-
-
-def classify_category(title, ats_category="", extra_text=""):
-    """Return (club_category, needs_review).
-
-    The title wins whenever it matches a clinical pattern — the ATS files real
-    clinical roles ("Registered Nurse", "Consultant IVF") under the literal
-    category "Default" — and the ATS category is only the fallback. Everything
-    that lands in non_clinical is kept and flagged unless something in its
-    title/category/major mentions healthcare, so a hospital's "Medical
-    Administrator" passes while a support subsidiary's "Graphic Designer" is
-    surfaced for review (never dropped).
+    The posting's `skills` array is deliberately NOT part of this signal:
+    HMG fills it from a generic corporate competency framework ("data
+    management & record keeping", "process management") that describes no
+    role, and feeding it in admits radiologists and secretaries as Clinical
+    Data Management. It is still stored verbatim in the rich CSV.
     """
-    title = title or ""
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    mapped = _ATS_CATEGORY_MAP.get(clean_text(ats_category).lower())
-    if mapped and mapped != "non_clinical":
-        return (mapped, False)
-    haystack = " ".join(filter(None, [title, ats_category, extra_text]))
-    return ("non_clinical", not bool(_HEALTHCARE_SIGNAL_RE.search(haystack)))
+    return " ".join(filter(None, [row.get("category_original", ""),
+                                  row.get("career_level", ""),
+                                  row.get("industry", ""),
+                                  row.get("major", "")])).strip()
+
+
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
+
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
+    """
+    verdict = classify_job(row.get("title", ""),
+                           classification_skills(row),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 def map_job_type(job_types):
@@ -603,8 +582,6 @@ def build_rich_row(job, portal):
     ats_category = _joined(job.get("category"))
     major = _joined(job.get("major"))
     industry = _joined(job.get("industry"))
-    category, needs_review = classify_category(
-        job.get("title"), ats_category, " ".join([major, industry]))
     raw, salary_min, salary_max, period, currency = parse_salary(
         job.get("salary"))
     exp_min, exp_max = parse_experience(job.get("years_of_experience"))
@@ -626,7 +603,14 @@ def build_rich_row(job, portal):
         "salary_currency": currency,
         "job_type": map_job_type(job.get("job_type")),
         "career_level": _joined(job.get("career_level")),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "category_original": ats_category,
         "industry": industry,
         "major": major,
@@ -634,7 +618,7 @@ def build_rich_row(job, portal):
         "skills": _joined(job.get("skills")),
         "experience_min_years": exp_min,
         "experience_max_years": exp_max,
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": clean_text(job.get("posted_at"))[:10],
         "expires_at": clean_text(job.get("end_schedule_date"))[:10],
         "description": build_description(
@@ -668,17 +652,20 @@ def rich_row_to_club_row(r):
         "title": val("title"),
         "description": val("description"),
         "job_type": val("job_type") or "full_time",
-        "category": val("category") or "non_clinical",
+        "category": val("category"),
+        "sub_category": val("sub_category"),
         "application_url": val("job_url") or CAREERS_HUB,
         "posted_at": val("posted_date"),
         "min_experience": val("experience_min_years"),
         "max_experience": val("experience_max_years"),
+        # structured source field (Elevatus `degree`) first, else grounded
+        # extraction from the description — never inferred
+        "qualification": val("education") or extract_qualification(
+            val("description")),
         "min_salary": val("salary_min_monthly"),
         "max_salary": val("salary_max_monthly"),
         "salary_period": val("salary_period_original"),
         "salary_currency": val("salary_currency"),
-        "is_active": "true",
-        "expires_at": val("expires_at"),
     }
 
 
@@ -768,8 +755,8 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; cutoff: %s", len(known_ids),
              cutoff or "none (keeping all open postings)")
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "errors": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0, "errors": 0}
     new_rows, review_log = [], []
 
     for portal in portals:
@@ -804,6 +791,9 @@ def main(argv=None):
             except Exception as exc:
                 log.warning("Skipping malformed posting %s: %s", job_id, exc)
                 counters["errors"] += 1
+                continue
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
                 continue
             if row["needs_review"]:
                 counters["needs_review"] += 1
@@ -843,6 +833,8 @@ def main(argv=None):
     print("\n===== Run summary =====")
     print("Portals scraped:       {:>5,}".format(len(portals)))
     print("Postings scanned:      {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(
+        counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff or "no cutoff",
                                                     counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))

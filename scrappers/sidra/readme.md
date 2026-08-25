@@ -40,20 +40,25 @@ facet is needed:
 
 - **No salary data** anywhere on the portal → `salary_raw = "Not Disclosed"`,
   numeric/club salary fields blank (never invented, master spec §3).
+- **Classification is the shared two-level taxonomy**
+  (`scrappers/_shared/classification.py`): `category` is `Non Clinical` |
+  `Public Health`, plus a `sub_category` (Clinical Data Management, Clinical
+  Research, Medical Coding, Infection Prevention & Control, …). Sidra is a
+  specialist hospital, so most requisitions (physicians, nursing, allied
+  health, generic corporate roles) are **out of scope and dropped**, counted as
+  `excluded_out_of_scope` in the run summary.
 - **Oracle's category facet is populated on every live requisition** —
   `Physician` / `Nursing` / `Allied Health` / `Enabling Function: <function>` —
-  so it drives the club category, with the title classifier as fallback.
-  `Enabling Function: …` is matched by **prefix**, so a new sub-function (IT,
-  Finance, …) still maps to `non_clinical`. `Allied Health` also has no club
-  bucket of its own and lands in `non_clinical` (same treatment SEHA gives it).
-  An unmistakable title still overrides a coarse facet: `Specialist -
-  Medication Management and Pharmacy Quality` (facet *Allied Health*) →
-  `pharmacists`.
+  but it no longer decides anything. It is kept verbatim in the rich CSV as
+  `category_original` and, together with `requisition_type` and `job_function`,
+  passed to the classifier as its `skills` signal only.
+- **Qualification**: Oracle's structured `StudyLevel` when present, else a
+  grounded extraction from the description — never inferred.
 - **Talent-pool campaigns are not vacancies.** `CM0055` is a
   "Join Our Talent Pool - Future opportunities" campaign requisition
   (`RequisitionType = Campaigns`) with an empty description — an expression of
-  interest, not a live opening. It is kept, marked `talent_pool = True` and
-  flagged `needs_review` so a human decides (§2 — never silently dropped).
+  interest, not a live opening. One that is in scope is kept, marked
+  `talent_pool = True` and **always** flagged `needs_review` so a human decides.
 - **Bilingual portal**: that same campaign returns the Arabic schedule label
   `كل الوقت` (full time) instead of the English one, so `map_job_type` maps the
   Arabic labels explicitly.
@@ -98,7 +103,9 @@ Useful flags:
 - `--run-date DD-MM-YYYY` — target `jobs_csv/` folder (default: today).
 - `--verbose` — debug logging.
 
-Unit tests (parsers, classifier, cutoff logic — all examples taken from real
+Unit tests — 37 covering the parsers, the classification wiring (in-scope role
+gets the right category/sub_category; clinical titles are dropped; an in-scope
+talent-pool row is kept and flagged) and the cutoff logic; all examples from real
 Sidra listings):
 
 ```bash
@@ -109,13 +116,18 @@ Sidra listings):
 
 - `sidra_jobs.csv` — rich cumulative store, deduplicated on `job_id`. Running
   twice in a row adds 0 rows and leaves the file byte-identical.
-- `../../jobs_csv/<DD-MM-YYYY>/sidra.csv` — HealthCareers.club 22-column schema.
-- `needs_review.csv` — requisitions the classifier could not confidently place.
+- `../../jobs_csv/<DD-MM-YYYY>/sidra.csv` — HealthCareers.club 22-column schema
+  (`CLUB_COLUMNS` imported from `_shared/classification.py`; `is_active` /
+  `expires_at` are retired, `sub_category` and `qualification` are in).
+- `needs_review.csv` — in-scope rows whose title looks like another profession,
+  plus every in-scope talent-pool campaign.
+- `out-of-scope.csv` — rows the shared classifier rejected during the one-off
+  stored-data reclassification (reversible; never silently discarded).
 
-## First run (2026-07-27)
+## Coverage note
 
-All 23 open requisitions captured: 4 `doctors`, 4 `nurses`, 1 `pharmacists`,
-14 `non_clinical` (1 flagged `needs_review` — the talent-pool campaign).
-All in Doha, Qatar; 22 full-time and 1 part-time. Descriptions on 22/23
-(mean ~6.5k chars), experience on 22/23, education and expiry dates on 22/23.
-The 23rd is the empty talent-pool campaign requisition.
+Earlier crawls captured every open requisition (all in Doha, Qatar; mostly
+full-time, descriptions ~6.5k chars). Under the two-level taxonomy nearly all
+of them are clinical or generic-corporate and therefore out of scope: the
+stored rich CSV keeps only the Non Clinical / Public Health roles, with the
+rest preserved in `out-of-scope.csv`.

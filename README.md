@@ -2,37 +2,40 @@
 
 Scrapers collect healthcare job listings from external portals and write them into a shared CSV format for import into HealthCareers.club.
 
-**Goal:** scrape jobs from each portal → write rows matching [`job_samples.csv`](./job_samples.csv) → save under `jobs_csv/<DD-MM-YYYY>/<site_name>.csv`.
-
-<!-- Add  -->
+**Goal:** scrape jobs from each portal → classify every job through `scrappers/_shared/classification.py` → write rows on the 22-column club schema → save under `jobs_csv/<DD-MM-YYYY>/<site_name>.csv`.
 
 ## Folder layout
 
 ```
-scrapers/
-├── jobslly/                 # one folder per job site
-│   ├── scraper.py
-│   ├── readme.md            # site-specific notes (URL, selectors, quirks)
+scrappers/
+├── _shared/                 # classification.py, role_families.py, taxonomy_keywords.py
+├── shine_roles/             # one folder per job site
+│   ├── shine_scraper.py
+│   ├── README.md            # site-specific notes (URL, selectors, quirks)
+│   ├── test_filters.py
 │   └── requirements.txt
 ├── another_site/
-│   ├── scraper.py
-│   ├── readme.md
-│   └── requirements.txt
-└── jobs_csv/
-    └── 10-07-2026/          # run date: DD-MM-YYYY
-        ├── jobslly.csv
-        └── another_site.csv
+│   └── ...
+jobs_csv/
+└── 25-08-2026/              # run date: DD-MM-YYYY
+    ├── shine_roles.csv
+    └── another_site.csv
 ```
 
 | Path | Purpose |
-|||
-| `<site_name>/` | Scraper for one portal (e.g. `jobslly`) |
-| `jobs_csv/<date>/` | Output folder for that day’s runs |
-| `jobs_csv/<date>/<site_name>.csv` | Scraped jobs from that site |
+|---|---|
+| `scrappers/<site_name>/` | Scraper for one portal |
+| `scrappers/<site_name>/<site>_jobs.csv` | Rich cumulative per-source store (source of truth) |
+| `jobs_csv/<date>/` | Output folder for that day's runs |
+| `jobs_csv/<date>/<site_name>.csv` | That site's club export, regenerated each run |
 
-## Output CSV format
+## Output CSV format — the club schema
 
-Every scraper **must** write the same columns as [`job_samples.csv`](./job_samples.csv). Column order and names must match exactly.
+Every new scraper **must** write exactly the 22 `CLUB_COLUMNS` defined in
+[`scrappers/_shared/classification.py`](./scrappers/_shared/classification.py),
+and every migrated scraper does. Import the list — never hand-copy it. Column
+order and names must match exactly. (Scrapers not yet migrated still write an
+older club schema — see the note at the end of this section.)
 
 ### Columns
 
@@ -49,87 +52,107 @@ Every scraper **must** write the same columns as [`job_samples.csv`](./job_sampl
 | `title`             | Yes      | Job title                               |
 | `description`       | No       | Full job details                        |
 | `job_type`          | Yes      | Enum — see below                        |
-| `category`          | Yes      | Enum — see below                        |
+| `category`          | Yes      | `Non Clinical` or `Public Health`       |
+| `sub_category`      | Yes      | One of the 20 sub-categories below      |
 | `application_url`   | Yes      | URL where the candidate applies         |
 | `posted_at`         | Yes      | `YYYY-MM-DD`                            |
 | `min_experience`    | No       | Years (integer)                         |
 | `max_experience`    | No       | Years (integer)                         |
-| `qualification`     | No       | Qualification or education requirements |
+| `qualification`     | No       | Source's qualification field, else `extract_qualification(description)` — never inferred |
 | `min_salary`        | No       | Full amount (e.g. `1500000`, not lakhs) |
 | `max_salary`        | No       | Full amount                             |
 | `salary_period`     | No       | Enum — see below                        |
 | `salary_currency`   | No       | Enum — see below                        |
 
+The old `is_active` and `expires_at` columns are retired everywhere (rich CSVs
+may keep source expiry data in their own columns).
+
 Leave optional fields empty when the source page does not provide them. Do not invent salary or experience.
 
 ### Allowed enum values
 
-Use these exact strings (Postgres / Prisma enums). Do **not** use display labels like `Full Time` or numeric codes.
+Use these exact strings. Do **not** use display labels like `Full Time` or numeric codes.
 
 | Field          | Allowed values                                   |
 | -------------- | ------------------------------------------------ |
 | `company_type` | `hospital`, `pharma`                             |
 | `job_type`     | `full_time`, `part_time`, `remote`, `hybrid`     |
-| `category`     | see the eleven role families below               |
+| `category`     | `Non Clinical`, `Public Health`                  |
+| `sub_category` | one of the 20 sub-categories below               |
 | `salary_period` | `per_annum`, `per_month`                        |
 | `salary_currency` | `INR`, `USD`                                  |
 
-#### `category` — role families
+#### The two-level taxonomy
 
-`category` names the **role family**, not the profession. Unlike the other
-enums it uses display-style capitalisation, so write these strings verbatim:
+Two **categories**, each with ten **sub-categories** (full titles and keyword
+lists in [`Jobs_keywords/keywords_for_jobs.md`](./Jobs_keywords/keywords_for_jobs.md),
+machine-readable form in `scrappers/_shared/taxonomy_keywords.py`):
 
-| Value | Covers |
-| --- | --- |
-| `Public Health` | epidemiology, population/community/global health, health policy |
-| `Clinical Data Management` | clinical data managers, EDC, CDISC/SDTM, clinical programming |
-| `Clinical Research` | CRAs, clinical trial/study/operations management, investigators |
-| `Medical Writer` | medical/scientific/regulatory writing, medical editors, publications |
-| `TMF` | trial master file operations |
-| `Medical Coding` | medical coders, CPC/CCS, risk adjustment, DRG, coding audit |
-| `Pharmacovigilance` | drug safety, GVP, adverse events, case processing, signal detection |
-| `Regulatory Affairs` | regulatory affairs/strategy/submissions/labelling, CTD/IND/NDA |
-| `Medical Reviewer` | medical monitors, physician reviewers, utilization review |
-| `MSL` | medical science liaisons, medical/scientific affairs, medical advisors |
-| `HEOR` | health economics, outcomes research, market access, RWE, HTA |
+| `category` | `sub_category` values |
+|---|---|
+| `Non Clinical` | Clinical Data Management · Clinical Research · Medical Writer · TMF · Medical Coding · Pharmacovigilance · Regulatory Affairs · Medical Reviewer · MSL · HEOR |
+| `Public Health` | Epidemiology · Public Health Program Management · Monitoring & Evaluation · Community Health · Health Promotion & Education · Disease Programs · Public Health Nutrition · Infection Prevention & Control · Health Informatics & Data · Public Health Research |
 
-Full sample file: [`job_samples.csv`](./job_samples.csv).
+### Classification — one module
+
+This is the **standard**: every migrated scraper classifies through
+`scrappers/_shared/classification.py`, and **every new scraper must**. All
+keep/drop and labeling decisions go through it:
+
+```python
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
+
+verdict = classify_job(title, skills, description)
+if not verdict["in_scope"]:
+    counters["excluded_out_of_scope"] += 1   # dropped, never exported
+    continue
+category, sub_category = verdict["category"], verdict["sub_category"]
+```
+
+- No scraper defines its own category regexes, enums, ALLOW/DENY classification
+  lists, or fallback maps. (Crawl-side scoping that merely saves requests —
+  URL slug filters, source category facets — may stay.)
+- `in_scope == False` → drop and count as `excluded_out_of_scope`.
+- `needs_review == True` → keep the row AND append it to `needs_review.csv`.
+- The rich CSV additionally records `role_family` and the score-trace columns
+  so every admission stays auditable.
+
+> **Not the whole fleet yet.** A set of scrapers has not been migrated and
+> still uses its own per-scraper classification — the legacy profession enum
+> `doctors | nurses | pharmacists | non_clinical` — and the older club schema.
+> `instructions/taxonomy-migration-status.md` holds the authoritative
+> per-scraper list; it is deliberately not repeated here. Their output does
+> **not** match the schema above until they are migrated.
 
 ## Adding a new site scraper
 
-1. Create `scrapers/<site_name>/` with `scraper.py`, `readme.md`, and `requirements.txt`.
-2. In `readme.md`, document the portal URL, how listing/detail pages work, and any rate-limit notes.
-3. Map scraped fields → the CSV columns above (including enum mapping).
-4. Write output to:
+See `prompts/master-prompt.md` for the full playbook. In short:
 
-    ```
-    scrapers/jobs_csv/<DD-MM-YYYY>/<site_name>.csv
-    ```
+1. Create `scrappers/<site_name>/` with `<site_name>_scraper.py`, `README.md`, `test_filters.py`, and `requirements.txt`.
+2. In `README.md`, document the portal URL, how listing/detail pages work, and any rate-limit notes.
+3. Classify every candidate job with `classify_job` and map scraped fields → `CLUB_COLUMNS` (including enum mapping).
+4. Write output to `jobs_csv/<DD-MM-YYYY>/<site_name>.csv`, regenerated from the rich store each run.
+5. Create the date folder if it does not exist.
 
-    Example for Jobslly on 10 Jul 2026:
-
-    ```
-    scrapers/jobs_csv/10-07-2026/jobslly.csv
-    ```
-
-5. Create the date folder if it does not exist. Overwrite or append only as agreed for that site’s run.
-
-### Suggested `scraper.py` behaviour
+### Suggested scraper behaviour
 
 ```text
 1. Fetch job listing pages from the portal
 2. For each job, open detail page (if needed) and extract fields
-3. Normalize enums / dates / salary to the format above
-4. Ensure jobs_csv/<today>/ exists
-5. Write <site_name>.csv with the header row from job_samples.csv
+3. classify_job(title, skills, description) → drop out-of-scope, flag needs_review
+4. Normalize enums / dates / salary to the format above
+5. Ensure jobs_csv/<today>/ exists
+6. Write <site_name>.csv with the CLUB_COLUMNS header
 ```
 
 ## Checklist before handing off a CSV
 
-- [ ] Header matches `job_samples.csv` exactly
+- [ ] Header is exactly `CLUB_COLUMNS` from `_shared/classification.py`
+- [ ] `category` is `Non Clinical`/`Public Health`; `sub_category` is one of the 20
+- [ ] Every exported row passed `classify_job` (out-of-scope rows dropped and counted)
 - [ ] Enum fields use allowed values only
 - [ ] `application_url` is a working apply link
 - [ ] `posted_at` is `YYYY-MM-DD`
 - [ ] File path is `jobs_csv/<DD-MM-YYYY>/<site_name>.csv`
-- [ ] No invented salary/experience when the source is silent
+- [ ] No invented salary/experience/qualification when the source is silent
 - [ ] Text with commas/newlines is properly CSV-quoted

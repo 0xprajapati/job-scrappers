@@ -13,8 +13,10 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
+    CLUB_COLUMNS,
+    apply_classification,
     build_description,
-    classify_category,
+    classification_skills,
     compute_cutoff,
     country_meta,
     location_label,
@@ -22,6 +24,7 @@ from scraper import (
     normalize_city,
     parse_experience,
     parse_salary,
+    rich_row_to_club_row,
     strip_html,
     within_window,
 )
@@ -78,78 +81,81 @@ class TestExperience(unittest.TestCase):
         self.assertEqual(parse_experience(["", None]), ("", ""))
 
 
-class TestCategory(unittest.TestCase):
-    """Master spec §2 — the title wins, the ATS category is the fallback."""
+class TestClassificationWiring(unittest.TestCase):
+    """The scraper delegates every keep/drop + label decision to
+    _shared/classification.py; these tests check the wiring only (the engine
+    itself is covered by _shared/test_classification.py)."""
 
-    def test_title_beats_ats_default_category(self):
-        # the ATS files these clinical roles under the literal "Default"
-        self.assertEqual(classify_category("Registered Nurse", "Default"),
-                         ("nurses", False))
-        self.assertEqual(classify_category("Consultant IVF", "Default"),
-                         ("doctors", False))
+    @staticmethod
+    def _row(title, ats_category="", major="", industry="", career_level="",
+             skills="", description=""):
+        return {"title": title, "category_original": ats_category,
+                "major": major, "industry": industry,
+                "career_level": career_level, "skills": skills,
+                "description": description}
 
-    def test_physician_titles(self):
-        for title in ("Consultant Endocrinologist", "Senior Specialist OB/GYN",
-                      "Consultant Plastic Surgeon", "Specialist PICU",
-                      "Consultant Psychiatrist"):
-            self.assertEqual(classify_category(title, "Physicians")[0],
-                             "doctors", title)
+    def test_skills_signal_joins_the_ats_facets(self):
+        row = self._row("Medical Coder", "Administration",
+                        major="Health Information", industry="Healthcare",
+                        career_level="Mid Level")
+        self.assertEqual(
+            classification_skills(row),
+            "Administration Mid Level Healthcare Health Information")
 
-    def test_dental_titles_from_the_ajaji_portal(self):
-        for title in ("Restorative and Esthetic Dentist", "Endodontics",
-                      "Oral Maxillofacial", "Pediatric Dentistry"):
-            self.assertEqual(classify_category(title, "Doctor")[0], "doctors",
-                             title)
+    def test_generic_competency_tags_are_kept_out_of_the_signal(self):
+        # HMG fills `skills` from a corporate competency framework; feeding
+        # it in admitted radiologists/secretaries as Clinical Data Management
+        row = self._row("Senior Specialist Radiologist", "Physicians",
+                        major="Physicians", industry="Hospital & Health Care",
+                        career_level="Mid - Level",
+                        skills="data management & record keeping; "
+                               "data gathering & assessment")
+        self.assertNotIn("data management", classification_skills(row))
+        self.assertFalse(apply_classification(row))
 
-    def test_nursing_titles(self):
-        for title in ("Head Nurse", "Charge Nurse", "Nursing informatics",
-                      "Assistant Nurse", "Dental Assistant"):
-            category, review = classify_category(title, "Nursing")
-            self.assertEqual(category, "nurses", title)
-            self.assertFalse(review)
+    def test_in_scope_role_is_labelled(self):
+        row = self._row("Medical Coder", "Administration")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Medical Coding")
+        self.assertEqual(row["role_family"], "Medical Coding")
 
-    def test_pharmacy_titles(self):
-        self.assertEqual(classify_category("Pharmacist - 3", "Pharmacy"),
-                         ("pharmacists", False))
-        self.assertEqual(classify_category("Tamheer Program - Pharmacist",
-                                           "Default"),
-                         ("pharmacists", False))
+    def test_public_health_role_is_labelled(self):
+        row = self._row("Infection Control Coordinator", "Administration")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Infection Prevention & Control")
 
-    def test_allied_health_is_non_clinical_but_not_flagged(self):
-        for title in ("Ultrasound Technologist", "Dialysis Technician",
-                      "Echo Technician", "Cath Lab Radiographer",
-                      "Laser Technician"):
-            category, review = classify_category(title, "Paramedical")
-            self.assertEqual(category, "non_clinical", title)
-            self.assertFalse(review, title)
+    def test_ats_category_cannot_admit_a_clinical_role(self):
+        # the ATS files real clinical roles under the literal "Default";
+        # neither the title nor the facet may keep them in scope now
+        for title, ats in (("Registered Nurse", "Default"),
+                           ("Consultant Endocrinologist", "Physicians"),
+                           ("Pharmacist - 3", "Pharmacy"),
+                           ("Ultrasound Technologist", "Paramedical")):
+            row = self._row(title, ats)
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "")
 
-    def test_technologist_is_not_a_physician(self):
-        # "-ologist" must not turn technologists/psychologists into doctors
-        self.assertEqual(classify_category("Neurology Technologist",
-                                           "Paramedical")[0], "non_clinical")
+    def test_support_services_roles_are_dropped(self):
+        # WRASS / Cloud Solutions postings with no in-scope signal
+        for title in ("Graphic Designer", "AC Technician", "Housekeeper",
+                      "Senior Developer"):
+            self.assertFalse(
+                apply_classification(self._row(title, "Administration")), title)
 
-    def test_hospital_admin_is_kept_unflagged(self):
-        for title in ("Medical Administrator",
-                      "Tamheer Program - Patient Services"):
-            category, review = classify_category(title, "Administration")
-            self.assertEqual(category, "non_clinical", title)
-            self.assertFalse(review, title)
-
-    def test_unclassifiable_is_kept_and_flagged(self):
-        # WRASS / Cloud Solutions support roles: kept, never dropped
-        for title, ats in (("Graphic Designer", "Administration"),
-                           ("AC Technician", "Administration"),
-                           ("Housekeeper", "Administration"),
-                           ("Senior Developer", "Administration"),
-                           ("FMS Manager", "")):
-            category, review = classify_category(title, ats)
-            self.assertEqual(category, "non_clinical", title)
-            self.assertTrue(review, title)
-
-    def test_healthcare_signal_in_major_clears_the_flag(self):
-        _, review = classify_category("Associate", "", "Emergency Medical "
-                                                       "Services")
-        self.assertFalse(review)
+    def test_club_row_uses_shared_columns(self):
+        row = self._row("Clinical Research Coordinator", "Default",
+                        description="Coordinates ethics submissions.")
+        row["education"] = "Bachelor's Degree"
+        apply_classification(row)
+        club = rich_row_to_club_row(row)
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        self.assertEqual(club["qualification"], "Bachelor's Degree")
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
 
 
 class TestJobType(unittest.TestCase):

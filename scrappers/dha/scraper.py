@@ -33,12 +33,14 @@ nationality, so each NEW job's ``viewOpportunityDetails`` page is fetched
 (details on by default, ``--no-details`` to skip) for the description, the
 requirements list and the facility's contact email/phone.
 
-Every posting is a job at a DHA-licensed healthcare facility, so the
-healthcare filter is satisfied at the source (master spec §2); the portal's
-own ``category`` ("Physician", "Nurse and Midwife", "Allied Health",
-"Dentist", "Traditional And Complementary Medicine (T&CM)") and the title map
-onto the club category enum. Titles that map to nothing are kept as
-``non_clinical`` and flagged ``needs_review`` — never dropped.
+Classification is the shared two-level taxonomy (``_shared/classification``):
+every candidate is scored by ``classify_job(title, skills, description)``,
+where the portal's licence-register ``category`` ("Physician", "Nurse and
+Midwife", "Allied Health", …) travels only as a *skills* signal and stays in
+the rich CSV as the raw ``category_original`` column — it no longer decides
+anything. Jobs the classifier rules out of scope are dropped and counted as
+``excluded_out_of_scope``; in-scope jobs get ``category`` ("Non Clinical" |
+"Public Health"), ``sub_category`` and the role-family trace columns.
 
 Salary is never published on this board -> ``salary_raw = "Not Disclosed"``
 and empty numeric fields (master spec §3: capture, never invent).
@@ -62,6 +64,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -71,6 +74,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -113,19 +120,12 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "raw_title", "company", "raw_facility_name",
     "facility_id", "city", "country", "salary_raw", "salary_min_monthly",
     "salary_max_monthly", "salary_period_original", "job_type", "category",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in",
     "category_original", "vacancy_type", "nationality_requirement",
     "experience_min_years", "experience_max_years", "interested_count",
     "contact_email", "contact_phones", "needs_review", "posted_date",
     "first_seen_date", "description", "requirements", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("dha_scraper")
@@ -179,65 +179,36 @@ def clean_facility(raw_name):
 
 
 # ----------------------------------------------------------------------------
-# Category / company classification (club enums)
+# Classification (shared two-level taxonomy) / company type (club enum)
 # ----------------------------------------------------------------------------
-
-# The portal's own category field, which is authoritative when present.
-# Allied health (technicians, physios, dietitians, …) has no club bucket and
-# necessarily lands in non_clinical, as in export_club_csv.py; T&CM follows
-# the project's "AYUSH/Alternative Therapy -> doctors" convention.
-_PORTAL_CATEGORY_MAP = {
-    "physician": "doctors",
-    "dentist": "doctors",
-    "nurse and midwife": "nurses",
-    "allied health": "non_clinical",
-    "traditional and complementary medicine (t&cm)": "doctors",
-}
-
-_PHARM_RE = re.compile(r"\bpharmac(y|ist|ists|ies)\b|\bpharm ?d\b", re.IGNORECASE)
-_NURSE_RE = re.compile(r"\bnurs(e|es|ing)\b|\bmidwi(fe|ves|fery)\b|\brn\b",
-                       re.IGNORECASE)
-# No bare "specialist"/"consultant" here: on this board those words belong to
-# admin titles ("Facial and Laser Specialist", "HR Consultant") as often as to
-# physician grades, and real physician grades already carry a portal category.
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|dentist|general practitioner|registrar|"
-    r"medical officer|gp|intensivist|an(a?)esthetist|obstetrician|"
-    r"gyn(a?)ecologist|p(a?)ediatrician|psychiatrist)\b",
-    re.IGNORECASE)
-
-# Vacancy types the portal itself marks as non-clinical.
-_ADMIN_VACANCY_TYPES = {"admin", "administrative"}
 
 _PHARMA_COMPANY_RE = re.compile(
     r"pharmac|laborator|\blab\b|diagnost|biotech|life ?science|therapeut",
     re.IGNORECASE)
 
 
-def classify_category(title, portal_category="", vacancy_type=""):
-    """Return (club_category, needs_review).
+def classify_row(row):
+    """Run the shared classifier over a built rich row (after any detail
+    enrichment) and write the verdict back into it.
 
-    The portal's own category is authoritative — it comes from the licence
-    register and is set on every Medical vacancy — with one exception: a
-    "Pharmacist" title, because the portal files pharmacists under "Allied
-    Health" and the club's pharmacists bucket would otherwise be lost. Titles
-    decide only where the portal is silent (its Admin vacancies), and anything
-    still unmapped is kept as non_clinical and flagged for review
-    (master spec §2 — never silently dropped).
-    """
-    title = clean_text(title)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    mapped = _PORTAL_CATEGORY_MAP.get(clean_text(portal_category).lower())
-    if mapped:
-        return (mapped, False)
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if clean_text(vacancy_type).lower() in _ADMIN_VACANCY_TYPES:
-        return ("non_clinical", False)
-    return ("non_clinical", True)
+    The portal's licence-register category is a curated role signal, so it
+    travels in the `skills` argument; it stays in the rich CSV only as the
+    raw `category_original` column. Returns the verdict; in_scope False
+    means the caller must DROP the row (counted excluded_out_of_scope)."""
+    verdict = classify_job(
+        row.get("raw_title") or row.get("title", ""),
+        row.get("category_original", ""),
+        " ".join(filter(None, [row.get("description", ""),
+                               row.get("requirements", "")])))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict
 
 
 def classify_company_type(name):
@@ -532,8 +503,6 @@ def opportunity_to_rich_row(opp, job_url, today):
     raw_facility = clean_text(opp.get("facilityName") or "")
     portal_category = clean_text(opp.get("category") or "")
     vacancy_type = clean_text(opp.get("vacancyType") or "")
-    category, needs_review = classify_category(raw_title, portal_category,
-                                               vacancy_type)
     return {
         "source": SITE,
         "job_id": clean_text(opp.get("jobID") or ""),
@@ -550,7 +519,14 @@ def opportunity_to_rich_row(opp, job_url, today):
         "salary_max_monthly": "",
         "salary_period_original": "",
         "job_type": "full_time",
-        "category": category,
+        # Filled by classify_row() once the detail text is in.
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "category_original": portal_category,
         "vacancy_type": vacancy_type,
         "nationality_requirement": clean_text(opp.get("national") or ""),
@@ -559,7 +535,7 @@ def opportunity_to_rich_row(opp, job_url, today):
         "interested_count": clean_text(opp.get("interested") or ""),
         "contact_email": "",
         "contact_phones": "",
-        "needs_review": needs_review,
+        "needs_review": False,
         # DHA publishes no posting date; first_seen_date records when this
         # scraper first saw the vacancy (see readme.md).
         "posted_date": "",
@@ -587,8 +563,15 @@ def apply_detail(row, detail):
     return row
 
 
+def _blank(value):
+    """NaN-safe string coercion for values read back from the rich CSV."""
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return ""
+    return str(value).strip()
+
+
 def rich_row_to_club_row(r):
-    company = r.get("company") or "DHA-licensed healthcare facility"
+    company = _blank(r.get("company")) or "DHA-licensed healthcare facility"
     return {
         "country_name": r.get("country") or COUNTRY_NAME,
         "country_code": COUNTRY_CODE,
@@ -601,20 +584,23 @@ def rich_row_to_club_row(r):
         "title": r.get("title", ""),
         "description": r.get("description", ""),
         "job_type": r.get("job_type") or "full_time",
-        "category": r.get("category") or "non_clinical",
+        "category": r.get("category", ""),
+        "sub_category": r.get("sub_category", ""),
         "application_url": r.get("job_url", LANDING_URL),
         # No posting date is published; the date the board first listed the
         # job for us is the closest honest value.
         "posted_at": r.get("first_seen_date", ""),
         "min_experience": r.get("experience_min_years", ""),
         "max_experience": r.get("experience_max_years", ""),
+        # No structured qualification field on the board — grounded
+        # extraction from the posting text only, never inferred.
+        "qualification": extract_qualification(" ".join(filter(None, [
+            _blank(r.get("description")), _blank(r.get("requirements"))]))),
         # No salary anywhere on the board — left blank, never invented.
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -673,8 +659,8 @@ def main(argv=None):
     today = date.today().isoformat()
     log.info("Existing CSV has %d known jobs", len(known_ids))
 
-    counters = {"scanned": 0, "needs_review": 0, "new": 0,
-                "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_out_of_scope": 0, "needs_review": 0,
+                "new": 0, "duplicates": 0, "detail_failed": 0}
     new_rows, review_log = [], []
     page_no, total = 1, None
     stop = False
@@ -721,10 +707,22 @@ def main(argv=None):
                 else:
                     counters["detail_failed"] += 1
 
+            # Shared taxonomy gate: out-of-scope jobs are dropped, never
+            # exported (the board is unseen next run too — that is fine, the
+            # classifier drops them again). The page still counts as "new"
+            # activity so early-stop pagination is not fooled.
+            verdict = classify_row(row)
+            page_had_new = True
+            if not verdict["in_scope"]:
+                counters["excluded_out_of_scope"] += 1
+                continue
+
             if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({"job_id": row["job_id"],
                                    "title": row["raw_title"],
+                                   "category": row["category"],
+                                   "sub_category": row["sub_category"],
                                    "category_original": row["category_original"],
                                    "vacancy_type": row["vacancy_type"]})
             known_ids.add(row["job_id"])
@@ -774,7 +772,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Opportunities scanned: {:>5,}".format(counters["scanned"]))
-    print("Excluded (non-healthcare): {:>1,}  (source is healthcare-only)".format(0))
+    print("Excluded out of scope: {:>5,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (old):        {:>5,}  (board publishes no dates)".format(0))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

@@ -33,9 +33,14 @@ Quirks
   kept as the job title (matching how the site presents it).
 * Salary is almost never stated. When a Salary/Stipend/CTC bullet exists it
   is parsed (LPA / K / per month conventions); otherwise "Not Disclosed".
-* Everything on the site is pharma-industry, so the healthcare filter is
-  the source itself; club category is mapped from the title (pharmacist /
-  doctor / nurse regexes, else non_clinical — production, QC, QA, R&D).
+* Classification is the shared `classify_job` (scrappers/_shared/
+  classification.py): title + site category slugs (as skills) + body text.
+  The site is pharma-industry but most of it is manufacturing/QC/QA, which
+  the taxonomy does not cover, so a large share of posts is dropped and
+  counted as excluded_out_of_scope. In-scope posts get category
+  ("Non Clinical" | "Public Health"), sub_category and the role-family
+  trace columns. News-shaped titles are junk detection only: kept AND
+  flagged needs_review.
 * `pharma-jobs-abroad` posts get their country parsed from the Location
   bullet; anything unrecognised stays India, the site's home market.
 
@@ -55,6 +60,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -64,6 +70,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS  # noqa: E402
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -128,17 +138,10 @@ RICH_COLUMNS = [
     "country_code", "country_dial_code", "salary_raw", "salary_min",
     "salary_max", "salary_period", "salary_currency", "job_type",
     "experience_raw", "min_experience", "max_experience", "qualification",
-    "work_type_raw", "site_categories", "category", "company_type",
-    "needs_review", "posted_date", "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
+    "work_type_raw", "site_categories", "category", "sub_category",
+    "role_family", "all_families", "family_scores", "family_confidence",
+    "matched_in", "company_type", "needs_review", "posted_date",
+    "description", "job_url", "scraped_at",
 ]
 
 log = logging.getLogger("pharmarecruiter_scraper")
@@ -284,32 +287,34 @@ def parse_experience(raw):
     return "", ""
 
 
-_NURSE_RE = re.compile(r"nurs|midwif|\bgnm\b|\banm\b", re.IGNORECASE)
-_PHARMACIST_RE = re.compile(r"pharmacist|\bpharm ?d\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"doctor|physician|surgeon|\bmbbs\b|dentist|medical officer|\brmo\b|"
-    r"cardiologist|radiologist|pathologist|psychiatrist|intensivist", re.IGNORECASE)
+# Junk detection only — an article-shaped post title (listicle, guide, exam
+# result) is kept AND flagged needs_review. It never decides a category.
 _NEWSY_TITLE_RE = re.compile(
     r"^\s*top\s+\d+|how to\b|salary trends|career guide|tips for|"
     r"\bexam\b.*\bresult|admit card", re.IGNORECASE)
 
 
-def classify_category(title):
-    """Club category from the title. The site is pharma-industry, so most
-    roles (production, QC, QA, R&D, regulatory) are non_clinical; only
-    explicit pharmacist / doctor / nurse titles map to clinical buckets.
-    Returns (category, needs_review) — news-shaped titles are kept but
-    flagged, never silently dropped (master spec)."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        category = "nurses"
-    elif _PHARMACIST_RE.search(title):
-        category = "pharmacists"
-    elif _DOCTOR_RE.search(title):
-        category = "doctors"
-    else:
-        category = "non_clinical"
-    return category, bool(_NEWSY_TITLE_RE.search(title))
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
+
+    The site's own category slugs (jobs, production-jobs, qc-jobs, ...) are
+    the curated `skills` signal; the raw value stays in the rich CSV as the
+    `site_categories` source column only and never decides the category.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
+    """
+    verdict = classify_job(row.get("title", ""),
+                           row.get("site_categories", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    # local junk/missing-company flags survive alongside the classifier's
+    row["needs_review"] = bool(verdict["needs_review"]) or bool(row.get("needs_review"))
+    return verdict["in_scope"]
 
 
 _HOSPITAL_RE = re.compile(r"hospital|clinic|medical college|nursing home", re.IGNORECASE)
@@ -459,7 +464,8 @@ def post_to_rich_row(post, category_map):
     content = post["content"]["rendered"]
     fields = extract_labeled_fields(content)
 
-    category, needs_review = classify_category(title)
+    # local flags only; the taxonomy fields are stamped by apply_classification()
+    needs_review = bool(_NEWSY_TITLE_RE.search(title))
     company = clean_text(fields.get("company", ""))
     if not company:
         needs_review = True
@@ -489,7 +495,14 @@ def post_to_rich_row(post, category_map):
         "qualification": clean_text(fields.get("qualification", ""))[:300],
         "work_type_raw": clean_text(fields.get("work_type", "")),
         "site_categories": "; ".join(slugs),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": classify_company_type(company, title),
         "needs_review": needs_review,
         "posted_date": clean_text(post.get("date", ""))[:10],
@@ -533,17 +546,20 @@ def rich_row_to_club_row(r):
         "title": _blank(r.get("title")),
         "description": _blank(r.get("description")),
         "job_type": _blank(r.get("job_type")) or "full_time",
-        "category": _blank(r.get("category")) or "non_clinical",
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("min_experience")),
         "max_experience": _int_str(r.get("max_experience")),
+        # structured source field (the "Qualification:" bullet) first, else
+        # grounded extraction from the description — never inferred
+        "qualification": _blank(r.get("qualification"))
+            or extract_qualification(_blank(r.get("description"))),
         "min_salary": min_sal if has_salary else "",
         "max_salary": _int_str(r.get("salary_max")) if has_salary else "",
         "salary_period": _blank(r.get("salary_period")) if has_salary else "",
         "salary_currency": currency if has_salary else "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -600,8 +616,8 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0}
     new_rows, review_log = [], []
     page, empty_pages = 1, 0
 
@@ -629,6 +645,11 @@ def main(argv=None):
                 counters["excluded_old"] += 1
                 continue
             page_all_old = False
+            # gate after the date check so an all-out-of-scope page does not
+            # look like an all-old page and stop the newest-first crawl
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                continue
             if row["job_id"] in known_ids:
                 counters["duplicates"] += 1
                 continue
@@ -670,6 +691,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Posts scanned:         {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

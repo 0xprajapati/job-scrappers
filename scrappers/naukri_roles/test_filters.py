@@ -59,37 +59,47 @@ class TestSalary(unittest.TestCase):
         self.assertEqual((lo, hi), ("4500000", "6000000"))
 
 
-class TestClassify(unittest.TestCase):
-    def test_doctors(self):
+class TestSharedClassifierWiring(unittest.TestCase):
+    """job_to_rich_row() runs the shared two-level classifier and returns
+    None for an out-of-scope card (the engine itself is covered by
+    _shared/test_classification.py)."""
+
+    @staticmethod
+    def card(title, tags="", jd=""):
+        return {"jobId": "1", "title": title, "tagsAndSkills": tags,
+                "jobDescription": jd, "placeholders": [], "salaryDetail": {}}
+
+    def test_in_scope_role_gets_taxonomy_labels(self):
+        row = ns.job_to_rich_row(self.card(
+            "We are Hiring For HCC Certified medical coders",
+            "medical coding,ICD-10,CPC",
+            "<p>Assign ICD-10-CM codes for HCC risk adjustment.</p>"))
+        self.assertIsNotNone(row)
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Medical Coding")
+        self.assertEqual(row["role_family"], "Medical Coding")
+        # all three signals were passed through and all three matched
+        self.assertEqual(row["matched_in"], "title|skills|description")
+
+    def test_second_in_scope_family(self):
+        row = ns.job_to_rich_row(self.card(
+            "Pharmacovigilance Associate", "argus,ICSR,MedDRA",
+            "Case processing and MedDRA coding of adverse events."))
+        self.assertIsNotNone(row)
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
+
+    def test_clinical_titles_are_dropped(self):
         for t in ["Neurologist For Varanasi, Uttar Pradesh", "Cardiologist",
-                  "General Surgeon Consultant", "Radiologist Consultant",
-                  "Anaesthetist For Haridwar", "MBBS Physician", "Doctor"]:
-            self.assertEqual(ns.classify_category(t), ("doctors", False), t)
+                  "Staff Nurse", "GNM Nursing Incharge",
+                  "Hospital Pharmacist", "Physiotherapist",
+                  "Front Desk Receptionist"]:
+            self.assertIsNone(ns.job_to_rich_row(self.card(t)), t)
 
-    def test_nurses(self):
-        for t in ["Staff Nurse", "GNM Nursing Incharge", "ICU Nurse", "Midwife"]:
-            self.assertEqual(ns.classify_category(t), ("nurses", False), t)
-
-    def test_pharmacists(self):
-        for t in ["Hospital Pharmacist", "B.Pharm Fresher", "Pharmacy Incharge"]:
-            self.assertEqual(ns.classify_category(t), ("pharmacists", False), t)
-
-    def test_nonclinical_allied_and_office(self):
-        # medical coders / allied health / office roles -> non_clinical, no review
-        for t in ["We are Hiring For HCC Certified medical coders",
-                  "AR Caller", "Optometrist ( Super Urgent Opening)",
-                  "Physiotherapist", "Lab Technician", "Medical Biller",
-                  "Hospital Accountant", "Front Desk Receptionist"]:
-            self.assertEqual(ns.classify_category(t), ("non_clinical", False), t)
-
-    def test_unmatched_flagged_for_review(self):
-        cat, review = ns.classify_category("Zonal Head - Operations Excellence")
-        self.assertEqual(cat, "non_clinical")
-        self.assertTrue(review)
-
-    def test_allied_beats_doctor_regex(self):
-        # "Audiologist" ends in -ologist but is allied -> non_clinical
-        self.assertEqual(ns.classify_category("Audiologist"), ("non_clinical", False))
+    def test_skills_are_a_signal_not_a_decision(self):
+        # A bedside title stays out of scope even with in-scope-looking tags.
+        self.assertIsNone(ns.job_to_rich_row(self.card(
+            "ICU Staff Nurse", "clinical research,GCP")))
 
 
 class TestCompanyType(unittest.TestCase):
@@ -139,7 +149,7 @@ class TestCutoff(unittest.TestCase):
     def test_first_run_uses_window(self):
         from datetime import date
         cutoff = ns.compute_cutoff(None, today=date(2026, 8, 8))
-        self.assertEqual(cutoff, "2026-08-01")  # 8 - 7 days
+        self.assertEqual(cutoff, "2026-08-06")  # 8 - INITIAL_WINDOW_DAYS
 
     def test_later_run_uses_watermark(self):
         df = pd.DataFrame({"posted_date": ["2026-08-05", "2026-08-08", "2026-08-07"]})
@@ -154,12 +164,19 @@ class TestClubMapping(unittest.TestCase):
                "country": "India", "country_code": "IN",
                "country_dial_code": "+91", "city": "Pune",
                "company": "X", "title": "Cardiologist", "job_url": "u",
-               "posted_date": "2026-08-08", "category": "doctors",
-               "company_type": "hospital"}
+               "posted_date": "2026-08-08", "category": "Non Clinical",
+               "sub_category": "Clinical Research",
+               "description": "Site monitoring to ICH-GCP. B.Pharm preferred.",
+               "company_type": "pharma"}
         club = ns.rich_row_to_club_row(row)
+        self.assertEqual(sorted(club), sorted(ns.CLUB_COLUMNS))
         self.assertEqual(club["min_salary"], "4500000")
         self.assertEqual(club["salary_currency"], "INR")
         self.assertEqual(club["salary_period"], "per_annum")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        # qualification is grounded extraction, never inferred
+        self.assertEqual(club["qualification"], "B.Pharm")
 
     def test_undisclosed_salary_blank(self):
         row = {"salary_currency": "", "salary_period": "", "salary_min": "",
@@ -169,7 +186,9 @@ class TestClubMapping(unittest.TestCase):
         self.assertEqual(club["salary_currency"], "")
         # required defaults still present
         self.assertEqual(club["country_name"], "India")
-        self.assertEqual(club["is_active"], "true")
+        # is_active / expires_at are retired from the club contract
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
 
 
 if __name__ == "__main__":

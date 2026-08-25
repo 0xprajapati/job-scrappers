@@ -41,13 +41,16 @@ than inventing one.
 Salary is never exposed by iRecruitment -> `salary_raw = "Not Disclosed"`
 (master spec §3: capture, never invent, never filter on it).
 
-Everything PHCC posts is healthcare-sector employment (it runs Qatar's public
-primary-care health centres), so the healthcare filter reduces to mapping the
-portal's own `ProfessionalArea` facet onto the club category enum — a
-source-side field, which master spec §2 prefers over title guessing. The facet
-is populated on every row; the title classifier only *overrides* it where a
-title is unmistakable (a "Consultant Radiologist" filed under Radiology is a
-doctor, not a technologist). Nothing is ever silently dropped.
+Classification is the shared two-level taxonomy (scrappers/_shared/
+classification.py): `category` is "Non Clinical" | "Public Health" plus a
+`sub_category`. Everything PHCC posts is healthcare-sector employment (it runs
+Qatar's public primary-care health centres) but the great majority of it is
+bedside primary care, so most vacancies come back out of scope and are dropped
+(counted as `excluded_out_of_scope`). The portal's own `ProfessionalArea`
+facet is no longer allowed to decide the category: it is passed to the
+classifier as the curated `skills` signal and kept verbatim in the rich CSV as
+`category_original`, a raw source column. Rows are classified AFTER the detail
+fetch so the description can be scored too.
 
 Time window: an ATS lists only OPEN vacancies (PHCC keeps some live for well
 over a year), so the first run keeps ALL of them (`INITIAL_WINDOW_DAYS = None`);
@@ -73,6 +76,7 @@ Run `python scraper.py --help` for options.
 import argparse
 import html as html_lib
 import logging
+import os
 import re
 import sys
 import time
@@ -82,6 +86,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -138,19 +146,11 @@ RICH_COLUMNS = [
     "organization", "city", "country", "location_raw",
     "salary_raw", "salary_min_monthly", "salary_max_monthly",
     "salary_period_original", "job_type", "employment_status",
-    "category", "category_original",
+    "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in", "category_original",
     "experience_min_years", "experience_max_years",
     "needs_review", "posted_date", "description", "job_requirements",
     "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("phcc_scraper")
@@ -314,81 +314,37 @@ def parse_min_experience_years(text):
 
 
 # ----------------------------------------------------------------------------
-# Category mapping (club enum: doctors | nurses | pharmacists | non_clinical)
+# Classification (shared two-level taxonomy)
 # ----------------------------------------------------------------------------
 
-# The portal's own "Job Category" (ProfessionalArea) facet -> club category.
-# Allied-health and technical areas have no club bucket of their own, so they
-# land in non_clinical (same treatment seha/medcare give "Allied Health").
-CATEGORY_MAP = {
-    "physicians": "doctors",
-    "dentist": "doctors",
-    "dental health": "non_clinical",
-    "nursing": "nurses",
-    "pharmacy": "pharmacists",
-    "lab": "non_clinical",
-    "radiology": "non_clinical",
-    "other allied health services": "non_clinical",
-    "health information management(him)": "non_clinical",
-    "administration & support services": "non_clinical",
-    "corporate communications": "non_clinical",
-    "engineering": "non_clinical",
-    "executive leadership": "non_clinical",
-    "governance": "non_clinical",
-    "information & communication technology": "non_clinical",
-    "supervisory": "non_clinical",
-    "technical administration": "non_clinical",
-}
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-_NURSE_RE = re.compile(r"\bnurs(e|es|ing)\b|\bmidwi(fe|ves|fery)\b", re.IGNORECASE)
-_PHARM_RE = re.compile(r"\bpharmac(y|ist|ists|ies)\b", re.IGNORECASE)
-# Physician titles that can appear under a non-physician facet — e.g. a
-# "Consultant Radiologist" filed under Radiology, or a "Dentist" under Dental
-# Health. Deliberately narrower than the facet: bare "Consultant"/"Specialist"
-# are NOT here, because PHCC also titles corporate roles that way.
-_DOCTOR_RE = re.compile(
-    r"\b(physician|surgeon|dentist|general practitioner|medical officer|"
-    r"radiologist|pathologist|psychiatrist|p(a?)ediatrician|obstetrician|"
-    r"gynaecologist|gynecologist|anaesthetist|anesthetist|anaesthesiologist|"
-    r"anesthesiologist|cardiologist|dermatologist|endocrinologist|"
-    r"gastroenterologist|neurologist|nephrologist|oncologist|ophthalmologist|"
-    r"orthodontist|otolaryngologist|periodontist|prosthodontist|"
-    r"pulmonologist|rheumatologist|urologist|neonatologist|intensivist|"
-    r"h(a?)ematologist)\b",
-    re.IGNORECASE)
+    The portal's own "Job Category" (ProfessionalArea) facet is the curated
+    `skills` signal; its raw value stays in the rich CSV as `category_original`
+    and never decides the category by itself. The job requirements are folded
+    into the description signal because PHCC states the substance of a role
+    there.
 
-
-def classify_category(title, professional_area=""):
-    """Return (club_category, needs_review).
-
-    The portal's Job Category facet is the primary signal (master spec §2
-    prefers source-side classification) and is populated on every row. The
-    title only overrides it where it is unmistakable. A row whose facet is
-    unknown AND whose title matches nothing is kept as non_clinical and flagged
-    needs_review — never dropped.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
     """
-    area = clean_text(professional_area).lower()
-    mapped = CATEGORY_MAP.get(area)
-
-    if mapped:
-        # the facet is department-level, so an unmistakable title still wins
-        if mapped != "pharmacists" and _PHARM_RE.search(title):
-            return "pharmacists", False
-        if mapped == "non_clinical":
-            if _NURSE_RE.search(title):
-                return "nurses", False
-            if _DOCTOR_RE.search(title):
-                return "doctors", False
-        return mapped, False
-
-    # unrecognised facet (PHCC added a new Job Category) — fall back to title
-    if _PHARM_RE.search(title):
-        return "pharmacists", True
-    if _NURSE_RE.search(title):
-        return "nurses", True
-    if _DOCTOR_RE.search(title):
-        return "doctors", True
-    return "non_clinical", True
+    description = " ".join(part for part in (row.get("description", ""),
+                                             row.get("job_requirements", ""))
+                           if part)
+    verdict = classify_job(row.get("title", ""),
+                           row.get("category_original", ""),
+                           description)
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    # an unpacked HR-code title (set by listing_to_rich_row) keeps its own
+    # review flag: a human should confirm the reconstructed wording
+    row["needs_review"] = bool(verdict["needs_review"]) or bool(row.get("needs_review"))
+    return verdict["in_scope"]
 
 
 # ----------------------------------------------------------------------------
@@ -777,7 +733,6 @@ def fetch_detail(session, vacancy_id):
 def listing_to_rich_row(listing):
     organization = clean_organization(listing["organization"])
     title, coded = clean_title(listing["raw_title"], listing["organization"])
-    category, review = classify_category(title, listing["professional_area"])
 
     return {
         "source": SITE,
@@ -797,11 +752,20 @@ def listing_to_rich_row(listing):
         "salary_period_original": "",
         "job_type": map_job_type(listing["employment_status"]),
         "employment_status": listing["employment_status"],
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "category_original": listing["professional_area"],
         "experience_min_years": "",
         "experience_max_years": "",
-        "needs_review": bool(review or coded),
+        # seeded with the HR-code-title flag; apply_classification() ORs the
+        # classifier's own needs_review onto it
+        "needs_review": bool(coded),
         "posted_date": parse_posted_date(listing["posted_raw"]),
         "description": "",
         "job_requirements": "",
@@ -849,19 +813,21 @@ def rich_row_to_club_row(r):
         "title": _s("title"),
         "description": _s("description"),
         "job_type": _s("job_type", "full_time"),
-        "category": _s("category", "non_clinical"),
+        "category": _s("category"),
+        "sub_category": _s("sub_category"),
         "application_url": _s("job_url"),
         "posted_at": _s("posted_date"),
         "min_experience": _s("experience_min_years"),
         "max_experience": _s("experience_max_years"),
+        # iRecruitment has no structured qualification field, so this is a
+        # grounded extraction from the requirements/description — never inferred
+        "qualification": extract_qualification(
+            " ".join(p for p in (_s("job_requirements"), _s("description")) if p)),
         # no salary data on the iRecruitment portal — blank, never invented
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        # the portal exposes no closing date
-        "expires_at": "",
     }
 
 
@@ -945,8 +911,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; cutoff: %s",
              len(known_ids), cutoff or "none (keeping all open vacancies)")
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows, review_log = [], []
 
     for listing in collect_listing_rows(session, args.max_pages):
@@ -981,12 +948,19 @@ def main(argv=None):
             else:
                 row = apply_detail(row, sections)
 
+        # classify only after the detail fetch, so the description and
+        # requirements can be scored alongside the title and the facet
+        if not apply_classification(row):
+            counters["excluded_out_of_scope"] += 1
+            continue
+
         if row["needs_review"]:
             counters["needs_review"] += 1
             review_log.append({"job_id": row["job_id"],
                                "raw_title": row["raw_title"],
                                "category_original": row["category_original"],
-                               "category": row["category"]})
+                               "category": row["category"],
+                               "sub_category": row["sub_category"]})
         known_ids.add(row["job_id"])
         new_rows.append(row)
         counters["new"] += 1
@@ -1019,6 +993,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Vacancies scanned:     {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(
         cutoff or "no cutoff", counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))

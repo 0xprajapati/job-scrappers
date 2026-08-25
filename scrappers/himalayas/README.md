@@ -87,13 +87,24 @@ no browser impersonation.
   `"['United States']"`. Parsed with `ast.literal_eval`.
 - The feed grows by roughly 1,000 jobs/day, ~2.4% of them healthcare.
 
-## Scope filter — the eleven role families
+## Scope filter — the shared two-level classifier (2026-08-25)
 
-The gate matches the **job title** against `ROLE_FAMILIES`. The first family
-that matches labels the row in `role_family`; everything else is counted
-`excluded_out_of_scope`. Re-scoping the 7,930-job stored corpus kept 988 (12%)
-— the rest was the general telehealth / behavioural-health / nursing market
-the earlier broad healthcare gate admitted.
+Classification is delegated entirely to
+`_shared/classification.classify_job(title, skills, description)`:
+the feed's `categories` slugs (hyphens flattened to spaces) go in as the
+weighted `skills` signal and the HTML-stripped description as `description`.
+The verdict fills `category` ("Non Clinical" | "Public Health"),
+`sub_category` (one of the 20 shared sub-categories) and the rich-CSV trace
+columns (`role_family`, `all_families`, `family_scores`, `family_confidence`,
+`matched_in`, `needs_review`). Anything `in_scope == False` is counted
+`excluded_out_of_scope` and dropped (or moved to `out-of-scope.csv` by
+`--reclassify`). The local `ROLE_FAMILIES` list and its two-tier rescue gate
+were removed in this migration — no scraper defines its own category logic
+any more.
+
+Historical measurement: re-scoping the 7,930-job stored corpus with the old
+local gate kept 988 (12%) — the rest was the general telehealth /
+behavioural-health / nursing market an earlier broad healthcare gate admitted.
 
 ### Why the title, and not the feed's own category slugs
 
@@ -111,43 +122,26 @@ against the stored corpus, **roughly half the slug-only admissions were wrong**:
 | Open Application | `Medical-Affairs` |
 | Senior IT Project Manager - Enterprise Platforms | `Regulatory-Affairs` |
 
-The tagging is automated and loose, so slugs are **not** an admission path.
-`match_role_family()` accepts a `categories` argument and ignores it.
+The tagging is automated and loose, so slugs are **not** an admission path on
+their own: `classify_feed_job()` passes them only as the `skills` signal,
+which the shared scorer weights title x5 / skills x2 / description x1 —
+a slug can corroborate but cannot admit a job by itself.
 
-### Precedence
+### Known boundary shift vs. the old local gate
 
-Families are ordered specific → broad, and the first match wins:
+The removed local gate deliberately excluded two adjacent US markets that
+share words with "Medical Reviewer": payer-side utilization
+review/management ("Utilization Review Nurse-LVN/LPN", 43 roles in the
+corpus) and IME / disability peer review ("Board Certified Physician
+Disability Peer Reviewer"). The shared classifier currently ADMITS those
+titles (as `Medical Reviewer`, and "Field Medical Director" IME titles as
+`MSL`) — if that noise should stay out, the fix belongs in
+`_shared/taxonomy_keywords.py` / `_shared/role_families.py`, not here.
 
-`TMF → HEOR → Medical Reviewer → MSL → Pharmacovigilance → Medical Coding →
-Medical Writer → Regulatory Affairs → Clinical Data Management →
-Public Health → Clinical Research`
-
-So "Medical Writer - Clinical Regulatory Documentation" is a Medical Writer,
-and "Principal Clinical Trial Regulatory Affairs" is Regulatory Affairs.
-
-### Boundaries that took measurement to get right
-
-Each of these was a real false positive found in the corpus:
-
-| Trap | Why it matters | Handling |
-|---|---|---|
-| `CDM` | In US revenue-cycle listings it means **Charge Description Master** ("Revenue Integrity & CDM Operations Manager") | requires a clinical/trial/EDC context |
-| bare `data management` | Swallows "Manager, Client Data Management", "Configuration / Data Management Analyst - Federal Health" | same clinical-context requirement |
-| `regulatory compliance` | Usually **revenue-cycle** compliance ("Senior Regulatory Compliance and Revenue Cycle Analyst"), not pharma RA | excluded from Regulatory Affairs |
-| `field medical` | In this feed it appears in IME titles: "Physician Reviewer - Field Medical Director, Radiology" | excluded from MSL |
-| `MSL` | Also means **Medical Stop Loss**, an insurance product | kept, flagged for review |
-| `biostatistics` | Pharma biometrics, not public health, and not in the requested scope | excluded from Public Health |
-
-**Medical Reviewer is the pharma sense only** — medical monitoring and medical
-review at sponsors and CROs. It deliberately excludes the two adjacent US
-markets that share the words: payer-side utilization review/management
-("Utilization Review Nurse-LVN/LPN", 43 roles in the corpus) and IME /
-disability peer review ("Board Certified Physician Disability Peer Reviewer").
-Widen `ROLE_FAMILIES["Medical Reviewer"]` if you want them.
-
-**Medical Coding is mostly US revenue-cycle work** — hospital and profee
-coders, DRG reviewers, risk adjustment — rather than clinical-trial coding
-(MedDRA/WHODrug). That is the market as it exists on this board.
+**Medical Coding on this board is mostly US revenue-cycle work** — hospital
+and profee coders, DRG reviewers, risk adjustment — rather than
+clinical-trial coding (MedDRA/WHODrug). That is the market as it exists on
+this board.
 
 ### Kept but flagged, never dropped
 
@@ -160,23 +154,17 @@ whether these belong on the site is an editorial call:
 - Regional Account Manager, Medical Stop Loss (MSL) Distribution
 - Clinical Research Patient Recruiter
 
-### `category` is the role family
+### `category` is the two-level taxonomy
 
-`category` in the club CSV carries the **role family verbatim** — `Clinical
-Research`, `Pharmacovigilance`, `TMF` and so on. `role_family` in the rich CSV
-holds the same string; they are one value, so they can never disagree.
-
-The previous profession enum (`doctors | nurses | pharmacists |
-non_clinical`) has been **retired here**. It was a poor fit for this scope:
-every one of the eleven families is a non-clinical desk role, so ~92% of rows
-collapsed into `non_clinical` and the column carried almost no information.
-`ROLE_FAMILIES` is now the single source of truth for both the scope gate and
-the category.
-
-Note this diverges from `instructions/export_club_csv.py`, whose `ENUMS` still
-validates the old four-value set for the other scrapers (dha, shine, fortis),
-which scrape bedside roles that genuinely are doctors/nurses. That exporter is
-not used by this scraper — it writes its club CSV directly.
+`category` in both CSVs carries `"Non Clinical" | "Public Health"`, and
+`sub_category` the finer 20-way split, both straight from `classify_job`.
+The winning role family is kept as the rich-CSV `role_family` trace column
+(a Public Health job the finer split could not place keeps an empty
+`sub_category` — the classifier refuses to invent one). The club CSV uses
+exactly the 22 `CLUB_COLUMNS` imported from `_shared/classification.py`
+(`is_active` / `expires_at` are retired). The previous profession enum
+(`doctors | nurses | pharmacists | non_clinical`) and the interim
+family-as-category scheme are both gone.
 
 ## Salary
 

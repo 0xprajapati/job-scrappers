@@ -38,17 +38,33 @@ Functions.
 - The ATS category codes contain typos (`TECHINICIANS`).
 - The list payload has no job-family info (`JobFamily: null`); the family
   comes from the detail call (`JobFamilyId` / `Category`), which is why
-  detail fetches are on by default (`--no-details` skips them but then
-  category mapping relies on the title alone).
+  detail fetches are on by default (`--no-details` skips them, and then the
+  classifier only sees the title).
 
-## Category mapping
+## Classification (shared taxonomy)
 
-Title regexes (nurse / pharmacist / doctor) first, then the Fortis job
-family as fallback: Clinicians → `doctors`, Nursing → `nurses`, everything
-else → `non_clinical`. "Consultant …" titles count as doctors only in the
-Clinicians family. Generic corporate titles in Other Functions with no
-healthcare keyword are kept but flagged `needs_review` (logged to
-`needs_review.csv`).
+Every candidate job goes through the shared classifier
+(`scrappers/_shared/classification.py`) after the detail fetch, so the
+description is part of the decision. The scraper defines no category rules
+of its own:
+
+```python
+verdict = classify_job(title, skills=job_family + category_source, description=description)
+```
+
+- `in_scope == False` → the job is **dropped** and counted as
+  `excluded_out_of_scope` in the run summary. On this hospital-chain ATS that
+  is the large majority (Clinicians, Nursing, Technicians): the scope is
+  **Non Clinical + Public Health** roles only.
+- In-scope jobs get `category` (`Non Clinical` | `Public Health`) and
+  `sub_category` (one of the 20 sub-categories), plus the rich-CSV trace
+  columns `role_family`, `all_families`, `family_scores`,
+  `family_confidence`, `matched_in`.
+- The five Fortis job families (Clinicians, Nursing, Technicians, Medical
+  Support, Other Functions) no longer decide anything: they stay in the rich
+  CSV as the raw `job_family` / `category_source` source columns and travel
+  to the classifier only as its curated `skills` signal.
+- `needs_review == True` rows are kept **and** appended to `needs_review.csv`.
 
 ## Usage
 
@@ -63,9 +79,14 @@ cd scrappers/fortis
 Outputs:
 
 - `fortis_jobs.csv` — rich cumulative store (dedup key: requisition `Id`)
-- `../../jobs_csv/<DD-MM-YYYY>/fortis.csv` — HealthCareers.club 22-column
-  schema
-- `needs_review.csv` — titles the classifier could not place
+- `../../jobs_csv/<DD-MM-YYYY>/fortis.csv` — the 22 `CLUB_COLUMNS` imported
+  from `_shared/classification.py`, including `sub_category` and
+  `qualification`; the old `is_active`/`expires_at` columns are retired.
+  `qualification` is the structured `StudyLevel` when present, else
+  `extract_qualification(description)` — never inferred.
+- `needs_review.csv` — in-scope rows the classifier flagged for review
+- `out-of-scope.csv` — rows the classifier dropped from the rich store during
+  the one-off taxonomy migration (reversible archive)
 
 Time window per master spec §4: first run keeps the last 7 days; later
 runs keep jobs newer than the stored watermark minus 2 days grace.

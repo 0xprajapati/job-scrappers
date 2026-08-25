@@ -3,7 +3,7 @@
 Scrapes the **Healthcare / Doctor / Hospital Staff** department of
 [apna.co](https://apna.co) (a general job board with ~91k jobs; the department
 URL pre-filters to ~3,600 healthcare roles, so no keyword classification is
-needed) and appends new jobs to a deduplicated CSV. Schema is shared with the DoctHub and jobslly scrapers —
+needed) and appends new jobs to a deduplicated CSV. Schema is shared with the DoctHub scraper —
 every row carries `source = "apna.co"`, and dedup is on `(source, job_id)`,
 so the CSVs can be concatenated into one dataset.
 
@@ -121,7 +121,6 @@ All three scrapers share the core columns, so:
 import pandas as pd
 merged = pd.concat([
     pd.read_csv("../Docthub/docthub_jobs.csv").assign(source="jobs.docthub.com"),
-    pd.read_csv("../jobslly/jobslly_jobs.csv").assign(source="jobslly.in"),
     pd.read_csv("../apna/apna_jobs.csv"),
 ], ignore_index=True)
 merged.drop_duplicates(subset=["source", "job_id"]).to_csv("all_jobs.csv", index=False)

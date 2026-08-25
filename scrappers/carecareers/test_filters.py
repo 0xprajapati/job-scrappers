@@ -12,10 +12,11 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
+    CLUB_COLUMNS,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
     apply_detail,
-    classify_category,
+    classify_row,
     compute_cutoff,
     detail_id_from_job,
     job_to_rich_row,
@@ -76,53 +77,44 @@ class TestExpRange(unittest.TestCase):
         self.assertEqual(parse_exp_range("3 years"), ("3", "3"))
 
 
-class TestClassifier(unittest.TestCase):
-    """Titles/departments from real listings."""
+class TestSharedClassifierWiring(unittest.TestCase):
+    """The shared classify_job is the only keep/drop authority; these tests
+    only check the wiring (the engine itself is covered by
+    _shared/test_classification.py)."""
 
-    def test_staff_nurse(self):
-        category, review = classify_category(
-            "Staff Nurse", "Staff Nurse", "Nursing Administration - Wards")
-        self.assertEqual(category, "nurses")
-        self.assertFalse(review)
+    @staticmethod
+    def _row(title, designation="", department="", description=""):
+        return {"title": title, "designation": designation,
+                "department": department, "skills": "",
+                "description": description,
+                "category": "", "sub_category": "", "role_family": "",
+                "all_families": "", "family_scores": "",
+                "family_confidence": "", "matched_in": "",
+                "needs_review": False}
 
-    def test_pharmacist(self):
-        category, review = classify_category(
-            "Pharmacist - Logistic", "Pharmacist", "Logistics - Pharmacy OP")
-        self.assertEqual(category, "pharmacists")
-        self.assertFalse(review)
+    def test_in_scope_role_gets_taxonomy_labels(self):
+        row = self._row("Clinical Research Coordinator", "Coordinator",
+                        "Clinical Research")
+        verdict = classify_row(row)
+        self.assertTrue(verdict["in_scope"])
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], verdict["role_family"])
 
-    def test_consultant_clinical_is_doctor(self):
-        category, review = classify_category(
-            "Consultant - Internal", "Consultant", "Clinical - Internal Medicine")
-        self.assertEqual(category, "doctors")
-        self.assertFalse(review)
+    def test_clinical_title_is_out_of_scope(self):
+        # Hospital ATS: nursing requisitions are vetoed and dropped
+        row = self._row("Staff Nurse", "Staff Nurse",
+                        "Nursing Administration - Wards")
+        verdict = classify_row(row)
+        self.assertFalse(verdict["in_scope"])
 
-    def test_consultant_typo_is_doctor(self):
-        # Real listing "Counsultant" in Clinical Administration - Orthopaedics
-        category, _ = classify_category(
-            "Counsultant", "Junior Consultant",
-            "Clinical Administration - Orthopaedics")
-        self.assertEqual(category, "doctors")
-
-    def test_pathology_technician_non_clinical_no_review(self):
-        category, review = classify_category(
-            "Technician/Executive - Pathology", "Executive",
-            "Laboratory - Pathology")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(review)  # clear healthcare signal
-
-    def test_marketing_executive_flagged(self):
-        category, review = classify_category(
-            "Senior Executive", "Senior Executive",
-            "Marketing & Business Development - Marketing")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(review)  # no healthcare word anywhere
-
-    def test_admission_executive_not_doctor(self):
-        category, _ = classify_category(
-            "Executive - Admission | General Administration", "Executive",
-            "General Administration Services - Administraton General")
-        self.assertEqual(category, "non_clinical")
+    def test_department_signal_reaches_classifier(self):
+        # Bare title scores in-scope only through the department (skills x2)
+        row = self._row("Associate", department="Pharmacovigilance | Drug Safety")
+        verdict = classify_row(row)
+        self.assertTrue(verdict["in_scope"])
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
 
 
 class TestHierarchies(unittest.TestCase):
@@ -168,7 +160,7 @@ class TestRowBuilding(unittest.TestCase):
     def test_rich_row(self):
         row = job_to_rich_row(self.LISTING)
         self.assertEqual(row["job_id"], "1806731")
-        self.assertEqual(row["category"], "pharmacists")
+        self.assertEqual(row["category"], "")  # filled by classify_row later
         self.assertEqual(row["city"], "Aurangabad")
         self.assertEqual(row["company"],
                          "United CIIGMA Institute of Medical Sciences Pvt Ltd.")
@@ -189,13 +181,24 @@ class TestRowBuilding(unittest.TestCase):
         self.assertEqual(row["qualifications"], "B.Pharm")
         self.assertEqual(row["job_type"], "full_time")  # Regular -> full_time
 
+        row["category"], row["sub_category"] = "Non Clinical", "Clinical Research"
         club = rich_row_to_club_row(row)
-        self.assertEqual(club["category"], "pharmacists")
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))  # shared contract
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        self.assertEqual(club["qualification"], "B.Pharm")  # structured field wins
         self.assertEqual(club["min_salary"], "216000")
         self.assertEqual(club["salary_period"], "per_annum")
-        self.assertEqual(club["expires_at"], "2026-08-19")
+        self.assertNotIn("is_active", club)   # retired
+        self.assertNotIn("expires_at", club)  # retired
         self.assertEqual(club["country_code"], "IN")
         self.assertEqual(club["company_type"], "hospital")
+
+    def test_qualification_extracted_when_no_structured_field(self):
+        row = job_to_rich_row(self.LISTING)
+        row["description"] = "Applicants must hold an MPH degree."
+        club = rich_row_to_club_row(row)
+        self.assertIn("MPH", club["qualification"])
 
     def test_strip_html(self):
         self.assertEqual(strip_html("<p>a&amp;b</p><br>c"), "a&b c")

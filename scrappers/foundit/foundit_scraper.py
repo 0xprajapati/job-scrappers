@@ -40,20 +40,27 @@ added, so there is no date-sorted crawl and no early stop: the capture
 walks every page of each keyword (capped, see README) and this script's
 date window keeps only in-window jobs.
 
-Healthcare filter (master spec §2)
-----------------------------------
-Keyword SERPs drag in noise ("medical" matches medical-benefits boilerplate,
-BPO/insurance claims work, IT roles at hospital chains). Gate, in order:
+Scope gate (2026-08-25 taxonomy migration, instructions/taxonomy-migration-spec.md)
+-----------------------------------------------------------------------------------
+foundit is NOT a broad "all healthcare" scraper. Every card goes through
+the ONE shared classifier, `_shared/classification.classify_job(title,
+skills, description)` — the same pipeline every scraper in this repo uses,
+so all sources agree on scope by construction:
 
-1. DENY_TITLE_KEYWORDS (telecallers, software, sales…)
-   -> excluded_non_healthcare, even at a healthcare employer.
-2. ALLOW_TITLE_KEYWORDS (clinical + healthcare-business vocabulary) -> kept.
-3. Any foundit industry/function tag matching HEALTH_TAXONOMY_RE
-   ("Health Care", "Hospital", "Medical Device", "Nursing", …) -> kept.
-4. Only neutral tags ("Other", empty) -> kept, flagged needs_review —
-   never silently dropped.
-5. A named non-healthcare industry (BPO, Insurance, IT…) with a
-   non-matching title -> excluded_non_healthcare.
+1. A negative-keyword veto drops lookalikes ("medical billing", "AR
+   caller", "revenue cycle", "staff nurse", "lab technician"…) and the
+   weighted role-family scorer (title x5 / skills x2 / description x1)
+   must name a family — otherwise `in_scope` is False and the card is
+   dropped, counted as excluded_out_of_scope (printed in the summary).
+2. Kept cards carry `category` ("Non Clinical" | "Public Health"),
+   `sub_category` (one of the 20 taxonomy sub-categories), the winning
+   `role_family`, and the full score trace (`all_families`,
+   `family_scores`, `family_confidence`, `matched_in`) in the rich CSV.
+   A title that reads like a different profession is kept but flagged
+   needs_review — never silently dropped (master spec §2).
+
+The keyword SERPs the capture walks are just recall (ask foundit for these
+roles instead of crawling all of healthcare); this scorer is the precision.
 
 Salary (master spec §3): capture, don't filter — never excluded, never
 invented. foundit exposes salary as INR/year (`absoluteValue`) plus a
@@ -73,7 +80,8 @@ Outputs (repo README + instructions/master-scraper-spec.md)
                            watermark source for incremental runs.
 * ../../jobs_csv/<DD-MM-YYYY>/foundit.csv
                          — HealthCareers.club 22-column schema.
-* needs_review.csv       — titles the classifier could not place.
+* needs_review.csv       — kept rows whose title reads like a different
+                           profession (rescued on skills/description).
 
 Time window (master spec §4): first run keeps INITIAL_WINDOW_DAYS (7);
 later runs keep jobs newer than (newest stored posted_date -
@@ -90,6 +98,12 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+
+# The ONE shared classifier (2026-08-25 taxonomy migration): classify_job
+# gates every card to the two categories — Non Clinical, Public Health —
+# with ten sub-categories each, and supplies the club-CSV column contract.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+from classification import CLUB_COLUMNS, classify_job, extract_qualification
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -116,150 +130,32 @@ RICH_COLUMNS = [
     "salary_period_original", "salary_currency_original", "salary_hidden",
     "job_type", "employment_type", "experience_min_years",
     "experience_max_years", "industries", "functions", "skills",
-    "category", "company_type", "match_signal", "needs_review",
+    "category", "sub_category", "role_family", "sub_category_basis",
+    "all_families", "family_scores", "family_confidence", "matched_in",
+    "company_type", "match_signal", "needs_review",
     "total_applicants", "posted_date", "updated_date", "description",
     "job_url", "apply_redirect_url", "found_via", "scraped_at",
 ]
 
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
+# The club CSV contract is the shared 22-column CLUB_COLUMNS imported from
+# _shared/classification.py — never hand-copied here.
 
 log = logging.getLogger("foundit_scraper")
 
 # ----------------------------------------------------------------------------
-# Healthcare classification (master spec §2)
+# Scope gate — the ONE shared classifier (2026-08-25 taxonomy migration)
 # ----------------------------------------------------------------------------
 
-# Applied to titles only (same vocabulary family as the shine/indeed
-# scrapers; descriptions mention "medical insurance" far too loosely).
-ALLOW_TITLE_KEYWORDS = re.compile(
-    r"(?:^|[^a-z])(?:"
-    r"nurse|nursing|midwif\w*|\bgnm\b|\banm\b|"
-    r"physician|doctor|surgeon|dentist|dental|mbbs|\bbds\b|\bmd\b|"
-    r"intensivist|practitioner|"
-    r"pediatric\w*|paediatric\w*|geriatric\w*|obstetric\w*|gyn[ae]?colog\w*|"
-    r"[a-z]{4,}ologist|diabetolog\w*|ayurved\w*|homeopath\w*|unani|"
-    r"psychiatr\w*|psycholog\w*|psychotherap\w*|therapist|"
-    r"mental[- ]?health|behaviou?ral[- ]?health|"
-    r"clinical|clinician|clinic|medical|medicine|healthcare|health[- ]?care|"
-    r"health\b|patient|telehealth|telemedicine|tele[- ]?consult\w*|"
-    r"pharmac\w*|pharma\b|drug[- ]?safety|regulatory[- ]?affairs|"
-    r"radiolog\w*|radiograph\w*|sonograph\w*|phlebotom\w*|patholog\w*|"
-    r"paramedic\w*|epidemiolog\w*|oncolog\w*|cardiolog\w*|neurolog\w*|"
-    r"dermatolog\w*|endocrinolog\w*|an[ae]sthes\w*|optometr\w*|"
-    r"ophthalmolog\w*|dietit\w*|dietic\w*|nutrition\w*|"
-    r"physiotherap\w*|occupational[- ]?therap\w*|speech[- ]?(?:therap|language)\w*|"
-    r"audiolog\w*|respiratory[- ]?therap\w*|"
-    r"caregiver|care[- ]?giver|home[- ]?health|hospice|hospital|"
-    r"wellness|\brcm\b|revenue[- ]?cycle|prior[- ]?auth\w*|"
-    r"\bicd(?:-10)?\b|\bcpt\b|coder|coding|"
-    r"ar[- ]?caller|denial[- ]?management|"
-    r"lab\b|laboratory|\bdmlt\b|"
-    r"life[- ]?science|biotech|pharmacovigilance|"
-    r"\bemr\b|\behr\b|\boet\b"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
+def scope_card(title, skills, description):
+    """Gate one card through the shared classify_job.
 
-# Clearly non-healthcare occupations the keyword SERPs drag in. DENY wins
-# even at a healthcare employer: the occupation, not the employer, decides
-# (same convention as the shine/indeed scrapers).
-DENY_TITLE_KEYWORDS = re.compile(
-    r"(?:^|[^a-z])(?:"
-    r"telesales|telecaller|tele[- ]?calling|telemarket\w*|"
-    r"admissions?[- ]?counsell?or|academic[- ]?counsel\w*|"
-    r"education[- ]?counsel\w*|visa[- ]?counsell?or|career[- ]?counsel\w*|"
-    r"sales[- ]?executive|business[- ]?development|"
-    r"software[- ]?(?:engineer|developer)|web[- ]?developer|"
-    r"frontend|front[- ]?end|backend|back[- ]?end|full[- ]?stack|devops|"
-    r"java[- ]?developer|python[- ]?developer|\.net|salesforce|"
-    r"data[- ]?engineer\w*|cloud[- ]?engineer|network[- ]?engineer|"
-    r"civil[- ]?engineer|mechanical[- ]?engineer|electrical[- ]?engineer|"
-    r"accountant|chartered[- ]?accountant|"
-    r"data[- ]?annotat\w*|transcriber\b|"
-    r"graphic[- ]?designer|ui[- ]?designer|ux[- ]?designer|copywriter|"
-    r"chef|housekeeping|driver|security[- ]?guard"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
-
-# foundit's own industry/function tags that assert healthcare work.
-HEALTH_TAXONOMY_RE = re.compile(
-    r"health|hospital|medic\w*|pharma\w*|nurs\w*|clinic\w*|dental|dentist|"
-    r"diagnostic|doctor|physician|surg\w*|therap\w*|psychiatr\w*|patholog\w*|"
-    r"radiolog\w*|fertility|veterinar\w*|life ?science|biotech|"
-    r"wellness|elder ?care|ambulance",
-    re.IGNORECASE)
-
-# Tags that say nothing about the work: keep + needs_review when the title
-# is also non-committal.
-NEUTRAL_TAGS = {"", "other", "others"}
-
-
-def is_healthcare(title, industries, functions):
-    """Return (keep, signal); see the gate order in the module docstring."""
-    title = title or ""
-    tags = [t.strip() for t in (industries or []) + (functions or [])]
-    if DENY_TITLE_KEYWORDS.search(title):
-        return (False, "deny")
-    if ALLOW_TITLE_KEYWORDS.search(title):
-        return (True, "title")
-    if any(HEALTH_TAXONOMY_RE.search(t) for t in tags):
-        return (True, "taxonomy")
-    if all(t.lower() in NEUTRAL_TAGS for t in tags):
-        return (True, "needs_review")
-    return (False, "industry")
-
-
-# Title -> club category enum (same regex family as shine/indeed).
-_NURSE_RE = re.compile(
-    r"(?:^|[^a-z])(?:nurse|nursing|midwif\w*|\brn\b|\bgnm\b|\banm\b|"
-    r"nursing[- ]?attendant)(?:[^a-z]|$)", re.IGNORECASE)
-_PHARM_RE = re.compile(
-    r"(?:^|[^a-z])(?:pharmacist|pharmacy|pharm\.?\s?d|dispenser|"
-    r"pharmacolog\w*)(?:[^a-z]|$)", re.IGNORECASE)
-# Psychology-family clinicians map to non_clinical in the club schema, but
-# "...ologist" would drag them into doctors — checked before doctors.
-_PSYCH_RE = re.compile(r"ps[cy]{1,2}h\w*olog|psychotherap", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"(?:^|[^a-z])(?:physician|doctor|surgeon|dentist|\bmd\b|mbbs|\bbds\b|"
-    r"psychiatrist|medical[- ]?director|medical[- ]?officer|intensivist|"
-    r"[a-z]{4,}ologist|diabetolog\w*|general[- ]?practitioner|"
-    r"p[ae]diatrician|"
-    r"(?:family|internal|emergency)[- ]?medicine|\bgp\b)(?:[^a-z]|$)",
-    re.IGNORECASE)
-_NONCLINICAL_RE = re.compile(
-    r"(?:^|[^a-z])(?:therapist|therapy|counselor|counsellor|psycholog\w*|"
-    r"coach|caregiver|attendant|technician|"
-    r"technologist|dietit\w*|dietic\w*|nutrition\w*|physiotherap\w*|"
-    r"coder|coding|biller|billing|claims|caller|scribe|"
-    r"coordinator|specialist|manager|director|analyst|administrator|"
-    r"assistant|associate|executive|representative|consultant|advisor|"
-    r"recruiter|scientist|researcher|writer|editor|educator|trainer|tutor|"
-    r"faculty|reviewer|auditor|support|operations|lead|supervisor|"
-    r"liaison|student|intern\w*|fellow\w*|officer|head\b|receptionist"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
-
-
-def classify_category(title):
-    """Return (club category, ambiguous) for a kept title."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _PSYCH_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    return ("non_clinical", True)
+    Thin wrapper kept for the scraper's historical call shape: returns
+    classify_job's verdict dict. `verdict["in_scope"]` is False when the
+    negative-keyword veto fires or no role family scores; in-scope verdicts
+    carry `category` ("Non Clinical" | "Public Health"), `sub_category`,
+    `role_family`, `needs_review` and the full score trace.
+    """
+    return classify_job(title, skills, description)
 
 
 _PHARMA_COMPANY_RE = re.compile(
@@ -412,10 +308,26 @@ def compute_cutoff(existing_df, today=None, since=None):
 # Row building
 # ----------------------------------------------------------------------------
 
-def job_to_rich_row(card, signal):
+def card_signals(card):
+    """Extract the (title, skills_str, description) the scorer reads."""
     title = clean_value(card.get("title"))
-    category, ambiguous = classify_category(title)
-    needs_review = ambiguous or signal == "needs_review"
+    skills = [clean_value(t) for t in card.get("skills") or []
+              if clean_value(t)]
+    description = truncate_description(
+        strip_html(clean_value(card.get("description"))))
+    return title, ", ".join(skills), description
+
+
+def job_to_rich_row(card, verdict):
+    """Build a rich row for an in-scope card.
+
+    `verdict` is classify_job's dict (see scope_card): `category` holds the
+    top-level "Non Clinical" | "Public Health", `sub_category` the finer
+    split (with classify_job's family fallback for Non Clinical already
+    applied), `role_family` the winning family, plus the score trace.
+    """
+    title, skills_str, description = card_signals(card)
+    needs_review = verdict.get("needs_review", False)
 
     (salary_raw, sal_min, sal_max, sal_period, sal_currency,
      sal_hidden) = parse_salary(card.get("minSalary"), card.get("maxSalary"),
@@ -456,18 +368,24 @@ def job_to_rich_row(card, signal):
                                 if clean_value(t)),
         "functions": ", ".join(clean_value(t) for t in card.get("functions") or []
                                if clean_value(t)),
-        "skills": ", ".join(clean_value(t) for t in card.get("skills") or []
-                            if clean_value(t)),
-        "category": category,
+        "skills": skills_str,
+        "category": verdict["category"],
+        "sub_category": verdict["sub_category"],
+        "role_family": verdict["role_family"],
+        "sub_category_basis": verdict.get("sub_category_basis", ""),
+        "all_families": verdict.get("all_families", ""),
+        "family_scores": verdict.get("family_scores", ""),
+        "family_confidence": verdict.get("family_confidence", ""),
+        "matched_in": verdict.get("matched_in", ""),
         "company_type": classify_company_type(company),
         "match_signal": "{}:{}".format(
-            ",".join(card.get("foundVia") or []), signal),
+            ",".join(card.get("foundVia") or []),
+            verdict.get("matched_in", "")),
         "needs_review": "true" if needs_review else "false",
         "total_applicants": clean_value(card.get("totalApplicants")),
         "posted_date": epoch_ms_to_ist_date(card.get("postedAt")),
         "updated_date": epoch_ms_to_ist_date(card.get("updatedAt")),
-        "description": truncate_description(
-            strip_html(clean_value(card.get("description")))),
+        "description": description,
         "job_url": jd_url,
         "apply_redirect_url": clean_value(card.get("redirectUrl")),
         "found_via": ",".join(card.get("foundVia") or []),
@@ -523,17 +441,20 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": club_type,
-        "category": _clean(r.get("category")) or "non_clinical",
+        # `category` is the top-level taxonomy value ("Non Clinical" |
+        # "Public Health"); `sub_category` carries the finer split. The
+        # role family lives in the rich CSV only.
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),
         "max_experience": _clean(r.get("experience_max_years")),
+        "qualification": extract_qualification(_clean(r.get("description"))),
         "min_salary": club_lo,
         "max_salary": club_hi,
         "salary_period": club_period,
         "salary_currency": currency,
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -613,7 +534,7 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s%s",
              len(known_ids), cutoff, " (--since override)" if args.since else "")
 
-    counters = {"scanned": 0, "excluded_non_healthcare": 0, "excluded_old": 0,
+    counters = {"scanned": 0, "excluded_out_of_scope": 0, "excluded_old": 0,
                 "needs_review": 0, "new": 0, "duplicates": 0}
     new_rows, review_log = [], []
 
@@ -627,23 +548,22 @@ def main(argv=None):
                 counters["excluded_old"] += 1
                 continue
 
-            keep, signal = is_healthcare(card.get("title"),
-                                         card.get("industries"),
-                                         card.get("functions"))
-            if not keep:
-                counters["excluded_non_healthcare"] += 1
+            # Scope gate: the shared classify_job (see scope_card).
+            title, skills_str, description = card_signals(card)
+            verdict = scope_card(title, skills_str, description)
+            if not verdict["in_scope"]:
+                counters["excluded_out_of_scope"] += 1
                 continue
 
             job_id = clean_value(card.get("jobId"))
             if not job_id:
-                log.warning("Card without jobId — skipped (%r)",
-                            clean_value(card.get("title")))
+                log.warning("Card without jobId — skipped (%r)", title)
                 continue
             if job_id in known_ids:
                 counters["duplicates"] += 1
                 continue
 
-            row = job_to_rich_row(card, signal)
+            row = job_to_rich_row(card, verdict)
         except Exception as exc:       # never let one card crash the run
             log.warning("Skipping malformed card (%s)", exc)
             continue
@@ -652,8 +572,9 @@ def main(argv=None):
             counters["needs_review"] += 1
             review_log.append({
                 "job_id": row["job_id"], "title": row["title"],
-                "company": row["company"], "industries": row["industries"],
-                "functions": row["functions"],
+                "company": row["company"], "category": row["category"],
+                "sub_category": row["sub_category"],
+                "role_family": row["role_family"],
                 "match_signal": row["match_signal"]})
         known_ids.add(job_id)
         new_rows.append(row)
@@ -696,7 +617,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Cards scanned:             {:>6,}".format(counters["scanned"]))
-    print("Excluded (non-healthcare): {:>6,}".format(counters["excluded_non_healthcare"]))
+    print("Excluded (out of scope)  : {:>6,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>4,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:      {:>6,}".format(counters["needs_review"]))
     print("New jobs added:            {:>6,}".format(counters["new"]))

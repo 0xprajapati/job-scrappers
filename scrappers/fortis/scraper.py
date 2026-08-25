@@ -33,11 +33,13 @@ adds Category/JobFunction (CLINICIAN/NURSING/...), StudyLevel, JobSchedule,
 ExternalPostedEndDate and the hiring facility (workLocation LocationName,
 e.g. "FHL- Manesar").
 
-Being a hospital chain's own ATS, every posting is healthcare-industry at
-the source (§2: filter at source; nothing is dropped). The classifier maps
-titles + the Fortis job family to the club category enum; generic corporate
-titles in "Other Functions" with no healthcare signal are only flagged
-`needs_review`.
+Classification is the shared two-level taxonomy (scrappers/_shared/
+classification.py): category "Non Clinical" | "Public Health" plus a
+sub_category. Being a hospital chain's ATS, most requisitions (clinicians,
+nursing, technicians) are out of scope and dropped (counted as
+excluded_out_of_scope). The Fortis job-family / Category facet stays in the
+rich CSV as raw source columns (job_family, category_source) and feeds the
+classifier as its curated `skills` signal — it never decides the category.
 
 Quirks
 ------
@@ -69,6 +71,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -78,6 +81,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -119,27 +126,27 @@ RICH_CSV = "fortis_jobs.csv"
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 # Job-family ids of the five tiles on careers-at-fortis (also returned as
-# JobFamilyId by the detail API) -> club category fallback when the title
-# alone says nothing.
-JOB_FAMILY_CATEGORY = {
-    "300000787441924": ("Clinicians", "doctors"),
-    "300000787442029": ("Nursing", "nurses"),
-    "300000787442090": ("Technicians", "non_clinical"),
-    "300000787442096": ("Medical Support", "non_clinical"),
-    "300000787441932": ("Other Functions", "non_clinical"),
+# JobFamilyId by the detail API) -> human-readable family name. Raw source
+# data for the rich CSV only — the category is decided by classify_job.
+JOB_FAMILY_NAMES = {
+    "300000787441924": "Clinicians",
+    "300000787442029": "Nursing",
+    "300000787442090": "Technicians",
+    "300000787442096": "Medical Support",
+    "300000787441932": "Other Functions",
 }
 # Detail-API Category codes / RequisitionType names, uppercased (typos are
-# theirs; some requisitions carry only RequisitionType) -> same fallback.
-CATEGORY_CODE_FALLBACK = {
-    "CLINICIAN": ("Clinicians", "doctors"),
-    "CLINICIANS": ("Clinicians", "doctors"),
-    "NURSING": ("Nursing", "nurses"),
-    "TECHINICIANS": ("Technicians", "non_clinical"),
-    "TECHNICIANS": ("Technicians", "non_clinical"),
-    "MEDICAL SUPPORT": ("Medical Support", "non_clinical"),
-    "MEDICAL_SUPPORT": ("Medical Support", "non_clinical"),
-    "OTHER FUNCTIONS": ("Other Functions", "non_clinical"),
-    "OTHERS": ("Other Functions", "non_clinical"),
+# theirs; some requisitions carry only RequisitionType) -> same names.
+CATEGORY_CODE_NAMES = {
+    "CLINICIAN": "Clinicians",
+    "CLINICIANS": "Clinicians",
+    "NURSING": "Nursing",
+    "TECHINICIANS": "Technicians",
+    "TECHNICIANS": "Technicians",
+    "MEDICAL SUPPORT": "Medical Support",
+    "MEDICAL_SUPPORT": "Medical Support",
+    "OTHER FUNCTIONS": "Other Functions",
+    "OTHERS": "Other Functions",
 }
 
 COUNTRY_META = {
@@ -154,18 +161,10 @@ RICH_COLUMNS = [
     "job_family", "category_source", "city", "state", "country",
     "country_code", "country_dial_code", "salary_raw", "salary_min",
     "salary_max", "salary_period", "salary_currency", "job_type",
-    "category", "company_type", "study_level", "min_experience",
-    "max_experience", "needs_review", "posted_date", "closure_date",
-    "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
+    "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in", "company_type",
+    "study_level", "min_experience", "max_experience", "needs_review",
+    "posted_date", "closure_date", "description", "job_url", "scraped_at",
 ]
 
 log = logging.getLogger("fortis_scraper")
@@ -186,67 +185,27 @@ def strip_html(markup):
     return clean_text(_TAG_RE.sub(" ", markup or ""))
 
 
-_NURSE_RE = re.compile(r"nurs|midwif|\bgnm\b|\banm\b|\bsister\b", re.IGNORECASE)
-_PHARMACIST_RE = re.compile(r"pharmacist|\bpharmacy\b|\bpharm ?d\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"doctor|physician|surgeon|\bmbbs\b|dentist|medical officer|\brmo\b|"
-    r"intensivist|hospitalist|[a-z]+ologist|anaesthetist|anesthetist|"
-    r"obstetrician|p(a?)ediatrician|psychiatrist|registrar|\bdnb\b|\bdmo\b|"
-    r"clinical (associate|assistant|fellow)|\bfellow\b", re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-# "Consultant"/"Attending Consultant" titles are doctors only in the
-# Clinicians family; a "Consultant - Finance" in Other Functions is not.
-_CONSULTANT_RE = re.compile(r"consultant|coun?sultant", re.IGNORECASE)
-
-# Allied-health roles land in non_clinical per the club convention (see
-# export_club_csv.py), even though Fortis files some under Clinicians.
-# Checked before the doctor regex so "audiologist"/"psychologist" don't
-# match its [a-z]+ologist branch.
-_ALLIED_RE = re.compile(
-    r"physiothera|physical therap|occupational therap|speech therap|"
-    r"dieti[ct]|nutritionist|optometr|audiolog|psycholog|technician|"
-    r"technologist|perfusion|phlebotom", re.IGNORECASE)
-
-# Healthcare signal for needs_review flagging (the site itself is a hospital
-# chain, so nothing is dropped — generic corporate titles with no healthcare
-# word anywhere are only flagged).
-_HEALTHCARE_SIGNAL_RE = re.compile(
-    r"medical|pharma|health|nurs|doctor|clinic|hospital|\blab\b|laborator|"
-    r"diagnost|patient|dental|surgi|therap|physio|radiol|patholog|dialysis|"
-    r"icu|nicu|ward|emergency|paramedic|technician|technologist|cath|"
-    r"blood ?bank|cssd|anaesth|anesth|biomedical|dietic|dietit|nutrition|"
-    r"phlebotom|audiolog|optometr|perfusion|transplant|cardio|pulmo|onco|"
-    r"neuro|ortho|gastro|nephro|\buro|derma|gyn|obstet|p(a?)edia|psychiat",
-    re.IGNORECASE)
-
-
-def classify_category(title, family_name="", family_category=""):
-    """Map to the club category enum (doctors|nurses|pharmacists|
-    non_clinical). Returns (category, needs_review)."""
-    title = clean_text(title)
-    if _NURSE_RE.search(title):
-        category = "nurses"
-    elif _PHARMACIST_RE.search(title):
-        category = "pharmacists"
-    elif _ALLIED_RE.search(title):
-        category = "non_clinical"
-    elif _DOCTOR_RE.search(title):
-        category = "doctors"
-    elif _CONSULTANT_RE.search(title):
-        # No family info (list payload): a clinical word in the title is
-        # enough — "Attending Consultant Radiology" vs "Consultant - Tax".
-        if family_category == "doctors" or (
-                not family_category and _HEALTHCARE_SIGNAL_RE.search(title)):
-            category = "doctors"
-        else:
-            category = "non_clinical"
-    else:
-        category = family_category or "non_clinical"
-    haystack = " ".join(filter(None, [title, family_name]))
-    needs_review = (category == "non_clinical"
-                    and family_name in ("", "Other Functions")
-                    and not _HEALTHCARE_SIGNAL_RE.search(haystack))
-    return category, needs_review
+    The Fortis job-family name and raw Category code are the curated
+    `skills` signal; the raw values stay in the rich CSV as source columns
+    only. Returns in_scope — False means DROP the row
+    (excluded_out_of_scope).
+    """
+    skills = " ".join(filter(None, [row.get("job_family", ""),
+                                    row.get("category_source", "")]))
+    verdict = classify_job(row.get("title", ""), skills,
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 def parse_location(raw):
@@ -266,15 +225,16 @@ def country_meta(country_code):
     return name, code if code in COUNTRY_META else "IN", dial
 
 
-def family_fallback(job_family_id="", category_code=""):
-    """(family_name, club_fallback_category) from either ATS identifier."""
+def family_name_for(job_family_id="", category_code=""):
+    """Human-readable Fortis family name from either ATS identifier
+    (rich-CSV source data only — never a category decision)."""
     key = clean_text(job_family_id)
-    if key in JOB_FAMILY_CATEGORY:
-        return JOB_FAMILY_CATEGORY[key]
+    if key in JOB_FAMILY_NAMES:
+        return JOB_FAMILY_NAMES[key]
     code = clean_text(category_code).upper()
-    if code in CATEGORY_CODE_FALLBACK:
-        return CATEGORY_CODE_FALLBACK[code]
-    return "", ""
+    if code in CATEGORY_CODE_NAMES:
+        return CATEGORY_CODE_NAMES[code]
+    return ""
 
 
 _PART_TIME_RE = re.compile(r"part.?time", re.IGNORECASE)
@@ -382,8 +342,7 @@ def job_to_rich_row(job):
     title = clean_text(job.get("Title"))
     city, state = parse_location(job.get("PrimaryLocation"))
     country_name, code, dial = country_meta(job.get("PrimaryLocationCountry"))
-    family_name, fallback = family_fallback(category_code=job.get("JobFamily"))
-    category, needs_review = classify_category(title, family_name, fallback)
+    family_name = family_name_for(category_code=job.get("JobFamily"))
 
     return {
         "source": SITE,
@@ -405,12 +364,19 @@ def job_to_rich_row(job):
         "salary_period": "",
         "salary_currency": "",
         "job_type": "full_time",        # detail enrich refines via JobSchedule
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": "hospital",     # hospital chain's own ATS
         "study_level": "",
         "min_experience": "",
         "max_experience": "",
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": clean_text(job.get("PostedDate"))[:10],
         "closure_date": clean_text(job.get("PostingEndDate"))[:10],
         "description": strip_html(job.get("ShortDescriptionStr"))[:DESCRIPTION_MAX_CHARS],
@@ -424,15 +390,13 @@ def apply_detail(row, detail):
     if not detail:
         return row
     row["requisition_id"] = clean_text(detail.get("RequisitionId"))
-    family_name, fallback = family_fallback(
+    family_name = family_name_for(
         detail.get("JobFamilyId"),
         detail.get("Category") or detail.get("RequisitionType"))
     if family_name:
         row["job_family"] = family_name
         row["category_source"] = clean_text(detail.get("Category")
                                             or detail.get("RequisitionType"))
-        row["category"], row["needs_review"] = classify_category(
-            row["title"], family_name, fallback)
     work_locations = detail.get("workLocation") or []
     if work_locations:
         row["facility"] = clean_text(work_locations[0].get("LocationName"))
@@ -494,17 +458,20 @@ def rich_row_to_club_row(r):
         "description": _blank(r.get("description")) or
             (facility and "Hiring facility: {}".format(facility)) or "",
         "job_type": _blank(r.get("job_type")) or "full_time",
-        "category": _blank(r.get("category")) or "non_clinical",
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("min_experience")),
         "max_experience": _int_str(r.get("max_experience")),
+        # structured source field (StudyLevel) first, else grounded
+        # extraction from the description — never inferred
+        "qualification": _blank(r.get("study_level"))
+            or extract_qualification(_blank(r.get("description"))),
         "min_salary": "",               # never exposed by the source
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        "expires_at": _blank(r.get("closure_date")),
     }
 
 
@@ -558,8 +525,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows, review_log = [], []
     offset, page_count, empty_pages = 0, 0, 0
     total_count = None
@@ -603,6 +571,11 @@ def main(argv=None):
                     apply_detail(row, detail)
                 else:
                     counters["detail_failed"] += 1
+            # Classify only after the detail fetch so the description and
+            # refined job_family feed the shared classifier.
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                continue
             if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({"job_id": row["job_id"], "title": row["title"],
@@ -645,6 +618,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Jobs scanned:          {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

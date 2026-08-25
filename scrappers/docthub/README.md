@@ -20,22 +20,26 @@ Job objects are fully structured: numeric salary with a `Monthly`/`Yearly` type
 (undisclosed salaries appear as type `"0"` with zero amounts), exact publish
 timestamps, and a `code` slug ending in the job ID (`dermatologist-J120239`).
 The 18 job categories exactly partition all ~16k jobs, so the scraper crawls
-**per category** — every job gets a category tag, and clearly non-clinical
-categories (Marketing, HR, Housekeeping, …) are skipped without a single request.
+**per category** — every job carries its raw facet in `source_category`, but
+the facet never decides anything.
 
-## Filtering
+## Classification (taxonomy migration 2026-08-25)
 
-1. **Healthcare filter** (config constants at the top of `docthub_scraper.py`):
-   - `INCLUDE_CATEGORIES` — always kept (Doctor / Surgeon, Nursing, Paramedical,
-     Pharmacist, Medical Officer, Physiotherapy, Dentist, AYUSH).
-   - `EXCLUDE_CATEGORIES` — never crawled (Marketing, Administration, HR,
-     Engineering / Maintenance, Housekeeping).
-   - Everything else (Pharmaceuticals, Professor / Academic Staff, Others,
-     Clinical Research, Counsellor) is classified by **title** against
-     `ALLOW_TITLE_KEYWORDS` / `DENY_TITLE_KEYWORDS`. Titles matching *neither*
-     list are kept but flagged `needs_review=True` in the CSV **and** logged to
-     `needs_review.csv`, so you can refine the keyword lists. The DENY list
-     also overrides inside included categories as a safety net.
+1. **The one classifier**: every scanned job goes through
+   `classify_job(title, skills, description)` from
+   `_shared/classification.py` — the old `INCLUDE_CATEGORIES` /
+   `ALLOW_TITLE_KEYWORDS` / `DENY_TITLE_KEYWORDS` machinery is gone. The
+   verdict alone decides keep/drop: `in_scope == False` rows are counted
+   `excluded_out_of_scope` and never exported. In-scope rows carry
+   `category` ("Non Clinical" | "Public Health"), `sub_category` (one of
+   the 20 shared sub-categories) and the score-trace columns
+   (`role_family`, `all_families`, `family_scores`, `family_confidence`,
+   `matched_in`, `needs_review`). `needs_review == True` rows are kept AND
+   logged to `needs_review.csv`. The only remaining `EXCLUDE_CATEGORIES`
+   entries (Engineering / Maintenance, Housekeeping) are pure crawl-side
+   scoping to save requests. Note: this board is overwhelmingly
+   bedside/clinical — the 2026-08-25 stored-data reclassification kept 21
+   of 1,735 rows (the rest moved to `out-of-scope.csv`, reversible).
 2. **Time window (no salary filter)**: salaries are captured and normalized to
    INR/month but never filtered on; undisclosed salaries stay as blank fields.
    The first run keeps jobs posted in the last `INITIAL_WINDOW_DAYS` (30);
@@ -68,19 +72,30 @@ category, for testing), `--page-size N` (default 100), `--enrich` (off by
 default; only enriches jobs that are new *and* passed both filters), `--verbose`.
 
 Tunables at the top of the script: `INITIAL_WINDOW_DAYS`,
-`WATERMARK_GRACE_DAYS`, category and title keyword lists,
+`WATERMARK_GRACE_DAYS`, crawl-side `EXCLUDE_CATEGORIES`,
 `REQUEST_DELAY_SECONDS`, `MAX_RETRIES`, `PAGE_SIZE`, `USER_AGENT`.
 
 ## Output
 
-- `docthub_jobs.csv` — one row per passing job, deduplicated by `job_id`.
+- `docthub_jobs.csv` — one row per in-scope job, deduplicated by `job_id`.
   Columns: `job_id, title, company, location, experience_min_years,
   experience_max_years, salary_raw, salary_min_monthly, salary_max_monthly,
-  salary_period_original (P.M/P.A), job_type, category, needs_review,
-  posted_date (YYYY-MM-DD), job_url, scraped_at` (+ `description, apply_url`
-  with `--enrich`).
-- `needs_review.csv` — ambiguous titles for keyword-list tuning (deduplicated).
-- A run summary is printed: scanned / excluded per reason / new / duplicates.
+  salary_period_original (P.M/P.A), job_type, source_category (raw docthub
+  facet), category ("Non Clinical" | "Public Health"), sub_category,
+  role_family, all_families, family_scores, family_confidence, matched_in,
+  needs_review, posted_date (YYYY-MM-DD), job_url, scraped_at`
+  (+ `description, apply_url` with `--enrich`).
+- `../../jobs_csv/<DD-MM-YYYY>/docthub.csv` — the 22-column
+  HealthCareers.club export (`CLUB_COLUMNS` imported from
+  `_shared/classification.py`; `is_active`/`expires_at` retired;
+  `qualification` extracted from the description, never inferred),
+  regenerated from the full rich store each run.
+- `needs_review.csv` — in-scope rows whose title looks like a different
+  profession (kept AND flagged, deduplicated).
+- `out-of-scope.csv` — rows the shared classifier ruled out during the
+  one-off stored-data reclassification (reversible).
+- A run summary is printed: scanned / excluded per reason (including
+  `excluded_out_of_scope`) / new / duplicates.
 
 ## Idempotency
 

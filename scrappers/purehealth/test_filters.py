@@ -13,68 +13,50 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
-    WATERMARK_GRACE_DAYS, classify_category, clean_text, compute_cutoff,
-    map_job_type, parse_city, parse_experience, parse_facility,
+    CLUB_COLUMNS, WATERMARK_GRACE_DAYS, apply_classification, clean_text,
+    compute_cutoff, map_job_type, parse_city, parse_experience, parse_facility,
     rich_row_to_club_row, strip_html, within_window,
 )
 
 
-class TestClassifyCategory(unittest.TestCase):
-    def test_nurse_titles(self):
-        for title in ("Registered Nurse - CICU", "Registered Nurse - PICU",
-                      "Staff Nurse (Critical Cardiac Care)", "Practical Nurse",
-                      "Cath Lab Staff Nurse", "Assistant Nurse"):
-            self.assertEqual(classify_category(title), ("nurses", False), title)
+class TestClassificationWiring(unittest.TestCase):
+    """The engine itself is tested in _shared/test_classification.py; these
+    only prove this scraper wires its fields into it correctly."""
 
-    def test_midwife_is_nursing(self):
-        self.assertEqual(classify_category("Midwife"), ("nurses", False))
-        self.assertEqual(classify_category("Registered Midwife"),
-                         ("nurses", False))
+    def _row(self, title, category_original="", description=""):
+        return {"title": title, "category_original": category_original,
+                "description": description}
 
-    def test_title_beats_wrong_ats_category(self):
-        # the ATS files both of these under "Administration"
-        self.assertEqual(classify_category("Cath Lab Staff Nurse",
-                                           "Administration"),
-                         ("nurses", False))
-        self.assertEqual(classify_category("Assistant Nurse", "Administration"),
-                         ("nurses", False))
+    def test_in_scope_role_gets_category_and_sub_category(self):
+        row = self._row("Clinical Research Coordinator", "Administration")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
 
-    def test_doctor_titles(self):
-        self.assertEqual(classify_category("Consultant Physician", "Medical"),
-                         ("doctors", False))
-        self.assertEqual(classify_category("Specialist Radiologist"),
-                         ("doctors", False))
+    def test_public_health_role(self):
+        row = self._row("Infection Prevention and Control Officer", "Nursing")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Infection Prevention & Control")
 
-    def test_psychologist_is_not_a_doctor(self):
-        # allied health, and the club enum has no allied-health bucket
-        self.assertEqual(classify_category("Clinical Psychologist",
-                                           "Allied Health"),
-                         ("non_clinical", False))
+    def test_bedside_nurse_is_dropped(self):
+        for title in ("Registered Nurse - CICU", "Cath Lab Staff Nurse",
+                      "Assistant Nurse", "Midwife"):
+            row = self._row(title, "Administration")
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "")
 
-    def test_technologist_is_not_a_doctor(self):
-        self.assertEqual(classify_category("Medical Laboratory Technologist",
-                                           "Allied Health"),
-                         ("non_clinical", False))
+    def test_clinician_title_is_dropped(self):
+        row = self._row("Consultant Physician", "Medical")
+        self.assertFalse(apply_classification(row))
 
-    def test_pharmacist_wins_over_everything(self):
-        self.assertEqual(classify_category("Clinical Pharmacist", "Nursing"),
-                         ("pharmacists", False))
-
-    def test_allied_and_admin_from_ats_category(self):
-        self.assertEqual(classify_category("Occupational Therapist (Arabic "
-                                           "Speaker)", "Allied Health"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Patient Care Assistant "
-                                           "(Non-Licensed)", "Administration"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Associate Director –Services "
-                                           "(UPP KA)", "Administration"),
-                         ("non_clinical", False))
-
-    def test_unknown_title_and_category_flagged_not_dropped(self):
-        category, needs_review = classify_category("Zone Lead", "")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
+    def test_ats_category_cannot_admit_a_job(self):
+        # the ATS files nurses under "Administration" — the facet is a signal
+        # for the shared classifier, never a decider
+        row = self._row("Patient Care Assistant (Non-Licensed)",
+                        "Administration")
+        self.assertFalse(apply_classification(row))
 
 
 class TestParseExperience(unittest.TestCase):
@@ -204,28 +186,42 @@ class TestTextCleaning(unittest.TestCase):
 class TestClubRow(unittest.TestCase):
     def test_salary_columns_stay_empty(self):
         club = rich_row_to_club_row({
-            "title": "Midwife", "city": "Abu Dhabi", "country":
-            "United Arab Emirates", "category": "nurses",
+            "title": "Clinical Research Coordinator", "city": "Abu Dhabi",
+            "country": "United Arab Emirates", "category": "Non Clinical",
+            "sub_category": "Clinical Research",
             "job_type": "full_time", "posted_date": "2026-07-16",
-            "expires_at": "2026-08-31", "description": "Provide midwifery care",
+            "expires_at": "2026-08-31", "description": "Run study visits",
             "job_url": "https://example.invalid/job/4582",
+            "education": "Bachelors Degree",
             "experience_min_years": "2", "experience_max_years": "",
         })
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
         self.assertEqual(club["min_salary"], "")
         self.assertEqual(club["max_salary"], "")
         self.assertEqual(club["salary_currency"], "")
         self.assertEqual(club["country_code"], "AE")
         self.assertEqual(club["company_type"], "hospital")
-        self.assertEqual(club["is_active"], "true")
+        self.assertNotIn("is_active", club)
         self.assertEqual(club["posted_at"], "2026-07-16")
         self.assertEqual(club["min_experience"], "2")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        # structured StudyLevel wins over description extraction
+        self.assertEqual(club["qualification"], "Bachelors Degree")
+
+    def test_qualification_falls_back_to_description(self):
+        club = rich_row_to_club_row(
+            {"title": "Medical Writer",
+             "description": "Candidates must hold an MPH or equivalent."})
+        self.assertIn("MPH", club["qualification"])
 
     def test_missing_fields_do_not_crash(self):
         club = rich_row_to_club_row({})
         self.assertEqual(club["country_name"], "United Arab Emirates")
         self.assertEqual(club["city_name"], "Abu Dhabi")
         self.assertEqual(club["job_type"], "full_time")
-        self.assertEqual(club["category"], "non_clinical")
+        self.assertEqual(club["category"], "")
+        self.assertEqual(club["qualification"], "")
 
 
 if __name__ == "__main__":

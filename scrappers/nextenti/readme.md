@@ -47,13 +47,21 @@ disallowed).
 
 - **No salary filter** — salaries are captured, never filtered on. Blank /
   undisclosed salaries stay blank.
-- **Healthcare**: nextenti is a healthcare board, so all jobs are kept. Each is
-  mapped to the club `category` enum using the source `profession` field first
-  (authoritative), falling back to the title only when `profession` is generic
-  ("Others"/blank). Doctor/Nurse/Pharmacist professions map directly; allied
-  and non-clinical roles (physiotherapy, technician, HR, finance, engineering,
-  admin, sales…) map to `non_clinical`. Jobs that resolve to `non_clinical` by
-  pure default are flagged in `needs_review.csv`.
+- **Classification (taxonomy migration 2026-08-25)**: every candidate job
+  goes through the shared two-level classifier —
+  `_shared/classification.classify_job(title, skills, description)` — with
+  the source `profession` field passed as the `skills` signal only (it no
+  longer decides the category; it stays in the rich CSV as a raw source
+  column). The verdict fills `category` ("Non Clinical" | "Public Health"),
+  `sub_category` (20-way split) and the trace columns (`role_family`,
+  `all_families`, `family_scores`, `family_confidence`, `matched_in`,
+  `needs_review`). This is a clinical board, so most listings (doctors,
+  nurses, technicians, billing, sales) are now out of scope and dropped,
+  counted `excluded_out_of_scope` — intended. The 2026-08-25 stored-data
+  reclassification kept 1 of 196 rows and moved 195 to `out-of-scope.csv`
+  (reversible). `needs_review == True` rows are kept AND appended to
+  `needs_review.csv` (dedup on job_id). Classification runs after the
+  detail fetch so the full description is a signal.
 - **company_type**: `pharma` for pharma/CRO/lab/diagnostics names, else `hospital`.
 - **Time window**: first run keeps the last 30 days (`INITIAL_WINDOW_DAYS`);
   later runs keep only jobs newer than the newest stored `postDate` minus
@@ -84,10 +92,15 @@ Options: `--output PATH` (rich CSV, default `nextenti_jobs.csv`),
 
 - `nextenti_jobs.csv` — rich cumulative store (dedup key `job_id`), the source
   of truth for the incremental watermark. Not committed as a deliverable.
-- `../../jobs_csv/<DD-MM-YYYY>/nextenti.csv` — the same jobs in the shared
-  `job_samples.csv` schema, the actual HealthCareers.club deliverable.
-- `needs_review.csv` — jobs whose category fell back to `non_clinical` by
-  default, for keyword-list tuning.
+- `../../jobs_csv/<DD-MM-YYYY>/nextenti.csv` — the same jobs in the 22-column
+  `CLUB_COLUMNS` contract imported from `_shared/classification.py`
+  (`is_active`/`expires_at` retired; `qualification` extracted from the
+  description, never inferred), the actual HealthCareers.club deliverable.
+- `needs_review.csv` — in-scope rows whose title looks like a different
+  profession (kept AND flagged, never silently dropped).
+- `out-of-scope.csv` — rows the shared classifier ruled out during the
+  one-off stored-data reclassification (reversible).
 
-A run prints a summary: scanned, excluded-old, needs_review, new, duplicates.
+A run prints a summary: scanned, excluded-old, excluded-out-of-scope,
+needs_review, new, duplicates.
 Re-running the same day adds 0 new rows (idempotent).

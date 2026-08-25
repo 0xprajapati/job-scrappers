@@ -7,8 +7,9 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
-    classify_category, compute_cutoff, ddmmyyyy_to_iso, decode_taleo_text,
-    listing_to_rich_row, parse_detail_html, parse_salary,
+    apply_classification, compute_cutoff, ddmmyyyy_to_iso, decode_taleo_text,
+    listing_to_rich_row, parse_detail_html, parse_salary, rich_row_to_club_row,
+    CLUB_COLUMNS,
 )
 
 
@@ -22,30 +23,45 @@ class TestDates(unittest.TestCase):
             self.assertEqual(ddmmyyyy_to_iso(bad), "")
 
 
-class TestClassifier(unittest.TestCase):
-    # worked examples from the live listing (July 2026)
-    def test_live_titles(self):
-        self.assertEqual(classify_category("Clinical Dietitian 2 -UAE National"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Flex Campus Coordinators Lead"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Senior Analyst – Media Relations"),
-                         ("non_clinical", False))
+class TestClassificationWiring(unittest.TestCase):
+    """The scraper must delegate every keep/drop and label decision to the
+    shared two-level classifier (scrappers/_shared/classification.py)."""
 
-    def test_clinical_buckets(self):
-        self.assertEqual(classify_category("Staff Nurse - ICU"), ("nurses", False))
-        self.assertEqual(classify_category("Pharmacist"), ("pharmacists", False))
-        self.assertEqual(classify_category("Consultant Cardiologist"), ("doctors", False))
-        self.assertEqual(classify_category("Medical Officer"), ("doctors", False))
+    def test_in_scope_role_is_stamped(self):
+        row = {"title": "Clinical Research Coordinator",
+               "department": "Research", "description": ""}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+        self.assertTrue(row["matched_in"])
 
-    def test_department_sharpens(self):
-        self.assertEqual(classify_category("Team Member", "Nursing Services"),
-                         ("nurses", False))
+    def test_public_health_role_is_stamped(self):
+        row = {"title": "Infection Control Practitioner",
+               "department": "Infection Prevention", "description": ""}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Infection Prevention & Control")
 
-    def test_unknown_flagged_not_dropped(self):
-        category, needs_review = classify_category("Falconer 3")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
+    def test_bedside_role_is_dropped(self):
+        for title in ("Staff Nurse - ICU", "Consultant Cardiologist",
+                      "Clinical Dietitian 2 -UAE National"):
+            row = {"title": title, "department": "", "description": ""}
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "")
+
+    def test_club_row_uses_shared_contract(self):
+        row = {"title": "Medical Coder", "department": "HIM",
+               "description": "Assign ICD-10 codes.", "education": "Bachelor",
+               "job_url": "https://x/y", "posted_date": "2026-07-21"}
+        apply_classification(row)
+        club = rich_row_to_club_row(row)
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Medical Coding")
+        self.assertEqual(club["qualification"], "Bachelor")
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
 
 
 class TestSalary(unittest.TestCase):

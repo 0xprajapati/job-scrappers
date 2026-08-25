@@ -6,7 +6,9 @@ the Gulf (UAE / Saudi / Qatar / Kuwait / Bahrain / Oman) arm of Naukri.
 Source listing URL (agreed filters):
 `https://www.naukrigulf.com/healthcare-jobs?freshness=1,3,7,15&industryType=30,37`
 → industries **Medical (30) + Pharmaceutical (37)**, posted within the
-**last 15 days**, keyword `healthcare`.
+**last 15 days**, one search per keyword in `KEYWORD_QUERIES` (broad
+`healthcare` plus the Non Clinical role families and, since 2026-08-25,
+terms covering all ten Public Health sub-categories).
 
 ## Data source
 
@@ -85,14 +87,28 @@ Tests: `python test_filters.py`
 |---|---|
 | `naukrigulf_jobs.csv` | Rich cumulative store, dedup key `job_id`, watermark source |
 | `../../jobs_csv/<DD-MM-YYYY>/naukrigulf.csv` | HealthCareers.club 22-column schema |
-| `needs_review.csv` | Titles the category classifier could not place (kept as `non_clinical`, never dropped) |
+| `needs_review.csv` | In-scope rows whose title looks like a different profession (kept AND flagged, append + dedupe on job_id) |
+| `out-of-scope.csv` | Rows moved out by the one-off 2026-08-25 stored-data reclassification (reversible) |
 
-## Category / enum mapping
+## Classification (taxonomy migration 2026-08-25)
 
-- `category`: title regexes → `nurses` / `pharmacists` / `doctors`
-  (incl. `*ologist`, registrar, anaesthetist...); known admin/allied
-  titles → `non_clinical`; anything else → `non_clinical` + flagged in
-  `needs_review.csv`.
+- Every candidate goes through the shared two-level classifier —
+  `_shared/classification.classify_job(title, skills, description)`. With
+  `--enrich`, the detail API's curated `IndustryType`/`FunctionalArea`
+  fields are joined into the `skills` signal (they stay raw source columns
+  in the rich CSV and never decide the category). `in_scope == False` rows
+  are dropped and counted `excluded_out_of_scope`; in-scope rows carry
+  `category` ("Non Clinical" | "Public Health"), `sub_category` and the
+  score-trace columns. The old per-scraper title regexes and the retired
+  profession enum are gone. The club CSV is exactly the 22 `CLUB_COLUMNS`
+  imported from `_shared/classification.py` (`is_active`/`expires_at`
+  retired; `qualification` = the detail API's Education field, else
+  grounded extraction from the description). Note: this Gulf board is
+  overwhelmingly bedside/clinical — the 2026-08-25 reclassification kept
+  32 of 1,336 stored rows.
+- Crawl keywords (`KEYWORD_QUERIES`) are already scoped to the taxonomy's
+  role families plus the broad "healthcare" catch-all; the classifier does
+  the actual filtering.
 - `company_type`: pharma/labs/diagnostics/CRO keywords in the company name
   (or a pharma `IndustryType` via `--enrich`) → `pharma`, else `hospital`.
 - `job_type`: from detail `locationType`/`employmentType`; defaults to

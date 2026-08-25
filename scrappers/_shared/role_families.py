@@ -49,6 +49,22 @@ MIN_SCORE_KEEP = 3      # any title hit, or 2 skill terms, or 3 description term
 HIGH_CONFIDENCE = 5     # a title hit, or a skill + description cluster
 MEDIUM_CONFIDENCE = 3
 
+# Per-family override of MIN_SCORE_KEEP. Public Health vocabulary is far
+# more diffuse than the other families' ("child health", "nutrition",
+# "infection control" appear as routine duties across all of healthcare),
+# so score-3 PH admissions were mostly junk in the 2026-08-24 shine
+# backfill: phlebotomists tagged "infection control", analyst spam listing
+# "epidemiology" in keyword dumps. PH therefore demands a title hit or at
+# least two distinct skill terms.
+FAMILY_MIN_SCORE = {"Public Health": 5}
+
+# Families that must show evidence in the title or the skill tags —
+# description text alone never qualifies, whatever it scores. Every
+# description-only PH admission in the 2026-08-24 shine backfill was junk
+# (a printing RFQ, telesales, an HR operations role scoring 5 on scattered
+# boilerplate mentions).
+FAMILY_REQUIRE_TITLE_OR_SKILLS = {"Public Health"}
+
 # Only the first N characters of a description are scored. Job descriptions end
 # in EEO statements, benefits blurbs and company boilerplate that mention
 # "clinical research" for unrelated roles.
@@ -113,8 +129,45 @@ ROLE_FAMILIES = [
      r"\bcdm\b(?=.*(?:clinical|trial|study|edc))"),
 
     ("Public Health",
-     r"public health|epidemiolog\w*|population health|community health|"
-     r"global health|health promotion|disease surveillance|health polic\w*"),
+     # Covers the ten PH sub-categories (taxonomy 2026-08-24): Epidemiology,
+     # Program Management, Monitoring & Evaluation, Community Health, Health
+     # Promotion & Education, Disease Programs, Nutrition, Infection
+     # Prevention & Control, Health Informatics & Data, PH Research — plus
+     # the fold-ins (MCH, WASH, environmental health, policy, HSS).
+     # Health economics stays out: it always tags HEOR, never Public Health.
+     # Deliberately absent: bare "M&E" (Media & Entertainment), bare "MCH"
+     # (M.Ch. surgery degree), bare "IPC" (Indian Penal Code), bare "WASH"
+     # (the verb) — each is admitted only in a role-shaped phrase.
+     r"public health|epidemiolog\w*|population health|"
+     r"community health|community medicine|\bchw\b|"
+     r"asha (?:worker|supervisor|coordinator|facilitator)|anganwadi|"
+     r"global health|health promotion|health educat\w*|\bsbcc\b|"
+     r"behaviou?r(?:al)? change communication|"
+     r"disease surveillance|outbreak (?:investigation|response|preparedness)|"
+     r"health polic\w*|(?<!occupational )health program\w*|"
+     r"health systems? strengthening|"
+     r"monitoring (?:and|&) evaluation|"
+     r"m&e (?:officer|manager|coordinator|specialist|associate|lead|director)|"
+     r"meal (?:officer|coordinator|manager)|"
+     r"tuberculosis|\bntep\b|\brntcp\b|hiv/aids|\bhiv\b|malaria|leprosy|"
+     r"immuni[sz]ation|vaccinat\w*|"
+     r"(?<!animal )(?<!poultry )(?<!cattle )(?<!sports )nutritionist|"
+     r"(?:public health|community) nutrition|"
+     r"(?<!animal )(?<!poultry )(?<!cattle )(?<!feed )"
+     r"nutrition (?:officer|specialist|program\w*|assistant|educator)|"
+     r"poshan|"
+     r"infection (?:prevention|control)|"
+     r"health informatics|health information (?:management|system\w*)|"
+     r"\bhmis\b|dhis-?2|health data|"
+     r"health systems? research|implementation (?:research|science)|"
+     r"operational research|"
+     r"maternal (?:and |& )?child health|maternal health|child health|"
+     r"\brmnch\w*|"
+     r"wash (?:officer|specialist|coordinator|engineer|program\w*)|"
+     r"water,? sanitation (?:and|&) hygiene|"
+     # EHS ("Environmental Health and Safety" / "... , Safety") is a
+     # workplace-safety occupation, not public health
+     r"environmental health(?!\s*(?:,|and|&)?\s*safety)|\bmph\b"),
 
     ("Clinical Research",
      r"clinical research|clinical trial\w*|clinical stud\w*|clinical operations|"
@@ -199,7 +252,10 @@ def classify(title="", skills="", description=""):
         needs_review  True when the title looks like a different profession
     """
     scored = score_families(title, skills, description)
-    keep = {k: v for k, v in scored.items() if v["score"] >= MIN_SCORE_KEEP}
+    keep = {k: v for k, v in scored.items()
+            if v["score"] >= FAMILY_MIN_SCORE.get(k, MIN_SCORE_KEEP)
+            and not (k in FAMILY_REQUIRE_TITLE_OR_SKILLS
+                     and v["fields"] == ["description"])}
     if not keep:
         return {"family": "", "score": 0, "confidence": "", "all_families": "",
                 "family_scores": "", "matched_in": "", "needs_review": False}

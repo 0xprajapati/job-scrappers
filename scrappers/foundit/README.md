@@ -1,8 +1,23 @@
-# foundit.in healthcare scraper
+# foundit.in role-family scraper
 
-Scrapes healthcare job listings from [foundit.in](https://www.foundit.in/)
-(formerly Monster India) and emits both a rich per-source CSV and the shared
-HealthCareers.club 22-column import file.
+Scrapes [foundit.in](https://www.foundit.in/) (formerly Monster India),
+gated to the two in-scope categories — **Non Clinical** and **Public
+Health**, ten sub-categories each — and emits a rich per-source CSV plus the
+shared HealthCareers.club import file.
+
+> **Scope (2026-08-24 re-scope, finalised 2026-08-25).** foundit is no longer
+> a broad "all healthcare" scraper. Every card goes through the one shared
+> classifier, [`_shared/classification.classify_job`](../_shared/classification.py)
+> (which composes `role_families.classify()` — title 5 / skills 2 /
+> description 1, keep-threshold 3, Public Health needs a title-or-skills hit —
+> with `taxonomy_keywords`' negative-keyword veto and finer split). The old
+> profession enum is retired fleet-wide; `category` now holds
+> **`Non Clinical` | `Public Health`** and `sub_category` holds one of the 20
+> sub-categories. The winning role family is kept as the rich-CSV trace
+> column `role_family`. Cards with `in_scope == False` are dropped and
+> counted as `excluded_out_of_scope` in the run summary. This is the same
+> pipeline `shine_roles`, `himalayas`, and `pharmarecruiter_roles` use, so
+> all four agree on scope by construction.
 
 ## Data source
 
@@ -63,20 +78,33 @@ offline.
 * `hideSalary: true` cards sometimes still carry real salary values in the
   payload; they are stored with `salary_hidden=true` (foundit's UI hides
   them — the data is not invented).
+* Pagination depth is server-limited: pages past ~20 of any keyword return
+  **HTTP 410** (observed 2026-08-25; deeper pages held only stale postings
+  anyway, so page caps cost nothing the date window would have kept).
+* Chrome's Private Network Access can block the page's POST to
+  `127.0.0.1` outright ("Failed to fetch"; `sendBeacon` returns true but
+  delivers nothing — never trust it). `receiver.py` sends
+  `Access-Control-Allow-Private-Network: true`, which normal Chrome
+  accepts; if the POST still fails, the jobs are safe in `window.__cap` —
+  serialize to `window.__out` and pull it out in ~1.8 MB string slices
+  (an oversized DevTools/automation result can be saved to a file and the
+  slices reassembled offline).
 * T-chunk description refs are length-prefixed in **UTF-8 bytes**; the
   extractor binary-searches the JS-string slice that encodes to that byte
   length and resolves refs sequentially (chunks are not newline-separated).
 
 ## Keyword set
 
-`healthcare, medical, doctor, nurse, medical-representative,
-physiotherapist, pharmacist, lab-technician, radiographer, hospital,
-paramedical, dentist, medical-coding, nursing` — the union of foundit's
-healthcare-shaped SEO pages ("medical" alone lists ~20k relevance-sorted
-jobs, so it runs under a page cap; the run summary notes every cap hit).
-Dedup by jobId makes keyword overlap free. Keyword SERPs drag in
-non-healthcare noise, which the title/taxonomy gate filters (see
-`foundit_scraper.py` docstring).
+The capture (`capture.js`) walks two tiers of SEO pages: the broad
+healthcare terms (`healthcare, medical, doctor, nurse, …`) for recall, plus
+role-family terms added in the 2026-08-24 re-scope (`clinical-research,
+clinical-trials, clinical-data-management, pharmacovigilance, drug-safety,
+regulatory-affairs, medical-writing, medical-affairs, market-access,
+public-health, epidemiology`). The keyword pages are just recall — the
+`role_families` + `taxonomy_keywords` gate is the precision — so pulling
+extra terms only helps. "medical" alone lists ~20k relevance-sorted jobs and
+runs under a page cap; the run summary and the scraper log every cap hit.
+Dedup by jobId makes keyword overlap free.
 
 ## Capturing a fresh page set
 
@@ -105,11 +133,27 @@ non-healthcare noise, which the title/taxonomy gate filters (see
 ## Outputs
 
 * `foundit_jobs.csv` — rich cumulative store (dedup key: `job_id`),
-  watermark source of truth for incremental runs.
-* `../../jobs_csv/<DD-MM-YYYY>/foundit.csv` — HealthCareers.club 22-column
-  schema, rewritten every run.
-* `needs_review.csv` — titles the classifier could not confidently place
-  (kept in the main CSV, flagged `needs_review=true` — never dropped).
+  watermark source of truth. Carries the taxonomy plus the full score trace
+  per row: `category` (`Non Clinical` | `Public Health`), `sub_category`,
+  `role_family`, `sub_category_basis`, `all_families`, `family_scores`,
+  `family_confidence`, `matched_in`, `needs_review`.
+* `../../jobs_csv/<DD-MM-YYYY>/foundit.csv` — exactly the 22 `CLUB_COLUMNS`
+  imported from `_shared/classification.py` (with `category`,
+  `sub_category` and `qualification`; the old `is_active`/`expires_at`
+  columns are retired), regenerated from the full rich store every run.
+  `qualification` is `extract_qualification(description)` — foundit exposes
+  no structured qualification field, and it is never inferred.
+* `needs_review.csv` — kept rows whose title reads like a different
+  profession but were rescued on skills/description (`needs_review=true` in
+  the main CSV — never dropped, master spec §2).
+
+`sub_category` is `taxonomy_keywords`' finer split. When the scorer admits a
+Non Clinical family on description evidence but the taxonomy's stricter
+title/skills tiers can't place it, `sub_category` falls back to the family
+name (the ten Non Clinical families ARE their sub-categories, one to one;
+`sub_category_basis=family`). Public Health has no such fallback — its single
+family is coarser than its ten sub-categories — so those stay blank when
+unresolved rather than being guessed.
 
 Time window (master spec §4): first run keeps INITIAL_WINDOW_DAYS (7) days;
 later runs keep jobs newer than the stored max `posted_date` minus
@@ -122,5 +166,17 @@ board). Salary is captured, never a filter (master spec §3).
 python3 foundit_scraper.py [--capture FILE] [--output CSV] [--limit N]
                            [--since YYYY-MM-DD] [--run-date DD-MM-YYYY]
                            [--verbose]
-python3 test_filters.py      # unit tests (salary, gate, dates, club rows)
+python3 test_filters.py      # unit tests (salary, scope gate, dates, club)
+```
+
+The 2026-08-24 re-scope changed the CSV schema (`category` → the two-level
+taxonomy, new role_family/sub_category columns), so the old broad-schema
+`foundit_jobs.csv` is incompatible and was preserved as
+`foundit_jobs.broadschema.bak.csv`. Regenerate the store fresh from the
+existing capture (which already spans 2026-08-08 … 08-24):
+
+```bash
+rm -f foundit_jobs.csv needs_review.csv
+python3 foundit_scraper.py --capture captures/25-08-2026.json \
+                           --since 2026-08-08 --run-date 25-08-2026
 ```

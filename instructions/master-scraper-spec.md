@@ -2,13 +2,13 @@
 
 This is the single source of truth for every job-site scraper in this project.
 To add a new site, the only input needed is the website URL — everything else
-follows this spec. Existing scrapers: `Docthub/`, `jobslly/`, `apna/`.
+follows this spec. Scrapers live under `scrappers/<site>/`.
 
 ## Goal
 
 Given a job-site URL, deliver a self-contained scraper the user can run
 repeatedly (manually or on a daily schedule) without further prompting. Each
-run appends the latest healthcare jobs to a deduplicated CSV and refreshes the
+run appends the latest in-scope jobs to a deduplicated CSV and refreshes the
 HealthCareers.club import files.
 
 ## 1. Data-source discovery (first step for any new site)
@@ -23,19 +23,57 @@ Investigate before writing code, preferring the most robust source available:
 4. **HTML card parsing** only if nothing structured exists.
 5. **Playwright/headless** only as a last resort for JS-gated sites.
 
-**robots.txt is binding**: if it disallows an API path (e.g. jobslly.in
-disallows `/api/`), do not call it — use what the site exposes to crawlers
-instead. Confirm the listing schema on ONE page before building.
+**robots.txt is binding**: if it disallows an API path, do not call it — use
+what the site exposes to crawlers instead. Confirm the listing schema on ONE
+page before building.
 
-## 2. Healthcare-only filter
+## 2. Classification — `_shared/classification.py` is mandatory
 
-- PREFER filtering at the source: a category/department field in the API, or
-  a healthcare-specific listing URL (e.g. apna's
-  `dep_healthcare_doctor_hospital_staff-jobs`).
-- FALLBACK: classify titles with configurable `ALLOW_TITLE_KEYWORDS` /
-  `DENY_TITLE_KEYWORDS` constants. Titles matching neither list are KEPT,
-  flagged `needs_review=True`, and logged to `needs_review.csv` — never
-  silently dropped.
+Mandatory for every **new** scraper and for every scraper that has been
+migrated. Every candidate job goes through the shared classifier; it alone
+makes the final keep/drop and labeling decision:
+
+```python
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
+
+verdict = classify_job(title, skills, description)
+if not verdict["in_scope"]:
+    counters["excluded_out_of_scope"] += 1
+    continue          # dropped — never exported
+category      = verdict["category"]        # "Non Clinical" | "Public Health"
+sub_category  = verdict["sub_category"]    # one of the 20 sub-categories
+role_family   = verdict["role_family"]     # rich-CSV trace only
+needs_review  = verdict["needs_review"]    # keep AND flag
+```
+
+Rules:
+
+- **No scraper defines its own category regexes, enums, ALLOW/DENY
+  classification lists, or category fallback maps.** Crawl-side scoping that
+  merely saves requests (URL slug filters, source-side category facets,
+  junk-title detection) may stay, but the final decision is `classify_job`'s
+  alone.
+- PREFER filtering at the source too (a category facet or healthcare listing
+  URL) — source filters are recall, the classifier is precision.
+- Pass `skills` and `description` whenever the source provides them
+  (multi-field scoring is the point); strip HTML from the description first.
+  A curated role/function/department field goes in as `skills`.
+- `in_scope == False` → drop the job, count it as `excluded_out_of_scope`,
+  and print the counter in the run summary.
+- `needs_review == True` → keep the row AND append it to `needs_review.csv` —
+  never silently drop it.
+- ATS/site categories (Oracle facets, department fields, …) may not decide
+  the category; they stay in the rich CSV as raw source columns only.
+
+**Migration status.** A set of existing scrapers is excluded from the taxonomy
+migration for now and still runs its own per-scraper classifier on the legacy
+profession enum (`doctors | nurses | pharmacists | non_clinical`) with the
+older club schema. The authoritative per-scraper list lives in
+`instructions/taxonomy-migration-status.md` — do not copy it into other docs.
+This section still binds anything new.
 
 ## 3. Salary: capture, don't filter
 
@@ -47,8 +85,10 @@ not disclosing one.
   K = 1,000, L/LPA = 100,000, P.A ÷ 12) and `salary_period_original`.
 - When absent/undisclosed: `salary_raw = "Not Disclosed"`, numeric fields
   empty. Never invent values.
-- Where a site splits fixed pay vs. incentives (apna), the normalized fields
-  hold the FIXED range; the raw string keeps the displayed one.
+- Where a site splits fixed pay vs. incentives, the normalized fields hold
+  the FIXED range; the raw string keeps the displayed one.
+- Club columns carry salary only for INR/USD; other currencies stay in the
+  rich CSV with the club salary columns blank. Nothing is currency-converted.
 
 ## 4. Time window & daily incremental scraping
 
@@ -68,7 +108,7 @@ not disclosing one.
 - Dedup key: `(source, job_id)` where `job_id` comes from the job URL / API id.
 - Read the existing CSV at startup; append only unseen jobs; never modify or
   duplicate existing rows. Running twice in a row adds 0 rows.
-- Print a run summary: scanned, excluded-non-healthcare, excluded-old,
+- Print a run summary: scanned, excluded_out_of_scope, excluded_old,
   needs-review, new added, duplicates skipped.
 
 ## 6. Output
@@ -77,15 +117,34 @@ Each scraper maintains a rich per-source CSV (`<site>_jobs.csv`) with at least:
 
 ```
 source, job_id, title, company, location, salary_raw, salary_min_monthly,
-salary_max_monthly, salary_period_original, job_type, needs_review,
-posted_date (YYYY-MM-DD), job_url, scraped_at
+salary_max_monthly, salary_period_original, job_type, category, sub_category,
+role_family, all_families, family_scores, family_confidence, matched_in,
+needs_review, posted_date (YYYY-MM-DD), job_url, scraped_at
 ```
 
 plus whatever the site exposes (experience, work_mode, education, description,
-category, …). `export_club_csv.py` (project root) converts all source CSVs to
-the HealthCareers.club 22-column contract
-(github.com/0xprajapati/job-scrappers) at `jobs_csv/<DD-MM-YYYY>/<site>.csv`;
-`run_daily.sh` runs every scraper then the export in one command.
+raw source category, …).
+
+Each run the scraper also regenerates its club export from the full rich
+store: `jobs_csv/<DD-MM-YYYY>/<site>.csv` with **exactly the 22
+`CLUB_COLUMNS` imported from `_shared/classification.py`** (never hand-copy
+the list):
+
+```
+country_name, country_code, country_dial_code, city_name, company_name,
+company_type, company_logo, company_about, title, description, job_type,
+category, sub_category, application_url, posted_at, min_experience,
+max_experience, qualification, min_salary, max_salary, salary_period,
+salary_currency
+```
+
+- `category` = `Non Clinical` | `Public Health`; `sub_category` = one of the
+  20 sub-categories (see `Jobs_keywords/keywords_for_jobs.md`).
+- The old `is_active` / `expires_at` columns are retired; rich CSVs may keep
+  source expiry data in their own columns.
+- `qualification`: the source's structured qualification field when present,
+  else `extract_qualification(description)`; never inferred.
+- Dates are never invented; salary rules per §3.
 
 ## 7. Robustness & etiquette
 
@@ -100,23 +159,28 @@ the HealthCareers.club 22-column contract
 
 ## 8. Structure, deliverables & scheduling
 
-For each site, a folder `Jobs/<site>/` containing:
+For each site, a folder `scrappers/<site>/` containing:
 
 - `<site>_scraper.py` — config constants at top, flow:
-  config → discover/paginate → parse → healthcare filter → time window →
-  dedup/append → write CSV. CLI flags: `--output`, `--max-pages`/`--limit`
-  (test runs), `--enrich` (detail-page extras, off by default), `--verbose`.
+  config → discover/paginate → parse → classify (shared module) → time window →
+  dedup/append → write rich CSV + club CSV. CLI flags: `--output`,
+  `--max-pages`/`--limit` (test runs), `--enrich` (detail-page extras, off by
+  default), `--verbose`.
 - `test_filters.py` — unit tests for the salary parser (with worked examples
-  from real listings), the classifier, and the cutoff logic; runnable with
-  plain `python test_filters.py`.
+  from real listings), date/cutoff logic, and at least two classification
+  wiring tests (an in-scope role gets the right `category`/`sub_category`; an
+  out-of-scope title is dropped). The shared engine itself is covered by
+  `_shared/test_classification.py` — don't re-test its internals.
 - `README.md` — data source, quirks, usage.
-- `requirements.txt` (`requests`, `pandas`; shared venv at `Jobs/.venv`).
+- `requirements.txt` (`requests`, `pandas`; shared venv at repo `.venv`).
 
 Build order for a new site: discover source → unit-test parsers → wire
-pagination/filter/dedup → 2–3 page sample run → full first run (last 30 days).
+pagination/classifier/dedup → 2–3 page sample run → full first run.
 
-Daily scheduling (macOS cron example, 08:00):
+Daily scheduling: there is **no fleet runner script yet** (a `run_daily.sh`
+is aspirational — each scraper is invoked by hand today). A cron line per
+scraper works, e.g.:
 
 ```cron
-0 8 * * * /Users/gaganakki/Documents/SahiLabs/HealthCareers/Jobs/run_daily.sh >> /Users/gaganakki/Documents/SahiLabs/HealthCareers/Jobs/run_daily.log 2>&1
+0 8 * * * cd <repo>/scrappers/<site> && ../../.venv/bin/python <site>_scraper.py >> run.log 2>&1
 ```

@@ -1,11 +1,17 @@
 # Freshersworld healthcare job scraper
 
 Scrapes healthcare jobs from [freshersworld.com](https://www.freshersworld.com),
-a general Indian fresher-jobs board, using its two healthcare-specific
-category listings as the source-side filter (master spec §2 preferred):
+a general Indian fresher-jobs board, using four healthcare/pharma category
+listings as **crawl-side scoping** (they save requests; they do not label
+anything):
 
 - `https://www.freshersworld.com/jobs/category/health-care-job-vacancies`
 - `https://www.freshersworld.com/jobs/category/pharma-job-vacancies`
+- `https://www.freshersworld.com/jobs/category/regulatory-affairs-job-vacancies`
+- `https://www.freshersworld.com/jobs/category/research-job-vacancies`
+
+The keep/drop and labeling decision belongs to the shared two-level
+classifier — see [Classification](#classification-shared-not-local).
 
 ## Data source
 
@@ -52,15 +58,43 @@ search/AJAX layer (`/jobsearch`, `/jobs/jobsearch/`, `/jobs/getjobs`,
 - The `qualifications` field on detail pages can be a huge degree list
   (every bachelor's degree); it is stored verbatim.
 
-## Filtering & classification
+## Classification (shared, not local)
 
-- **Healthcare filter**: source-side via the two categories — nothing is
-  excluded as non-healthcare by this scraper.
-- Titles are still classified into the club enum
-  (`doctors`/`nurses`/`pharmacists`/`non_clinical`). Titles matching no
-  healthcare pattern, or matching `DENY_TITLE_KEYWORDS` (tech/admin roles
-  posted into the category), are **kept**, flagged `needs_review=True` and
-  logged to `needs_review.csv` — never silently dropped.
+Every candidate goes through
+`_shared/classification.classify_job(title, skills, description)`:
+
+- **`skills`** = the site's own category slugs, humanized by
+  `humanize_fw_categories()` (`regulatory-affairs-job-vacancies` →
+  `regulatory affairs`). This is the only curated role signal Freshersworld
+  offers and it earns its keep: real RA openings are advertised under plain
+  titles like "Executive" or "Manager" at pharma companies, invisible to any
+  title keyword. The raw slugs stay in the rich CSV's `fw_categories` source
+  column and never decide the category.
+- **`description`** = the detail page's JSON-LD description, HTML-stripped.
+- `in_scope == False` → the row is **dropped** and counted as
+  `excluded_out_of_scope` in the run summary. Most of the health-care
+  category is bedside/allied (Staff Nurse, Physiotherapist, Lab Technician)
+  and goes; what survives is clinical research, pharmacovigilance, regulatory
+  affairs, medical coding, medical writing and the public-health families.
+- `needs_review == True` → the row is **kept** and appended to
+  `needs_review.csv`.
+
+The rich CSV records `category` (`Non Clinical` / `Public Health`),
+`sub_category`, `role_family` and the `all_families` / `family_scores` /
+`family_confidence` / `matched_in` score trace. This scraper defines **no**
+category regexes, profession enums, ALLOW/DENY title lists or fallback maps —
+the old `classify_category()` and `DENY_TITLE_KEYWORDS` are gone. The only
+local classifier left is `classify_company_type()` (`hospital` | `pharma`),
+which fills the club's separate `company_type` field and is not a category.
+
+**Crawl slugs kept as-is.** None of the four can only yield vetoed bedside
+jobs: `health-care` and `pharma` both carry real medical-coding / medical-rep
+/ PV openings alongside the nursing noise, and `regulatory-affairs` /
+`research` are almost entirely in scope. There is no `nurse`-only slug to
+prune.
+
+## Filtering
+
 - **Salary** (spec §3): captured, never filtered. `salary_raw` verbatim;
   `salary_min_monthly`/`salary_max_monthly` in INR/month (Year ÷ 12);
   the club export restores original annual amounts with `per_annum`.
@@ -74,8 +108,13 @@ search/AJAX layer (`/jobsearch`, `/jobs/jobsearch/`, `/jobs/getjobs`,
 - `freshersworld_jobs.csv` — rich cumulative store (dedup key
   `(source, job_id)`), source of truth for the watermark.
 - `../../jobs_csv/<DD-MM-YYYY>/freshersworld.csv` — the same jobs in the
-  HealthCareers.club 22-column schema (rewritten every run).
-- `needs_review.csv` — titles the classifier couldn't confidently place.
+  HealthCareers.club schema, the 22 shared `CLUB_COLUMNS` (rewritten every
+  run). `is_active` / `expires_at` are retired; `validThrough` stays in the
+  rich CSV's `valid_through` column.
+- `needs_review.csv` — in-scope rows whose title looks like another
+  profession (kept, flagged).
+- `out-of-scope.csv` — rows a reclassification moved out of the rich store;
+  reversible, never silently discarded.
 
 ## Usage
 

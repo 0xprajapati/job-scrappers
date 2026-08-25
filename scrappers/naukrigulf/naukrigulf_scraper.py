@@ -78,6 +78,11 @@ import pandas as pd
 from curl_cffi import requests
 from curl_cffi.requests import exceptions as requests_exceptions
 
+# The one shared two-level classifier (taxonomy 2026-08-25). No local
+# category regexes/enums — classify_job alone decides keep/drop + labels.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
+
 # ----------------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------------
@@ -108,7 +113,31 @@ IMPERSONATE = "chrome"
 # naukrigulf.com/healthcare-jobs?freshness=1,3,7,15&industryType=30,37
 CLUSTER_IND = "30,37"          # 30 = Medical/Healthcare, 37 = Pharmaceutical
 FRESHNESS = "1,3,7,15"         # posted within the last 15 days
-KEYWORDS = "healthcare"
+# Widened 2026-08-25 (fetch-wide/filter-tight pass): the single "healthcare"
+# keyword narrowed the search WITHIN the two industries, hiding role-family
+# jobs whose cards never say "healthcare" (a "Regulatory Affairs Specialist"
+# at a pharma). One paginated walk runs per keyword; JobId dedup makes the
+# overlap free, and the newest-first early stop bounds each walk.
+KEYWORD_QUERIES = [
+    "healthcare",
+    "clinical research", "clinical data management", "pharmacovigilance",
+    "drug safety", "regulatory affairs", "medical writer", "medical coding",
+    "medical affairs", "market access", "public health", "epidemiology",
+    "infection control",
+    # 2026-08-25 Public Health widening: cover all ten PH sub-categories.
+    # Gulf market, so the India-only program terms (ASHA, anganwadi, NHM)
+    # are deliberately absent; the watermark early-stop keeps the extra
+    # queries cheap after the first run.
+    "epidemiologist", "disease surveillance",
+    "public health program",
+    "monitoring and evaluation",
+    "community health",
+    "health educator", "health promotion",
+    "tuberculosis", "immunization", "vaccination",
+    "public health nutrition", "nutritionist",
+    "health informatics",
+    "public health research",
+]
 SORT_PREFERENCE = "date"       # newest-first -> watermark early stop works
 
 # No salary filter (master spec): salaries are captured, never filtered on.
@@ -131,25 +160,28 @@ NEEDS_REVIEW_CSV = str(Path(__file__).resolve().parent / "needs_review.csv")
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 # Rich (source-of-truth) columns — superset, keeps everything the API gives.
+# category holds "Non Clinical" | "Public Health"; the shared score trace
+# (role_family / all_families / family_scores / family_confidence /
+# matched_in) and needs_review keep every admission auditable.
+# industry_type / functional_area stay as RAW source columns only — they
+# feed classify_job as the skills signal but never decide the category.
 RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_id", "city", "country",
     "country_code", "country_dial_code", "salary_raw", "salary_min",
     "salary_max", "salary_currency", "salary_period", "experience_min_years",
     "experience_max_years", "job_type", "location_type", "category",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in", "needs_review",
     "company_type", "industry_type", "functional_area", "education",
     "vacancies", "company_logo", "company_about", "posted_date",
     "description", "job_url", "scraped_at",
 ]
 
-# Shared HealthCareers.club import schema (must match job_samples.csv exactly).
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
+# The club CSV contract (22 columns) is imported from _shared/classification
+# as CLUB_COLUMNS — never hand-copied here.
+
+NEEDS_REVIEW_COLUMNS = ["job_id", "title", "company", "category",
+                        "sub_category", "role_family", "matched_in"]
 
 # Gulf board: map normalized country name -> (ISO code, dial code).
 COUNTRY_META = {
@@ -299,51 +331,18 @@ def map_job_type(employment_type, location_type="", title=""):
     return "full_time"
 
 
-# Title classification -> club category enum. Unmatched titles are KEPT,
-# mapped to non_clinical and flagged needs_review (master spec §2) — the
-# listing is already industry-filtered to Medical/Pharma so nothing is dropped.
-_NURSE_RE = re.compile(r"\b(nurse|nursing|midwif\w*|gnm|anm)\b", re.IGNORECASE)
-_PHARM_RE = re.compile(r"\b(pharmacist|pharmacy|pharm\.?\s?d)\b", re.IGNORECASE)
-# Allied-health roles land in non_clinical (club convention) — checked BEFORE
-# the doctor regex so e.g. "Audiology" doesn't match the *ology specialty rule.
-_ALLIED_RE = re.compile(
-    r"\b(audiolog\w*|physiotherap\w*|radiograph\w*|optometr\w*|paramedic\w*|"
-    r"speech|lab ?technician|phlebotom\w*|dental hygien\w*)\b", re.IGNORECASE)
-# Gulf boards title doctors "Specialist - Cardiology" / "Consultant - Family
-# Medicine" / bare "Orthopaedic", hence the specialty-name patterns.
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|mbbs|dentist|medical officer|rmo|gp|"
-    r"[a-z]+ologist|[a-z]{4,}ology|orthop[ae]?edic\w*|intensivist|hospitalist|"
-    r"anaesthetist|anesthetist|an[ae]sthesiolog\w*|obstetric\w*|"
-    r"p[ae]?ediatric\w*|psychiatrist|neonat\w*|general practitioner|"
-    r"(family|internal|general|emergency) medicine|"
-    r"medical director|medical superintendent|registrar)\b",
-    re.IGNORECASE)
-# Clearly non-clinical roles — authoritative, no review needed.
-_NONCLINICAL_RE = re.compile(
-    r"\b(accountant|accounts?|finance|sales|marketing|receptionist|driver|"
-    r"secretary|hr\b|human resources|admin\w*|technician|technologist|"
-    r"therapist|dietician|dietitian|coordinator|executive|analytics|"
-    r"manager|officer|engineer|analyst|assistant|biller|coder|insurance|"
-    r"housekeeping|security|store ?keeper|procurement|liaison|customer care|"
-    r"photograph\w*|videograph\w*)\b",
-    re.IGNORECASE)
+# Category / scope decisions belong exclusively to the shared
+# classification.classify_job (title x5 / skills x2 / description x1
+# scoring + negative-keyword veto). The old per-scraper title regexes and
+# the doctors/nurses/pharmacists/non_clinical enum are retired.
 
 
-def classify_category(title):
-    """Return (category, needs_review) for a job title."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _ALLIED_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    return ("non_clinical", True)  # pure default -> flag for review
+def classification_skills_signal(industry_type, functional_area):
+    """Join the detail API's curated IndustryType/FunctionalArea fields into
+    the `skills` signal for classify_job (empty without --enrich). They stay
+    raw source columns in the rich CSV and never decide the category."""
+    return ", ".join(s for s in ((industry_type or "").strip(),
+                                 (functional_area or "").strip()) if s)
 
 
 _PHARMA_COMPANY_RE = re.compile(
@@ -424,11 +423,11 @@ def _request_json(session, url, params=None):
     return None
 
 
-def search_page(session, page):
+def search_page(session, page, keyword):
     """Return (jobs, total_count) for one page (0-based), or (None, None)."""
     params = {
         "ClusterInd": CLUSTER_IND, "Experience": "", "Freshness": FRESHNESS,
-        "Keywords": KEYWORDS, "KeywordsAr": "", "Limit": PAGE_SIZE,
+        "Keywords": keyword, "KeywordsAr": "", "Limit": PAGE_SIZE,
         "Location": "", "LocationAr": "", "Offset": page * PAGE_SIZE,
         "SortPreference": SORT_PREFERENCE, "breadcrumb": 1,
         "clusterSelected": 1, "locationId": "", "nationality": "",
@@ -465,14 +464,17 @@ def _exp_int(value):
 
 
 def job_to_rich_row(job, detail=None):
-    """Build one rich-CSV row from a listing job (+ optional detail payload)."""
+    """Build one rich-CSV row from a listing job (+ optional detail payload).
+
+    Returns None when the shared classifier rules the job out of scope
+    (the caller counts it as excluded_out_of_scope and never exports it).
+    """
     detail = detail or {}
     title = (job.get("Designation") or "").strip()
     company = job.get("Company") or {}
     city, country = parse_location(job.get("Location"))
     code, dial = country_meta(country)
     experience = job.get("Experience") or {}
-    category, needs_review = classify_category(title)
 
     other = detail.get("Other") or {}
     candidate = detail.get("DesiredCandidate") or {}
@@ -482,6 +484,14 @@ def job_to_rich_row(job, detail=None):
 
     description = strip_html(detail.get("Description") or "") or \
         (job.get("jobInfo") or "").strip()
+
+    verdict = classify_job(
+        title,
+        classification_skills_signal(detail.get("IndustryType"),
+                                     detail.get("FunctionalArea")),
+        description)
+    if not verdict["in_scope"]:
+        return None
 
     return {
         "source": SITE,
@@ -503,7 +513,14 @@ def job_to_rich_row(job, detail=None):
         "job_type": map_job_type(detail.get("employmentType"),
                                  detail.get("locationType"), title),
         "location_type": (detail.get("locationType") or "").strip(),
-        "category": category,
+        "category": verdict["category"],
+        "sub_category": verdict["sub_category"],
+        "role_family": verdict["role_family"],
+        "all_families": verdict["all_families"],
+        "family_scores": verdict["family_scores"],
+        "family_confidence": verdict["family_confidence"],
+        "matched_in": verdict["matched_in"],
+        "needs_review": verdict["needs_review"],
         "company_type": classify_company_type(
             (company.get("Name") or ""), detail.get("IndustryType")),
         "industry_type": (detail.get("IndustryType") or "").strip(),
@@ -516,7 +533,6 @@ def job_to_rich_row(job, detail=None):
         "description": description[:DESCRIPTION_MAX_CHARS],
         "job_url": (job.get("JdURL") or "").strip(),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "needs_review": needs_review,
     }
 
 
@@ -528,11 +544,13 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map a rich row to the 22-column HealthCareers.club schema.
+    """Map a rich row to the shared CLUB_COLUMNS schema (22 columns).
 
     The club salary_currency enum only allows INR/USD, so salary is exported
     only when the source currency matches AND the pay period is known;
     otherwise the columns stay empty (the rich CSV keeps the raw values).
+    qualification is the source's structured Education field when present,
+    else grounded extraction from the description — never inferred.
     """
     currency = _clean(r.get("salary_currency")).upper()
     period = _clean(r.get("salary_period"))
@@ -550,17 +568,18 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": _clean(r.get("job_type")) or "full_time",
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),
         "max_experience": _clean(r.get("experience_max_years")),
+        "qualification": _clean(r.get("education")) or
+                         extract_qualification(_clean(r.get("description"))),
         "min_salary": lo if exportable else "",
         "max_salary": (hi or lo) if exportable else "",
         "salary_period": period if exportable else "",
         "salary_currency": currency if exportable else "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -583,6 +602,20 @@ def write_club_csv(rich_df, run_date):
     target = out_dir / "{}.csv".format(SITE)
     club_df.to_csv(target, index=False)
     return target, len(club_df)
+
+
+def append_needs_review(entries):
+    """Append flagged rows to needs_review.csv, deduped on job_id."""
+    new_df = pd.DataFrame(entries, columns=NEEDS_REVIEW_COLUMNS, dtype=str)
+    try:
+        old = pd.read_csv(NEEDS_REVIEW_CSV, dtype=str, keep_default_na=False)
+        new_df = pd.concat([old, new_df], ignore_index=True)
+    except FileNotFoundError:
+        pass
+    new_df = new_df.reindex(columns=NEEDS_REVIEW_COLUMNS).fillna("")
+    new_df = new_df.drop_duplicates(subset="job_id", keep="last")
+    new_df.to_csv(NEEDS_REVIEW_CSV, index=False)
+    return len(new_df)
 
 
 def main(argv=None):
@@ -615,71 +648,87 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0}
     new_rows, review_log = [], []
-    page, total, empty_pages = 0, None, 0
     stop = False
 
-    while not stop:
-        if args.max_pages is not None and page >= args.max_pages:
+    # One newest-first walk per keyword (--max-pages caps each walk;
+    # --limit caps the TOTAL). JobId dedup absorbs cross-keyword overlap.
+    for keyword in KEYWORD_QUERIES:
+        if stop:
             break
-        if total is not None and page * PAGE_SIZE >= total:
-            break
-        jobs, total_count = search_page(session, page)
-        if jobs is None:
-            log.error("Page %d failed after retries — stopping", page)
-            break
-        if total is None and total_count is not None:
-            total = total_count
-            log.info("API reports %d total jobs (~%d pages)",
-                     total, (total + PAGE_SIZE - 1) // PAGE_SIZE)
-        if not jobs:
-            empty_pages += 1
-            if empty_pages >= MAX_EMPTY_PAGES:
+        log.info("--- keyword: %s ---", keyword)
+        page, total, empty_pages = 0, None, 0
+        while not stop:
+            if args.max_pages is not None and page >= args.max_pages:
+                break
+            if total is not None and page * PAGE_SIZE >= total:
+                break
+            jobs, total_count = search_page(session, page, keyword)
+            if jobs is None:
+                log.error("[%s] page %d failed after retries — stopping keyword",
+                          keyword, page)
+                break
+            if total is None and total_count is not None:
+                total = total_count
+                log.info("[%s] API reports %d total jobs (~%d pages)",
+                         keyword, total, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+            if not jobs:
+                empty_pages += 1
+                if empty_pages >= MAX_EMPTY_PAGES:
+                    break
+                page += 1
+                continue
+            empty_pages = 0
+
+            page_all_old = True
+            for job in jobs:
+                counters["scanned"] += 1
+                try:
+                    job_id = str(job.get("JobId") or "")
+                    posted = epoch_to_date(job.get("LatestPostedDate"))
+                    if posted and posted >= cutoff:
+                        page_all_old = False
+                    else:
+                        counters["excluded_old"] += 1
+                        continue
+                    if job_id in known_ids:
+                        counters["duplicates"] += 1
+                        continue
+
+                    detail = fetch_detail(session, job_id) if args.enrich else None
+                    row = job_to_rich_row(job, detail)
+                except Exception as exc:  # never let one job crash the run
+                    log.warning("[%s] skipping malformed job on page %d: %s",
+                                keyword, page, exc)
+                    continue
+
+                if row is None:  # classify_job ruled it out of scope
+                    counters["excluded_out_of_scope"] += 1
+                    continue
+                if row["needs_review"]:
+                    counters["needs_review"] += 1
+                    review_log.append({
+                        "job_id": row["job_id"], "title": row["title"],
+                        "company": row["company"], "category": row["category"],
+                        "sub_category": row["sub_category"],
+                        "role_family": row["role_family"],
+                        "matched_in": row["matched_in"]})
+                known_ids.add(row["job_id"])
+                new_rows.append(row)
+                counters["new"] += 1
+                if args.limit is not None and counters["new"] >= args.limit:
+                    stop = True
+                    break
+
+            # Newest-first ordering (SortPreference=date): once an entire page
+            # is older than the cutoff, everything after it is older too.
+            if page_all_old and jobs:
+                log.info("[%s] page %d entirely older than %s — next keyword",
+                         keyword, page, cutoff)
                 break
             page += 1
-            continue
-        empty_pages = 0
-
-        page_all_old = True
-        for job in jobs:
-            counters["scanned"] += 1
-            try:
-                job_id = str(job.get("JobId") or "")
-                posted = epoch_to_date(job.get("LatestPostedDate"))
-                if posted and posted >= cutoff:
-                    page_all_old = False
-                else:
-                    counters["excluded_old"] += 1
-                    continue
-                if job_id in known_ids:
-                    counters["duplicates"] += 1
-                    continue
-
-                detail = fetch_detail(session, job_id) if args.enrich else None
-                row = job_to_rich_row(job, detail)
-            except Exception as exc:  # never let one job crash the run
-                log.warning("Skipping malformed job on page %d: %s", page, exc)
-                continue
-
-            if row.pop("needs_review", False):
-                counters["needs_review"] += 1
-                review_log.append({"job_id": row["job_id"], "title": row["title"],
-                                   "company": row["company"]})
-            known_ids.add(row["job_id"])
-            new_rows.append(row)
-            counters["new"] += 1
-            if args.limit is not None and counters["new"] >= args.limit:
-                stop = True
-                break
-
-        # Newest-first ordering (SortPreference=date): once an entire page is
-        # older than the cutoff, everything after it is older too.
-        if page_all_old and jobs:
-            log.info("Page %d entirely older than %s — stopping", page, cutoff)
-            break
-        page += 1
 
     # ---- write rich cumulative CSV (source of truth) ----
     if new_rows:
@@ -703,12 +752,13 @@ def main(argv=None):
         log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
 
     if review_log:
-        pd.DataFrame(review_log).to_csv(NEEDS_REVIEW_CSV, index=False)
-        log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, len(review_log))
+        n_review = append_needs_review(review_log)
+        log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, n_review)
 
     print("\n===== Run summary =====")
     print("Jobs scanned:            {:>5,}".format(counters["scanned"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
+    print("Excluded (out of scope): {:>5,}".format(counters["excluded_out_of_scope"]))
     print("Flagged needs_review:    {:>5,}".format(counters["needs_review"]))
     print("New jobs added:          {:>5,}".format(counters["new"]))
     print("Duplicates skipped:      {:>5,}".format(counters["duplicates"]))

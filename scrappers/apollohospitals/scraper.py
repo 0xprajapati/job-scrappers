@@ -37,9 +37,13 @@ Quirks
 * No listing ever shows a salary -> salary_raw = "Not Disclosed" everywhere.
 * Descriptions are populated for some requisitions (mostly Nursing) and
   genuinely empty for many others.
-* Everything is an Apollo group hospital posting, so all jobs are healthcare-
-  industry by construction; non-clinical hospital roles (marketing,
-  engineering, call center) are kept as category=non_clinical, not flagged.
+* Classification is the shared two-level taxonomy (scrappers/_shared/
+  classification.py): category "Non Clinical" | "Public Health" plus a
+  sub_category. Being a hospital board, most requisitions (nursing, doctors,
+  paramedical) are out of scope and dropped (counted as
+  excluded_out_of_scope). The Oracle RequisitionType stays in the rich CSV
+  as a raw source column (site_category) and feeds the classifier as its
+  curated `skills` signal — it never decides the category itself.
 
 Outputs
 -------
@@ -57,6 +61,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -66,6 +71,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -113,18 +122,10 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "company", "hospital_unit", "city", "state",
     "country", "country_code", "country_dial_code", "salary_raw",
     "salary_min", "salary_max", "salary_period", "salary_currency",
-    "job_type", "site_category", "category", "company_type", "study_level",
-    "needs_review", "posted_date", "posting_end_date", "description",
-    "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
+    "job_type", "site_category", "category", "sub_category", "role_family",
+    "all_families", "family_scores", "family_confidence", "matched_in",
+    "company_type", "study_level", "needs_review", "posted_date",
+    "posting_end_date", "description", "job_url", "scraped_at",
 ]
 
 log = logging.getLogger("apollohospitals_scraper")
@@ -145,49 +146,25 @@ def strip_html(markup):
     return clean_text(_TAG_RE.sub(" ", markup or ""))
 
 
-_JUNK_TITLE_RE = re.compile(
-    r"^\s*test\b|\btest jobs?\b|\bdummy\b|asdf|qwer", re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-_NURSE_RE = re.compile(r"nurs|midwif|\bgnm\b|\banm\b", re.IGNORECASE)
-# "Technologist" would otherwise hit the [a-z]+ologist doctor pattern
-_TECHNICIAN_RE = re.compile(r"technologist|technician", re.IGNORECASE)
-_PHARMACIST_RE = re.compile(r"pharmacist|\bpharmacy\b|\bpharm ?d\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"doctor|physician|surgeon|\bmbbs\b|dentist|medical officer|\brmo\b|"
-    r"registrar|resident|consultant|intensivist|hospitalist|"
-    r"anaesthetist|anesthetist|[a-z]+ologist|obstetrician|"
-    r"p(a?)ediatrician|psychiatrist|duty doctor|"
-    r"medical superintendent|medical director", re.IGNORECASE)
-
-# RequisitionType fallback when no title regex fires. "Medical" covers the
-# Registrar/Resident/Medical Officer requisition family.
-_SITE_CATEGORY_FALLBACK = {
-    "nursing": "nurses",
-    "medical": "doctors",
-    "doctors": "doctors",
-    "pharmacy": "pharmacists",
-}
-
-
-def classify_category(title, site_category):
-    """Map to the club category enum; title regexes win over the site's
-    RequisitionType so e.g. a "Staff Nurse" filed under Paramedical still
-    maps to nurses. Returns (category, needs_review).
-
-    All postings are Apollo group hospital jobs, so nothing is excluded;
-    only junk/empty titles are flagged for review."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        category = "nurses"
-    elif _PHARMACIST_RE.search(title):
-        category = "pharmacists"
-    elif _DOCTOR_RE.search(title) and not _TECHNICIAN_RE.search(title):
-        category = "doctors"
-    else:
-        category = _SITE_CATEGORY_FALLBACK.get(
-            (site_category or "").strip().lower(), "non_clinical")
-    needs_review = bool(_JUNK_TITLE_RE.search(title)) or not title.strip()
-    return category, needs_review
+    The Oracle RequisitionType (site_category) is the curated `skills`
+    signal; the raw value stays in the rich CSV as a source column only.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
+    """
+    verdict = classify_job(row.get("title", ""),
+                           row.get("site_category", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 def classify_job_type(job_schedule):
@@ -316,7 +293,6 @@ def job_to_rich_row(job, detail=None):
     job_id = clean_text(job.get("Id"))
     title = clean_text(job.get("Title"))
     site_category = clean_text(detail.get("RequisitionType"))
-    category, needs_review = classify_category(title, site_category)
     city, state = parse_location(job.get("PrimaryLocation"))
 
     work_locations = detail.get("workLocation") or []
@@ -342,10 +318,17 @@ def job_to_rich_row(job, detail=None):
         "salary_currency": "",
         "job_type": classify_job_type(detail.get("JobSchedule")),
         "site_category": site_category,
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": "hospital",
         "study_level": clean_text(detail.get("StudyLevel")),
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": clean_text(job.get("PostedDate"))[:10],
         "posting_end_date": clean_text(detail.get("ExternalPostedEndDate"))[:10],
         "description": build_description(detail),
@@ -373,17 +356,20 @@ def rich_row_to_club_row(r):
         "title": _blank(r.get("title")),
         "description": _blank(r.get("description")),
         "job_type": _blank(r.get("job_type")) or "full_time",
-        "category": _blank(r.get("category")) or "non_clinical",
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": "",
         "max_experience": "",
+        # structured source field (StudyLevel) first, else grounded
+        # extraction from the description — never inferred
+        "qualification": _blank(r.get("study_level"))
+            or extract_qualification(_blank(r.get("description"))),
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        "expires_at": _blank(r.get("posting_end_date")),
     }
 
 
@@ -435,8 +421,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows, review_log = [], []
     offset, page_count, empty_pages = 0, 0, 0
 
@@ -474,6 +461,9 @@ def main(argv=None):
                 row = job_to_rich_row(job, detail)
             except Exception as exc:
                 log.warning("Skipping malformed job %s: %s", job.get("Id"), exc)
+                continue
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
                 continue
             if row["needs_review"]:
                 counters["needs_review"] += 1
@@ -513,6 +503,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Jobs scanned:          {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

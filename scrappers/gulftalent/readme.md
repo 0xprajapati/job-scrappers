@@ -56,9 +56,11 @@ employer has a profile.
   `salary_currency` enum allows only INR/USD, so AED/KWD/… amounts stay in
   the rich CSV and the club salary columns are left blank — same decision as
   the `dubizzle` and `dubailivejobs` scrapers. Nothing is ever invented.
-* **No structured experience field.** `min_experience` / `max_experience` are
-  mined from the description ("Minimum 7 years of experience …" → 7); blank
-  when the description says nothing.
+* **No structured experience or qualification field.** `min_experience` /
+  `max_experience` are mined from the description ("Minimum 7 years of
+  experience …" → 7); `qualification` comes from the shared grounded
+  `extract_qualification(description)`. Both are blank when the description
+  says nothing — never inferred.
 * **Employers are largely agencies** (MENA Recruit, TalentGrade, Michael
   Page, Robert Walters). `company_type` therefore looks only at the employer
   name, title and job function — an agency blurb name-drops every sector it
@@ -71,17 +73,41 @@ employer has a profile.
   (`Commercial Manager`, Eva Pharma, posted 13 May 2026). UAE has ~1,388,
   Saudi Arabia 125, Qatar 54, Oman 53 if a wider crawl is ever wanted.
 
-## Healthcare filter & review flags
+## Classification (shared, not local)
 
-The listing is already industry-filtered, so the classifier only maps a job
-onto the club category enum (`doctors` / `nurses` / `pharmacists` /
-`non_clinical`) from the title, with the site's Job Function as context.
-GulfTalent's healthcare industry also carries commercial and admin roles at
-pharma companies; those are **kept** and flagged `needs_review` when neither
-the title, job function, employer name nor description opening shows any
-healthcare signal, and logged to `needs_review.csv` (master spec §2 — nothing
-is silently dropped). The constant site industry string is deliberately left
-out of that signal test, or nothing would ever be flagged.
+The industry listing is **crawl-side scoping only** — it saves requests, it
+does not label anything. Every candidate goes through
+`_shared/classification.classify_job(title, skills, description)`:
+
+* **`skills`** = GulfTalent's own **Job Function** grid value — the site's
+  curated role taxonomy, the closest thing it offers to a skills tag list. The
+  raw value stays in the rich CSV as the `job_function` source column; it never
+  decides the category.
+* **`description`** = the JSON-LD description, HTML-stripped.
+* `in_scope == False` → the row is **dropped** and counted as
+  `excluded_out_of_scope` in the run summary. Because GulfTalent's healthcare
+  industry is mostly bedside and hospital-operations advertising, most rows are
+  dropped; what survives is clinical research, pharmacovigilance, regulatory
+  affairs, medical writing, medical coding, HEOR, MSL and the public-health
+  families.
+* `needs_review == True` → the row is **kept** and appended to
+  `needs_review.csv`.
+
+The rich CSV records `category` (`Non Clinical` / `Public Health`),
+`sub_category`, `role_family` and the `all_families` / `family_scores` /
+`family_confidence` / `matched_in` score trace, so every admission stays
+auditable. The club CSV carries `category` + `sub_category`.
+
+This scraper defines **no** category regexes, profession enums or fallback
+maps. The only local classifier left is `classify_company_type()`
+(`hospital` | `pharma`), which fills the club's separate `company_type` field
+and is not a category.
+
+> **Overlap note:** `scrappers/gulftalent_roles/` is a fork of this scraper
+> that crawls five countries per run (`uae,saudi-arabia,qatar,oman,kuwait`)
+> with a 2-day first-run window. Now that both use the same shared classifier
+> and the same club schema, the two overlap heavily — this one's single-country
+> crawl is a subset of the fork's. Consolidating them is a live option.
 
 ## Time window
 
@@ -118,9 +144,10 @@ Country slugs: `kuwait`, `uae`, `saudi-arabia`, `qatar`, `oman`, `bahrain`,
 
 | File | Contents |
 | --- | --- |
-| `gulftalent_jobs.csv` | rich cumulative store, dedup key = numeric job id |
-| `../../jobs_csv/<DD-MM-YYYY>/gulftalent.csv` | HealthCareers.club 22-column schema |
-| `needs_review.csv` | titles with no healthcare signal (kept, flagged) |
+| `gulftalent_jobs.csv` | rich cumulative store, dedup key = numeric job id; carries `category`, `sub_category`, `role_family` and the family score trace |
+| `../../jobs_csv/<DD-MM-YYYY>/gulftalent.csv` | HealthCareers.club schema, the 22 shared `CLUB_COLUMNS` |
+| `needs_review.csv` | in-scope rows whose title looks like another profession (kept, flagged) |
+| `out-of-scope.csv` | rows a reclassification moved out of the rich store — reversible, never silently discarded |
 
 Running twice in a row adds 0 rows (verified). Dependencies: `requests`,
 `pandas` — the shared venv at `../../.venv` already has both.

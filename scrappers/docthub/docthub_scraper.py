@@ -11,9 +11,22 @@ The response contains structured job objects (numeric salary with a
 Monthly/Yearly type, exact publish timestamps, org + location, and a
 `code` slug ending in the job ID, e.g. "dermatologist-J120239").
 `isFacet=true` additionally returns facet counts, including the 18 job
-categories which exactly partition the full job set. We therefore crawl
-per category, which both tags every job with its category and lets us
-skip clearly non-clinical categories entirely.
+categories which exactly partition the full job set. We crawl per category
+so every job carries its raw source facet (`source_category`), but the
+keep/drop and labeling decision belongs to the shared two-level classifier
+alone (`_shared/classification.py` -> classify_job): `category` holds
+"Non Clinical" | "Public Health", `sub_category` the finer 20-way split,
+and the score-trace columns keep every admission auditable. Out-of-scope
+jobs are dropped and counted `excluded_out_of_scope`; `needs_review` rows
+are kept AND appended to needs_review.csv.
+
+Outputs
+-------
+* docthub_jobs.csv                        -- cumulative rich store
+* needs_review.csv                        -- in-scope but flagged titles
+* ../../jobs_csv/<DD-MM-YYYY>/docthub.csv -- HealthCareers.club 22-column
+  export (CLUB_COLUMNS from _shared/classification.py), regenerated from
+  the full rich store each run.
 
 Run `python docthub_scraper.py --help` for options.
 """
@@ -21,14 +34,21 @@ Run `python docthub_scraper.py --help` for options.
 import argparse
 import json
 import logging
+import os
 import re
 import sys
 import time
 import urllib.robotparser
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
 import pandas as pd
 import requests
+
+# The one shared classifier + club contract (taxonomy migration 2026-08-25).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -50,86 +70,16 @@ USER_AGENT = (
 INITIAL_WINDOW_DAYS = 30
 WATERMARK_GRACE_DAYS = 2
 
-# Categories (as named in the API facets) that are always healthcare —
-# every job in them is kept without looking at the title.
-INCLUDE_CATEGORIES = {
-    "Doctor / Surgeon",
-    "Nursing",
-    "Paramedical / Technician",
-    "Pharmacist",
-    "Medical Officer",
-    "Physiotherapy/ Rehabilitation",
-    "Dentist",
-    "AYUSH/Alternative Therapy",
-}
-
-# Categories that are never healthcare — not even crawled (saves requests).
+# Crawl-side scoping ONLY (saves requests; never decides keep/drop — the
+# ALLOW/DENY keyword classification was removed in the 2026-08-25 taxonomy
+# migration). These facets are skipped without a request because they cannot
+# plausibly hold Non Clinical / Public Health taxonomy roles; note that
+# Marketing/BD and Administration ARE crawled now (they can hide Market
+# Access / program-management roles the old lists threw away).
 EXCLUDE_CATEGORIES = {
-    "Marketing / Business Development",
-    "Administration / Management",
-    "Human Resource (HR)",
     "Engineering / Maintenance",
     "Housekeeping Department",
 }
-
-# Any category in neither list (e.g. "Pharmaceuticals", "Others",
-# "Professor / Academic Staff", "Clinical Research/ Data Science",
-# "Counsellor") is crawled and each job is classified by its TITLE using the
-# ALLOW/DENY keyword lists below. Titles matching neither list are kept but
-# flagged needs_review=True and logged to the needs-review CSV.
-
-# Title phrases that mark a job as NON-healthcare. Checked first; also acts
-# as a safety net inside INCLUDE_CATEGORIES. Matched case-insensitively on
-# word boundaries.
-DENY_TITLE_KEYWORDS = [
-    "software developer", "software engineer", "web developer", "full stack",
-    "front end", "frontend", "back end", "backend", "mobile app",
-    "computer science", "data engineer", "devops",
-    "mechanical engineer", "civil engineer", "electrical engineer",
-    "maintenance engineer", "network engineer", "hardware",
-    "accountant", "accounts executive", "chartered accountant", "cashier",
-    "graphic designer", "ui designer", "ux designer", "video editor",
-    "digital marketing", "marketing executive", "marketing manager",
-    "sales executive", "sales manager", "business development",
-    "telecaller", "tele caller", "receptionist", "front office", "front desk",
-    "human resource", "hr executive", "hr manager", "recruiter",
-    "housekeeping", "security guard", "security supervisor", "driver",
-    "electrician", "plumber", "cook", "chef", "store keeper", "storekeeper",
-    "purchase executive", "billing executive", "data entry",
-]
-
-# Title keywords that mark a job as healthcare / clinical / allied health.
-ALLOW_TITLE_KEYWORDS = [
-    "nurse", "nursing", "gnm", "anm",
-    "doctor", "physician", "surgeon", "medical officer", "rmo", "mbbs",
-    "consultant", "specialist", "registrar", "intensivist", "hospitalist",
-    "anesthesiologist", "anaesthesiologist", "anesthetist", "anaesthetist",
-    "cardiologist", "neurologist", "nephrologist", "urologist", "oncologist",
-    "radiologist", "pathologist", "microbiologist", "biochemist",
-    "gynecologist", "gynaecologist", "obstetrician", "pediatrician",
-    "paediatrician", "neonatologist", "psychiatrist", "dermatologist",
-    "ophthalmologist", "ent ", "orthopedic", "orthopaedic", "physiatrist",
-    "pulmonologist", "gastroenterologist", "endocrinologist", "hematologist",
-    "haematologist", "immunologist", "rheumatologist", "dietician",
-    "dietitian", "nutritionist", "psychologist", "counsellor", "counselor",
-    "pharmacist", "pharmacy", "pharmacologist", "pharmacovigilance",
-    "dental", "dentist", "orthodontist", "endodontist", "periodontist",
-    "prosthodontist", "hygienist",
-    "physiotherapist", "physiotherapy", "occupational therapist",
-    "speech therapist", "audiologist", "therapist", "rehabilitation",
-    "lab technician", "laboratory", "technologist", "technician",
-    "radiographer", "radiography", "sonographer", "ultrasound", "x-ray",
-    "xray", "mri", "ct scan", "cath lab", "dialysis", "phlebotomist",
-    "phlebotomy", "optometrist", "optician", "perfusionist", "audiometrist",
-    "paramedic", "emt", "emergency medical",
-    "medical superintendent", "medical director", "medical", "clinical",
-    "icu", "ot ", "operation theatre", "operation theater", "ward",
-    "opd", "ipd", "casualty", "emergency",
-    "biomedical", "microbiology", "pathology", "radiology", "anatomy",
-    "physiology", "midwife", "midwifery", "vaccinator", "health",
-    "hospital", "ayurved", "homeopath", "homoeopath", "unani", "siddha",
-    "yoga", "naturopath", "veterinary", "vet ",
-]
 
 PAGE_SIZE = 100                # jobs per API request (100 verified working)
 REQUEST_DELAY_SECONDS = 1.0    # pause between successive API requests
@@ -140,12 +90,21 @@ BACKOFF_BASE_SECONDS = 3.0     # 3s, 6s, 12s, 24s
 DEFAULT_OUTPUT_CSV = "docthub_jobs.csv"
 NEEDS_REVIEW_CSV = "needs_review.csv"
 
+SITE = "docthub"
+CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
+
+# Rich store schema. `source_category` is docthub's raw facet name (source
+# data only — it never decides anything); `category` holds the two-level
+# taxonomy ("Non Clinical" | "Public Health") with `sub_category`,
+# `role_family` and the score-trace columns from classify_job.
 CSV_COLUMNS = [
     "job_id", "title", "company", "location",
     "experience_min_years", "experience_max_years",
     "salary_raw", "salary_min_monthly", "salary_max_monthly",
-    "salary_period_original", "job_type", "category", "needs_review",
-    "posted_date", "job_url", "scraped_at",
+    "salary_period_original", "job_type", "source_category",
+    "category", "sub_category", "role_family",
+    "all_families", "family_scores", "family_confidence", "matched_in",
+    "needs_review", "posted_date", "job_url", "scraped_at",
 ]
 
 log = logging.getLogger("docthub_scraper")
@@ -237,50 +196,9 @@ def compute_cutoff(existing_df):
 
 
 # ----------------------------------------------------------------------------
-# Healthcare classification
-# ----------------------------------------------------------------------------
-
-def _compile_keywords(keywords):
-    # Word-boundary match; keywords ending in a space (e.g. "ot ") keep it so
-    # "OT Manager" matches but "photo" does not.
-    parts = []
-    for kw in keywords:
-        esc = re.escape(kw.strip())
-        parts.append(r"\b" + esc + (r"\s" if kw.endswith(" ") else r"\b"))
-    return re.compile("|".join(parts), re.IGNORECASE)
-
-
-_DENY_RE = _compile_keywords(DENY_TITLE_KEYWORDS)
-_ALLOW_RE = _compile_keywords(ALLOW_TITLE_KEYWORDS)
-
-
-def classify_title(title):
-    """Return "deny", "allow", or "unknown" for a job title."""
-    title = title or ""
-    if _DENY_RE.search(title):
-        return "deny"
-    if _ALLOW_RE.search(title):
-        return "allow"
-    return "unknown"
-
-
-def classify_job(title, category):
-    """Decide whether a job is healthcare.
-
-    Returns (keep: bool, needs_review: bool). Category drives the decision;
-    the title DENY list acts as a safety net even inside included categories,
-    and the ALLOW/DENY lists decide jobs in ambiguous categories.
-    """
-    verdict = classify_title(title)
-    if category in EXCLUDE_CATEGORIES:
-        return (False, False)
-    if verdict == "deny":
-        return (False, False)
-    if category in INCLUDE_CATEGORIES or verdict == "allow":
-        return (True, False)
-    return (True, True)  # ambiguous: keep, but flag for review
-
-
+# Classification — delegated ENTIRELY to _shared/classification.classify_job.
+# The old INCLUDE/ALLOW/DENY keyword machinery was removed in the 2026-08-25
+# taxonomy migration; no scraper defines its own category logic any more.
 # ----------------------------------------------------------------------------
 # HTTP layer
 # ----------------------------------------------------------------------------
@@ -391,9 +309,17 @@ def iter_category_jobs(session, category_id, page_size, cutoff, max_pages=None):
 # ----------------------------------------------------------------------------
 
 _JOB_ID_RE = re.compile(r"-(J\d+)$")
+_TAG_RE = re.compile(r"<[^>]+>")
 
 
-def job_to_row(job, category_name, needs_review):
+def strip_html(text):
+    """Flatten an HTML fragment to plain text (classifier + club export)."""
+    text = _TAG_RE.sub(" ", text or "")
+    return re.sub(r"\s+", " ", text.replace("&nbsp;", " ")).strip()
+
+
+def job_to_row(job, category_name, verdict):
+    """Build one rich-CSV row from an API job object + its classify_job verdict."""
     code = job.get("code") or ""
     id_match = _JOB_ID_RE.search(code)
     job_id = id_match.group(1) if id_match else "J{}".format(job.get("id", ""))
@@ -426,8 +352,15 @@ def job_to_row(job, category_name, needs_review):
         "salary_max_monthly": sal_max,
         "salary_period_original": period,
         "job_type": job.get("employementType") or "",
-        "category": category_name,
-        "needs_review": bool(needs_review),
+        "source_category": category_name,
+        "category": verdict["category"],
+        "sub_category": verdict["sub_category"],
+        "role_family": verdict["role_family"],
+        "all_families": verdict["all_families"],
+        "family_scores": verdict["family_scores"],
+        "family_confidence": verdict["family_confidence"],
+        "matched_in": verdict["matched_in"],
+        "needs_review": bool(verdict["needs_review"]),
         "posted_date": published[:10],
         "job_url": "{}/{}".format(SITE_BASE, code) if code else "",
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -438,20 +371,98 @@ def job_to_row(job, category_name, needs_review):
 # Optional detail-page enrichment
 # ----------------------------------------------------------------------------
 
-_TAG_RE = re.compile(r"<[^>]+>")
-
-
 def enrich_row(session, row):
     """Fetch the job-detail API for description and apply link. Best-effort."""
     code = row["job_url"].rsplit("/", 1)[-1]
     detail = get_json(session, "{}/{}".format(JOBS_ENDPOINT, code))
     if not detail:
         return row
-    description = _TAG_RE.sub(" ", detail.get("description") or "")
-    description = re.sub(r"\s+", " ", description.replace("&nbsp;", " ")).strip()
-    row["description"] = description
+    row["description"] = strip_html(detail.get("description") or "")
     row["apply_url"] = detail.get("referenceLink") or row["job_url"]
     return row
+
+
+# ----------------------------------------------------------------------------
+# HealthCareers.club export (CLUB_COLUMNS from _shared/classification.py)
+# ----------------------------------------------------------------------------
+
+def _blank(value):
+    """NaN/None-safe string."""
+    if value is None:
+        return ""
+    text = str(value).strip()
+    return "" if text.lower() == "nan" else text
+
+
+def _int_str(value):
+    value = _blank(value)
+    if value == "":
+        return ""
+    try:
+        return str(int(float(value)))
+    except (TypeError, ValueError):
+        return ""
+
+
+def rich_row_to_club_row(r):
+    """Map one rich-store row to the 22-column club schema.
+
+    Salaries in the rich store are already normalized to INR/month, so the
+    club export always uses per_month. Docthub has no structured
+    qualification field; qualification comes from grounded extraction over
+    the (--enrich) description — never inferred. is_active/expires_at are
+    retired.
+    """
+    job_type = _blank(r.get("job_type")).lower()
+    if "part" in job_type:
+        club_type = "part_time"
+    elif "intern" in job_type:
+        club_type = "internship"
+    else:
+        club_type = "full_time"
+
+    min_sal = _int_str(r.get("salary_min_monthly"))
+    max_sal = _int_str(r.get("salary_max_monthly"))
+    has_salary = bool(min_sal)
+
+    city = _blank(r.get("location")).split(",")[0].strip()
+    description = _blank(r.get("description"))
+
+    return {
+        "country_name": "India",
+        "country_code": "IN",
+        "country_dial_code": "+91",
+        "city_name": city,
+        "company_name": _blank(r.get("company")),
+        "company_type": "",
+        "company_logo": "",
+        "company_about": "",
+        "title": _blank(r.get("title")),
+        "description": description,
+        "job_type": club_type,
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
+        "application_url": _blank(r.get("apply_url")) or _blank(r.get("job_url")),
+        "posted_at": _blank(r.get("posted_date")),
+        "min_experience": _int_str(r.get("experience_min_years")),
+        "max_experience": _int_str(r.get("experience_max_years")),
+        "qualification": extract_qualification(description),
+        "min_salary": min_sal if has_salary else "",
+        "max_salary": (max_sal or min_sal) if has_salary else "",
+        "salary_period": "per_month" if has_salary else "",
+        "salary_currency": "INR" if has_salary else "",
+    }
+
+
+def write_club_csv(rich_df, run_date):
+    """Regenerate ../../jobs_csv/<run_date>/docthub.csv from the full store."""
+    rows = [rich_row_to_club_row(r) for _, r in rich_df.iterrows()]
+    club_df = pd.DataFrame(rows, columns=CLUB_COLUMNS)
+    out_dir = CLUB_CSV_DIR / run_date
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / "{}.csv".format(SITE)
+    club_df.to_csv(target, index=False)
+    return target, len(club_df)
 
 
 # ----------------------------------------------------------------------------
@@ -490,6 +501,8 @@ def main(argv=None):
     parser.add_argument("--enrich", action="store_true",
                         help="fetch each NEW passing job's detail page for "
                              "description and apply_url (extra requests)")
+    parser.add_argument("--run-date", default=date.today().strftime("%d-%m-%Y"),
+                        help="jobs_csv/<DD-MM-YYYY>/ folder (default: today)")
     parser.add_argument("--verbose", action="store_true", help="debug logging")
     args = parser.parse_args(argv)
 
@@ -501,11 +514,6 @@ def main(argv=None):
     check_robots(session)
 
     categories = fetch_categories(session)
-    known_names = INCLUDE_CATEGORIES | EXCLUDE_CATEGORIES
-    for cat in categories:
-        if cat["value"] not in known_names:
-            log.info("Category %r not in INCLUDE/EXCLUDE lists — will crawl "
-                     "and classify by title", cat["value"])
 
     known_ids, existing_df = load_known_ids(args.output)
     log.info("Existing CSV has %d known job ids", len(known_ids))
@@ -513,7 +521,7 @@ def main(argv=None):
     log.info("Keeping jobs posted on/after %s", cutoff)
 
     counters = {
-        "scanned": 0, "excluded_category": 0, "excluded_deny_title": 0,
+        "scanned": 0, "excluded_category": 0, "excluded_out_of_scope": 0,
         "excluded_old": 0, "needs_review": 0, "new": 0, "duplicates": 0,
     }
     new_rows, review_log = [], []
@@ -523,7 +531,7 @@ def main(argv=None):
         if name in EXCLUDE_CATEGORIES:
             counters["scanned"] += count
             counters["excluded_category"] += count
-            log.info("Skipping excluded category %r (%d jobs)", name, count)
+            log.info("Skipping crawl-excluded category %r (%d jobs)", name, count)
             continue
 
         log.info("Crawling category %r (%d jobs)...", name, count)
@@ -531,20 +539,24 @@ def main(argv=None):
                                       args.max_pages):
             counters["scanned"] += 1
             title = job.get("title") or ""
-            keep, needs_review = classify_job(title, name)
-            if not keep:
-                counters["excluded_deny_title"] += 1
+            verdict = classify_job(
+                title,
+                skills=job.get("skills") or job.get("keySkills") or "",
+                description=strip_html(
+                    job.get("description") or job.get("jobDescription") or ""))
+            if not verdict["in_scope"]:
+                counters["excluded_out_of_scope"] += 1
                 continue
 
-            row = job_to_row(job, name, needs_review)
+            row = job_to_row(job, name, verdict)
             if row["posted_date"] and row["posted_date"] < cutoff:
                 counters["excluded_old"] += 1
                 continue
-            if needs_review:
+            if verdict["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({
                     "job_id": row["job_id"], "title": row["title"],
-                    "category": name, "salary_raw": row["salary_raw"],
+                    "source_category": name, "salary_raw": row["salary_raw"],
                     "posted_date": row["posted_date"],
                 })
 
@@ -569,22 +581,31 @@ def main(argv=None):
             combined = combined.drop_duplicates(subset="job_id", keep="first")
         else:
             combined = new_df
+    else:
+        combined = existing_df
+    if combined is not None:
         for col in columns:  # keep column order stable across runs
             if col not in combined.columns:
                 combined[col] = ""
         ordered = [c for c in columns if c in combined.columns] + \
                   [c for c in combined.columns if c not in columns]
-        combined[ordered].to_csv(args.output, index=False)
+        combined = combined[ordered]
+        combined.to_csv(args.output, index=False)
         log.info("Wrote %s (%d total rows)", args.output, len(combined))
     else:
-        log.info("No new jobs; %s left unchanged", args.output)
+        log.info("No jobs stored yet; %s not written", args.output)
 
     append_needs_review(review_log, NEEDS_REVIEW_CSV)
 
+    # ---- always regenerate the club-schema CSV from the full rich store ----
+    if combined is not None and len(combined):
+        target, n = write_club_csv(combined, args.run_date)
+        log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
+
     print("\n===== Run summary =====")
     print("Total jobs scanned:            {:>7,}".format(counters["scanned"]))
-    print("Excluded (non-healthcare cat): {:>7,}".format(counters["excluded_category"]))
-    print("Excluded (deny-list title):    {:>7,}".format(counters["excluded_deny_title"]))
+    print("Excluded (crawl-skipped cat):  {:>7,}".format(counters["excluded_category"]))
+    print("Excluded (out of scope):       {:>7,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>4,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:          {:>7,}".format(counters["needs_review"]))
     print("New jobs added:                {:>7,}".format(counters["new"]))

@@ -46,15 +46,25 @@ Verified quirks
 * The card salary line shares its CSS class with the qualification line;
   parsing is by content pattern ("<num> - <num> Monthly"), not by class.
 
-Healthcare filter (master spec §2)
-----------------------------------
-Source-side: only the two healthcare categories are crawled, so nothing is
-excluded as non-healthcare (the counter is kept in the summary and is
-structurally 0). Titles are still classified into the club's
-doctors/nurses/pharmacists/non_clinical enum; a title that matches no
-healthcare pattern — or that matches DENY_TITLE_KEYWORDS (tech/commercial
-roles a pharma company posted into the category) — is KEPT, flagged
-needs_review and logged to needs_review.csv, never silently dropped.
+Classification (shared taxonomy, 2026-08-25)
+--------------------------------------------
+Crawl-side scoping stays source-side: only the four healthcare/pharma
+category listings are crawled (that merely saves requests). The keep/drop
+and labeling decision belongs to the ONE shared classifier,
+_shared/classification.classify_job(title, skills, description):
+
+* skills      = the site's own category tags (fw_categories), humanized
+                ("regulatory-affairs-job-vacancies" -> "regulatory affairs")
+                — a curated role signal for RA jobs with generic titles.
+* description = the JSON-LD description, HTML-stripped.
+
+in_scope False (e.g. Staff Nurse — clinical, or non-healthcare noise) ->
+the job is DROPPED and counted excluded_out_of_scope in the run summary.
+in_scope True fills category ("Non Clinical" | "Public Health"),
+sub_category, role_family and the score-trace columns; needs_review True
+(in-scope but the title looks like a different profession) keeps the row
+AND appends it to needs_review.csv. No local classification keyword lists
+exist any more.
 
 Salary (master spec §3: capture, don't filter)
 ----------------------------------------------
@@ -81,6 +91,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -90,6 +101,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -102,6 +117,14 @@ ROBOTS_URL = SITE_BASE + "/robots.txt"
 CATEGORY_PATHS = [
     "/jobs/category/health-care-job-vacancies",
     "/jobs/category/pharma-job-vacancies",
+    # Added 2026-08-24 (facet-widening pass): the site's category index
+    # carries a dedicated Regulatory Affairs category (verified: real RA
+    # openings under generic titles like "Manager" / "Executive" at pharma
+    # companies — invisible to any title keyword) and a Research category
+    # (pharma research associates / scientists). Probed and skipped:
+    # analyst-analytics (AR-caller/content noise), govt-sector (empty).
+    "/jobs/category/regulatory-affairs-job-vacancies",
+    "/jobs/category/research-job-vacancies",
 ]
 
 USER_AGENT = "HealthCareersJobScraper/1.0 (+https://github.com/0xprajapati/job-scrappers)"
@@ -130,17 +153,9 @@ RICH_COLUMNS = [
     "state", "country", "salary_raw", "salary_min_monthly",
     "salary_max_monthly", "salary_period_original", "job_type",
     "experience_raw", "experience_min_years", "qualification", "category",
-    "needs_review", "fw_categories", "posted_date", "valid_through",
-    "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in", "needs_review", "fw_categories",
+    "posted_date", "valid_through", "description", "job_url", "scraped_at",
 ]
 
 # ISO alpha-2 (as used in JSON-LD addressCountry) -> (name, dial code).
@@ -384,68 +399,48 @@ def extract_jobposting_jsonld(page_html):
 
 
 # ----------------------------------------------------------------------------
-# Classification (club category enum; master spec §2)
+# Classification — the ONE shared two-level taxonomy
 # ----------------------------------------------------------------------------
 
-_NURSE_RE = re.compile(
-    r"(?:^|[^a-z])(?:nurse|nursing|midwif\w*|\bgnm\b|\banm\b|staff nurse)"
-    r"(?:[^a-z]|$)", re.IGNORECASE)
-_PHARM_RE = re.compile(
-    r"(?:^|[^a-z])(?:pharmacist|pharmacy|pharm\.?\s?d|b\.?\s?pharm|"
-    r"pharmacovigilance)(?:[^a-z]|$)", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"(?:^|[^a-z])(?:doctor|physician|surgeon|dentist|\bmbbs\b|\bbds\b|"
-    r"medical officer|\brmo\b|[a-z]{4,}ologist|psychiatrist|intensivist|"
-    r"an[ae]sthetist|p[ae]?diatrician|obstetrician|veterinar\w*|"
-    r"medical director|medical superintendent)(?:[^a-z]|$)", re.IGNORECASE)
-# Licensed non-physician clinicians, allied health, plus every healthcare-
-# adjacent commercial/admin role the two categories carry. The club schema
-# has no allied-health bucket, so these map to non_clinical.
-_NONCLINICAL_RE = re.compile(
-    r"(?:^|[^a-z])(?:physiotherap\w*|\bbpt\b|therapist|therapy|counsel\w*|"
-    r"psycholog\w*|dietit\w*|dietic\w*|nutrition\w*|optometr\w*|"
-    r"technician|technologist|\bdmlt\b|phlebotom\w*|radiograph\w*|"
-    r"sonograph\w*|audiolog\w*|paramedic\w*|caregiver|care taker|"
-    r"medical rep\w*|medical sales|medical coding|medical coder|"
-    r"medical billing|medical scribe|medical transcription\w*|"
-    r"medical lab\w*|lab assistant|lab technician|"
-    r"hospital administrat\w*|healthcare|health care|clinical|clinic|"
-    r"medical|pharma|life science|biotech|"
-    r"ward (?:boy|girl|assistant)|\bmphw\b|\basha\b|"
-    r"front office|receptionist|telecaller|business development|"
-    r"sales (?:executive|officer|representative)|marketing)(?:[^a-z]|$)",
-    re.IGNORECASE)
+def humanize_fw_categories(fw_categories):
+    """"regulatory-affairs-job-vacancies; pharma-job-vacancies" ->
+    "regulatory affairs, pharma".
 
-# Plainly non-healthcare occupations that pharma/healthcare employers post
-# into these categories. NOT dropped (spec §2) — kept and forced to
-# needs_review so a human decides.
-DENY_TITLE_KEYWORDS = re.compile(
-    r"(?:^|[^a-z])(?:software|web developer|wordpress|frontend|front end|"
-    r"backend|back end|full stack|devops|javascript|typescript|python|java|"
-    r"android|ios developer|data entry|graphic design\w*|ui/ux|ux design\w*|"
-    r"accountant|accounts|\bhr\b|human resources|driver|security guard|"
-    r"housekeeping|electrician|delivery)(?:[^a-z]|$)",
-    re.IGNORECASE)
+    The site's own category slugs are the only curated role signal
+    Freshersworld offers, so they are passed to classify_job as `skills`
+    (they never decide the category — the raw value stays in the rich CSV's
+    fw_categories source column).
+    """
+    parts = []
+    for slug in str(fw_categories or "").split(";"):
+        slug = slug.strip()
+        if not slug:
+            continue
+        slug = re.sub(r"-job-vacancies$", "", slug)
+        parts.append(slug.replace("-", " "))
+    return ", ".join(parts)
 
 
-def classify_category(title):
-    """Return (club category, needs_review) for a category-page job title."""
-    title = title or ""
-    if DENY_TITLE_KEYWORDS.search(title):
-        return ("non_clinical", True)
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    # In a healthcare category but the title says nothing recognisable —
-    # keep it, flag it (master spec §2: never silently dropped).
-    return ("non_clinical", True)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
+
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
+    """
+    verdict = classify_job(row.get("title", ""),
+                           humanize_fw_categories(row.get("fw_categories", "")),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
+# company_type (hospital|pharma) is a separate club field, NOT a category.
 _PHARMA_COMPANY_RE = re.compile(
     r"pharma|therapeut|laborator|\blabs?\b|\bcro\b|biotech|bioscience|"
     r"life ?science|diagnostic|clinical research|medical devices?",
@@ -545,7 +540,6 @@ def build_row(card, posting, fw_categories, today=None):
 
     title = clean_value(posting.get("title")) or \
         title_from_seo_title(card.get("seo_title"))
-    category, needs_review = classify_category(title)
 
     posted_date = parse_iso_date(posting.get("datePosted"))
     if not posted_date:
@@ -606,8 +600,15 @@ def build_row(card, posting, fw_categories, today=None):
             posting.get("experienceRequirements"), card.get("experience_raw")),
         "qualification": clean_value(posting.get("qualifications")) or
                          clean_value(card.get("qualification")),
-        "category": category,
-        "needs_review": needs_review,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
+        "needs_review": False,
         "fw_categories": "; ".join(sorted(fw_categories)),
         "posted_date": posted_date,
         "valid_through": parse_iso_date(posting.get("validThrough")),
@@ -670,17 +671,21 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": job_type,
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),
         "max_experience": "",
+        # the site's structured qualification field first (JSON-LD
+        # `qualifications` / the card's qualification line), else grounded
+        # extraction from the description — never inferred
+        "qualification": (_clean(r.get("qualification"))
+                          or extract_qualification(_clean(r.get("description")))),
         "min_salary": lo,
         "max_salary": hi,
         "salary_period": period,
         "salary_currency": "INR" if lo else "",
-        "is_active": "true",
-        "expires_at": _clean(r.get("valid_through")),
     }
 
 
@@ -783,7 +788,7 @@ def main(argv=None):
     log.info("Categories yielded %d unique jobs across %d card slots",
              len(candidates), slots)
 
-    counters = {"scanned": 0, "excluded_non_healthcare": 0, "excluded_old": 0,
+    counters = {"scanned": 0, "excluded_out_of_scope": 0, "excluded_old": 0,
                 "needs_review": 0, "new": 0, "duplicates": 0}
     counters["duplicates"] += slots - len(candidates)  # cross-category repeats
 
@@ -821,6 +826,10 @@ def main(argv=None):
                 continue
         except Exception as exc:  # never let one job crash the run (spec §7)
             log.warning("Skipping malformed job %s: %s", job_id, exc)
+            continue
+
+        if not apply_classification(row):
+            counters["excluded_out_of_scope"] += 1
             continue
 
         if row["needs_review"]:
@@ -863,8 +872,8 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Unique jobs scanned:       {:>6,}".format(counters["scanned"]))
-    print("Excluded (non-healthcare): {:>6,}  (source-side category filter)".format(
-        counters["excluded_non_healthcare"]))
+    print("Excluded (out of scope):   {:>6,}  (shared classifier)".format(
+        counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>4,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:      {:>6,}".format(counters["needs_review"]))
     print("New jobs added:            {:>6,}".format(counters["new"]))

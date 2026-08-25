@@ -28,9 +28,18 @@ is employer/organization `4105100456`:
 
 ## Quirks
 
-- Every row is healthcare-sector by construction (organization filter at the
-  source), so nothing is dropped; titles are classified into the club enum
-  and pure-default `non_clinical` mappings are flagged `needs_review`.
+- Classification is the shared two-level taxonomy
+  (`scrappers/_shared/classification.py`): `category` is
+  `Non Clinical` | `Public Health`, plus a `sub_category`. The organization
+  filter at the source is a crawl-side saver only — it makes every row
+  healthcare-sector, but a Dubai Health board is mostly bedside/clinical, so
+  most requisitions come back out of scope and are dropped (counted as
+  `excluded_out_of_scope` in the run summary). Jobs are classified **after**
+  the detail fetch so the description and department can be scored; the Taleo
+  `department` is passed as the classifier's `skills` signal and stays in the
+  rich CSV as a raw source column — it never decides the category itself.
+  `needs_review` now comes from the shared classifier (in scope but the title
+  reads like another profession).
 - Salaries are **AED**; the club schema allows only INR/USD, so club CSV
   salary fields stay blank and AED amounts live in the rich CSV. Most
   postings show "Unspecified" → `salary_raw = "Not Disclosed"`.
@@ -48,5 +57,19 @@ python scraper.py --max-pages 1   # test run
 python test_filters.py            # unit tests (offline)
 ```
 
-Outputs: `dubaihealth_jobs.csv` (rich cumulative store) and
-`../../jobs_csv/<DD-MM-YYYY>/dubaihealth.csv` (HealthCareers.club schema).
+## Outputs
+
+* `dubaihealth_jobs.csv` — rich cumulative store of the **in-scope** jobs.
+* `out-of-scope.csv` — requisitions `classify_job` rejected, archived verbatim
+  (same columns) rather than discarded, so the decision stays reversible.
+* `needs_review.csv` — rows a human should confirm.
+* `../../jobs_csv/<DD-MM-YYYY>/dubaihealth.csv` — HealthCareers.club 22-column
+  schema.
+
+## Taxonomy migration (25-08-2026)
+
+The 3 stored requisitions were re-run through the shared classifier:
+**0 kept, 3 moved** to `out-of-scope.csv` (Clinical Dietitian, Flex Campus
+Coordinators Lead, Senior Analyst – Media Relations). A small or 0-row steady
+state is expected here — Dubai Health posts a handful of mostly bedside and
+generic-corporate openings at a time.

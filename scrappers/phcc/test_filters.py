@@ -185,70 +185,60 @@ class TestExperienceParser(unittest.TestCase):
             "")
 
 
-class TestClassifier(unittest.TestCase):
-    """The portal's own Job Category facet leads; the title only overrides it
-    where it is unmistakable."""
+class TestClassificationWiring(unittest.TestCase):
+    """Every keep/drop and label decision belongs to the shared two-level
+    classifier (scrappers/_shared/classification.py). The ProfessionalArea
+    facet is only a `skills` signal now."""
 
-    def test_facet_drives_the_common_cases(self):
-        cases = [
-            ("Specialist Paediatrician", "Physicians", "doctors"),
-            ("Consultant Emergency Medicine", "Physicians", "doctors"),
-            ("Nurse", "Nursing", "nurses"),
-            ("Midwife", "Nursing", "nurses"),
-            ("Director of Pharmacy", "Pharmacy", "pharmacists"),
-            ("Lab Technologist", "Lab", "non_clinical"),
-            ("Radiology Technologist", "Radiology", "non_clinical"),
-            ("Allied Health Technologist", "Other Allied Health Services",
-             "non_clinical"),
-            ("Clinical Coding Officer", "Health Information Management(HIM)",
-             "non_clinical"),
-        ]
-        for title, area, expected in cases:
-            category, review = scraper.classify_category(title, area)
-            self.assertEqual(category, expected, title)
-            self.assertFalse(review, title)
+    @staticmethod
+    def _row(title, area="", description="", requirements="", needs_review=False):
+        return {"title": title, "category_original": area,
+                "description": description, "job_requirements": requirements,
+                "needs_review": needs_review}
 
-    def test_facet_matching_is_case_insensitive(self):
-        self.assertEqual(scraper.classify_category("Nurse", "NURSING")[0],
-                         "nurses")
+    def test_in_scope_role_is_stamped(self):
+        row = self._row("Medical Coding Officer",
+                        "Health Information Management(HIM)")
+        self.assertTrue(scraper.apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Medical Coding")
+        self.assertEqual(row["role_family"], "Medical Coding")
+        self.assertTrue(row["matched_in"])
 
-    def test_unmistakable_title_overrides_a_coarse_facet(self):
-        # a radiologist filed under Radiology is a doctor, not a technologist
-        self.assertEqual(
-            scraper.classify_category("Consultant Radiologist", "Radiology")[0],
-            "doctors")
-        # a dentist filed under Dental Health is a doctor
-        self.assertEqual(
-            scraper.classify_category("Dentist", "Dental Health")[0], "doctors")
-        # a pharmacist filed under Administration is a pharmacist
-        self.assertEqual(
-            scraper.classify_category("Clinical Pharmacist",
-                                      "Administration & Support Services")[0],
-            "pharmacists")
-        # a nurse filed under Supervisory is a nurse
-        self.assertEqual(
-            scraper.classify_category("Head Nurse", "Supervisory")[0], "nurses")
+    def test_public_health_role_is_stamped(self):
+        row = self._row("Infection Control Practitioner",
+                        "Other Allied Health Services")
+        self.assertTrue(scraper.apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Infection Prevention & Control")
 
-    def test_bare_seniority_words_do_not_promote_admin_roles(self):
-        # PHCC titles corporate roles "Consultant"/"Specialist" too, so those
-        # words alone must NOT make something a doctor
-        for title in ["Consultant - Corporate Strategy",
-                      "Specialist - Talent Acquisition",
-                      "Director of Governance"]:
-            self.assertEqual(
-                scraper.classify_category(title, "Governance")[0],
-                "non_clinical", title)
+    def test_bedside_roles_are_dropped(self):
+        for title, area in [("Midwife", "Nursing"),
+                            ("Specialist Paediatrician", "Physicians"),
+                            ("Director of Pharmacy", "Pharmacy"),
+                            ("Radiology Technologist", "Radiology")]:
+            row = self._row(title, area)
+            self.assertFalse(scraper.apply_classification(row), title)
+            self.assertEqual(row["category"], "")
 
-    def test_unknown_facet_falls_back_to_title_and_flags(self):
-        category, review = scraper.classify_category(
-            "Staff Nurse", "Some New Category PHCC Just Added")
-        self.assertEqual(category, "nurses")
-        self.assertTrue(review)
+    def test_facet_alone_cannot_admit_a_bedside_role(self):
+        # the facet is a signal, never the verdict
+        row = self._row("Staff Nurse", "Health Information Management(HIM)")
+        self.assertFalse(scraper.apply_classification(row))
 
-    def test_unknown_facet_and_unknown_title_is_kept_and_flagged(self):
-        category, review = scraper.classify_category("Wayfinding Attendant", "")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(review)   # kept, never dropped (master spec §2)
+    def test_requirements_feed_the_description_signal(self):
+        row = self._row(
+            "Officer", "Governance",
+            requirements="Maintain the trial master file and manage "
+                         "clinical trial documentation to ICH-GCP.")
+        self.assertTrue(scraper.apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+
+    def test_hr_code_title_flag_survives_classification(self):
+        row = self._row("Clinical Research Coordinator", "Governance",
+                        needs_review=True)
+        self.assertTrue(scraper.apply_classification(row))
+        self.assertTrue(row["needs_review"])
 
 
 class TestCutoff(unittest.TestCase):
@@ -339,7 +329,9 @@ class TestResultTableParsing(unittest.TestCase):
     def test_end_to_end_row_build(self):
         row = scraper.listing_to_rich_row(scraper.parse_result_rows(self.PAGE)[0])
         self.assertEqual(row["title"], "Midwife")
-        self.assertEqual(row["category"], "nurses")
+        # taxonomy fields are left blank here; apply_classification() stamps them
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["category_original"], "Nursing")
         self.assertEqual(row["city"], "Doha")
         self.assertEqual(row["country"], "Qatar")
         self.assertEqual(row["job_type"], "full_time")
@@ -412,18 +404,29 @@ class TestDetailParsing(unittest.TestCase):
 
 
 class TestClubRow(unittest.TestCase):
-    def test_club_schema_and_values(self):
+    @staticmethod
+    def _in_scope_row():
         row = scraper.listing_to_rich_row(
             scraper.parse_result_rows(TestResultTableParsing.PAGE)[0])
-        club = scraper.rich_row_to_club_row(row)
+        row["title"] = "Pharmacovigilance Officer"
+        row["description"] = "Case processing. Requirements: MPH preferred."
+        scraper.apply_classification(row)
+        return row
+
+    def test_club_schema_and_values(self):
+        club = scraper.rich_row_to_club_row(self._in_scope_row())
         self.assertEqual(list(club), scraper.CLUB_COLUMNS)
         self.assertEqual(club["country_name"], "Qatar")
         self.assertEqual(club["country_code"], "QA")
         self.assertEqual(club["country_dial_code"], "+974")
         self.assertEqual(club["city_name"], "Doha")
         self.assertEqual(club["company_type"], "hospital")
-        self.assertEqual(club["category"], "nurses")
-        self.assertEqual(club["is_active"], "true")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Pharmacovigilance")
+        self.assertIn("qualification", club)
+        # retired fleet-wide
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
 
     def test_salary_columns_stay_blank(self):
         row = scraper.listing_to_rich_row(

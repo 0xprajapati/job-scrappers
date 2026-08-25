@@ -8,12 +8,11 @@ come from real listings captured on 2026-08-08.
 import unittest
 
 from shine_scraper import (
-    classify_category,
+    apply_classification,
     classify_company_type,
     club_salary,
     compute_cutoff,
     decode_job_type,
-    is_healthcare,
     page_url,
     parse_date,
     parse_experience,
@@ -94,69 +93,56 @@ class TestParseExperience(unittest.TestCase):
         self.assertEqual(parse_experience(None), ("", ""))
 
 
-class TestIsHealthcare(unittest.TestCase):
-    def test_deny_wins_even_in_healthcare_industry(self):
+class TestClassificationWiring(unittest.TestCase):
+    """The shared classifier is the ONLY keep/drop + labeling decision.
+
+    Engine internals live in _shared/test_classification.py; these tests
+    only prove shine hands it the right signals and honours the verdict.
+    """
+
+    def test_in_scope_title_is_kept_and_labelled(self):
+        row = {"title": "Pharmacovigilance Associate",
+               "keywords": "drug safety, argus", "description": ""}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
+        self.assertEqual(row["role_family"], "Pharmacovigilance")
+        self.assertIn("title", row["matched_in"])
+
+    def test_public_health_title(self):
+        row = {"title": "Public Health Epidemiologist",
+               "keywords": "", "description": ""}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+
+    def test_bedside_role_is_dropped(self):
+        # The old scraper kept this as category=nurses; it is now out of scope.
+        row = {"title": "Wanted Staff Nurse, GNM, DGNM, ANM & Midwifery",
+               "keywords": "icu, ward", "description": ""}
+        self.assertFalse(apply_classification(row))
+
+    def test_telesales_card_is_dropped(self):
         # Real card: telesales for ayurvedic products, industry "Others".
-        keep, signal = is_healthcare(
-            "Urgent Requirement | Telesales (Ayurvedic, Healthcare & FMCG "
-            "Sector)", "Others")
-        self.assertFalse(keep)
-        self.assertEqual(signal, "deny")
+        row = {"title": "Urgent Requirement | Telesales (Ayurvedic, "
+                        "Healthcare & FMCG Sector)",
+               "keywords": "", "description": ""}
+        self.assertFalse(apply_classification(row))
 
-    def test_clinical_title(self):
-        keep, signal = is_healthcare("Staff Nurse - ICU", "Others")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "title")
+    def test_industry_facet_is_not_a_signal(self):
+        # jInd "Medical / Healthcare" no longer rescues an off-scope title.
+        row = {"title": "Front Office Executive", "keywords": "",
+               "description": ""}
+        self.assertFalse(apply_classification(row))
 
-    def test_industry_rescues_blank_title(self):
-        keep, signal = is_healthcare("Front Office Executive",
-                                     "Medical / Healthcare")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "industry")
-
-    def test_neutral_industry_kept_for_review(self):
-        keep, signal = is_healthcare("Ward Boy", "Others")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "needs_review")
-
-    def test_named_other_industry_excluded(self):
-        keep, signal = is_healthcare("Process Associate",
-                                     "IT Services & Consulting")
-        self.assertFalse(keep)
-        self.assertEqual(signal, "industry")
-
-    def test_it_role_denied(self):
-        keep, _ = is_healthcare("Java Developer - Hospital Chain",
-                                "Medical / Healthcare")
-        self.assertFalse(keep)
-
-
-class TestClassifyCategory(unittest.TestCase):
-    def test_nurse(self):
-        self.assertEqual(
-            classify_category("Wanted Staff Nurse, GNM, DGNM, ANM & Midwifery"),
-            ("nurses", False))
-
-    def test_pharmacist(self):
-        self.assertEqual(classify_category("Pharmacist - Retail"),
-                         ("pharmacists", False))
-
-    def test_doctor(self):
-        self.assertEqual(classify_category("Nephrologist"), ("doctors", False))
-        self.assertEqual(classify_category("Psychiatrist"), ("doctors", False))
-
-    def test_psychologist_is_non_clinical_not_doctor(self):
-        self.assertEqual(classify_category("Clinical Psychologist"),
-                         ("non_clinical", False))
-
-    def test_non_clinical(self):
-        self.assertEqual(classify_category("Medical Coding Executive"),
-                         ("non_clinical", False))
-
-    def test_ambiguous_flagged(self):
-        category, ambiguous = classify_category("Ward Boy")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(ambiguous)
+    def test_skills_only_admission(self):
+        # jKwd is passed as `skills` (weight 2): two distinct terms clear
+        # MIN_SCORE_KEEP with no title hit at all.
+        row = {"title": "Senior Associate",
+               "keywords": "clinical trials, gcp, cra",
+               "description": ""}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["role_family"], "Clinical Research")
 
 
 class TestCompanyType(unittest.TestCase):
@@ -235,9 +221,11 @@ class TestClubRow(unittest.TestCase):
         rich = {
             "location": "Noida, Delhi", "company": "Apollo Hospitals",
             "company_type": "hospital", "title": "Staff Nurse",
-            "description": "ICU nurse.", "job_type": "Full time",
-            "employment_type": "Regular", "category": "nurses",
-            "job_url": "https://www.shine.com/jobs/staff-nurse/x/1",
+            "description": "Medical coding, CPC certified.",
+            "job_type": "Full time",
+            "employment_type": "Regular",
+            "category": "Non Clinical", "sub_category": "Medical Coding",
+            "job_url": "https://www.shine.com/jobs/medical-coder/x/1",
             "posted_date": "2026-08-07", "experience_min_years": "1",
             "experience_max_years": "5",
             "salary_raw": "Rs 2.0  - 3.5 Lakh/Yr", "expires_date": "2026-09-19",
@@ -246,7 +234,11 @@ class TestClubRow(unittest.TestCase):
         self.assertEqual(row["country_code"], "IN")
         self.assertEqual(row["city_name"], "Noida")
         self.assertEqual(row["job_type"], "full_time")
-        self.assertEqual(row["category"], "nurses")
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Medical Coding")
+        self.assertEqual(row["qualification"], "CPC")
+        self.assertNotIn("is_active", row)
+        self.assertNotIn("expires_at", row)
         self.assertEqual((row["min_salary"], row["max_salary"]),
                          ("200000", "350000"))
         self.assertEqual(row["salary_period"], "per_annum")

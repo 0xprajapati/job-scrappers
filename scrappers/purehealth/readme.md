@@ -36,13 +36,20 @@ Dhabi / UAE.
 
 ## Quirks
 
-* **`Category` from the ATS is unreliable.** "Cath Lab Staff Nurse" and
-  "Assistant Nurse" are both filed under *Administration*. The **title decides**
-  the club category; `Category` is only the fallback (master spec §2). A title
-  the patterns miss and a `Category` the map misses are kept as `non_clinical`,
-  flagged `needs_review` and logged to `needs_review.csv` — never dropped.
-  `Psychologist` / `Technologist` / `Audiologist` are deliberately excluded from
-  the `-ologist` doctor pattern (allied health, not physicians).
+* **Classification is the shared two-level taxonomy**
+  (`scrappers/_shared/classification.py`): `category` is `Non Clinical` |
+  `Public Health`, plus a `sub_category` (Clinical Research, Medical Coding,
+  Pharmacovigilance, Infection Prevention & Control, …). PureHealth is a
+  hospital/insurance operator, so most requisitions (bedside nursing,
+  clinicians, allied health) are **out of scope and dropped**, counted as
+  `excluded_out_of_scope` in the run summary. In-scope rows whose title looks
+  like another profession are kept and flagged `needs_review`.
+* **`Category` from the ATS is unreliable** — "Cath Lab Staff Nurse" and
+  "Assistant Nurse" are both filed under *Administration* — and it no longer
+  decides anything. It is kept verbatim in the rich CSV as `category_original`
+  and passed to the classifier as its `skills` signal only.
+* **Qualification**: Oracle's structured `StudyLevel` when present, else a
+  grounded extraction from the description — never inferred.
 * **No salary anywhere** — no pay fields, no flexfields, no skills on any
   requisition. `salary_raw = "Not Disclosed"`, all numeric salary columns empty
   (master spec §3). Nothing is invented.
@@ -90,8 +97,11 @@ Flags:
 
 * `purehealth_jobs.csv` — rich cumulative store, deduped on `job_id`.
 * `../../jobs_csv/<DD-MM-YYYY>/purehealth.csv` — HealthCareers.club 22-column
-  schema.
-* `needs_review.csv` — only written when a title/category pair can't be mapped.
+  schema (`CLUB_COLUMNS` imported from `_shared/classification.py`; `is_active`
+  / `expires_at` are retired, `sub_category` and `qualification` are in).
+* `needs_review.csv` — in-scope rows whose title looks like another profession.
+* `out-of-scope.csv` — rows the shared classifier rejected during the one-off
+  stored-data reclassification (reversible; never silently discarded).
 
 Re-running the same day adds 0 rows (master spec §5).
 
@@ -101,7 +111,10 @@ Re-running the same day adds 0 rows (master spec §5).
 python test_filters.py
 ```
 
-36 tests covering the category classifier (including the wrong-ATS-category
-cases), the free-text experience parser, job-type mapping, location/city
-fallbacks, the watermark cutoff, HTML flattening and the club-row mapping. All
-worked examples are copied verbatim from live `CX_6007` requisitions.
+33 tests covering the classification wiring (an in-scope role gets the right
+category/sub_category; bedside/clinician titles are dropped; the ATS facet can
+never admit a job), the free-text experience parser, job-type mapping,
+location/city fallbacks, the watermark cutoff, HTML flattening and the club-row
+mapping. The shared classifier's own behaviour is covered by
+`_shared/test_classification.py`. All worked examples are copied verbatim from
+live `CX_6007` requisitions.

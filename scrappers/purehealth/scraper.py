@@ -33,17 +33,19 @@ turns that off for a quick listing-only run.
 
 Quirks
 ------
-* The ATS `Category` is unreliable — "Cath Lab Staff Nurse" and "Assistant
-  Nurse" are both filed under *Administration* — so the title decides the club
-  category and `Category` is only the fallback (master spec §2). Titles that
-  match neither are kept, flagged `needs_review` and logged to
-  `needs_review.csv`.
+* Classification is the shared two-level taxonomy (scrappers/_shared/
+  classification.py): category "Non Clinical" | "Public Health" plus a
+  sub_category. The ATS `Category` is unreliable anyway — "Cath Lab Staff
+  Nurse" and "Assistant Nurse" are both filed under *Administration* — so it
+  never decides the category; it stays in the rich CSV as the raw source
+  column `category_original` and feeds the classifier as its curated `skills`
+  signal. PureHealth is a hospital/insurance operator, so most requisitions
+  (bedside nursing, clinicians, allied health) are out of scope and dropped
+  (counted as excluded_out_of_scope).
 * No salary anywhere in the API (no flexfields, no skills) ->
   `salary_raw = "Not Disclosed"`, numeric fields empty (master spec §3).
 * No structured experience field either; min/max years are parsed
   conservatively out of the description text and left empty when unclear.
-* Everything PureHealth posts is healthcare-sector employment, so the
-  healthcare filter reduces to the category mapping above.
 
 Time window: an ATS only lists currently OPEN requisitions (one here has been
 open since 2025-11), so the first run keeps ALL of them
@@ -66,6 +68,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -76,6 +79,10 @@ from urllib.parse import quote
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -128,18 +135,11 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "company", "facility", "city", "country",
     "salary_raw", "salary_min_monthly", "salary_max_monthly",
     "salary_period_original", "job_type", "job_shift", "category",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in",
     "category_original", "education", "experience_raw",
     "experience_min_years", "experience_max_years", "needs_review",
     "posted_date", "expires_at", "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("purehealth_scraper")
@@ -230,50 +230,30 @@ def parse_experience(description):
 
 
 # ----------------------------------------------------------------------------
-# Category mapping (club enum: doctors | nurses | pharmacists | non_clinical)
+# Classification (shared two-level taxonomy)
 # ----------------------------------------------------------------------------
 
-_NURSE_RE = re.compile(r"\bnurs(e|es|ing)\b|\bmidwi(fe|ves|fery)\b", re.IGNORECASE)
-_PHARM_RE = re.compile(r"\bpharmac(y|ist|ists|ies)\b", re.IGNORECASE)
-# "-ologist" catches radiologist/cardiologist/…; psychologist, technologist and
-# audiologist are allied-health roles, not physicians, so they are excluded.
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|dentist|general practitioner|consultant "
-    r"physician|specialist physician|registrar|medical officer|intensivist|"
-    r"an(a)?esthetist|obstetrician|p(a)?ediatrician|psychiatrist)\b|"
-    r"(?<!psych)(?<!audi)(?<!techn)ologist\b",
-    re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-# ATS Category values -> club category, used only when the title is silent.
-_ATS_CATEGORY_MAP = {
-    "nursing": "nurses",
-    "medical": "doctors",
-    "pharmacy": "pharmacists",
-    "allied health": "non_clinical",
-    "administration": "non_clinical",
-    "corporate": "non_clinical",
-    "support services": "non_clinical",
-}
-
-
-def classify_category(title, ats_category=""):
-    """Return (club_category, needs_review).
-
-    The title wins whenever it matches a clinical pattern — the ATS files
-    "Cath Lab Staff Nurse" under Administration, so its Category is only a
-    fallback. A title the patterns miss and a Category the map misses are kept
-    as non_clinical + needs_review (master spec §2 — never silently dropped).
+    The ATS Category facet (`category_original`) is the curated `skills`
+    signal — never a decider, since the site files "Cath Lab Staff Nurse"
+    under *Administration*; the raw value stays in the rich CSV as a source
+    column only.  Returns in_scope — False means DROP the row
+    (excluded_out_of_scope).
     """
-    if _PHARM_RE.search(title or ""):
-        return ("pharmacists", False)
-    if _NURSE_RE.search(title or ""):
-        return ("nurses", False)
-    if _DOCTOR_RE.search(title or ""):
-        return ("doctors", False)
-    mapped = _ATS_CATEGORY_MAP.get(clean_text(ats_category).lower())
-    if mapped:
-        return (mapped, False)
-    return ("non_clinical", True)
+    verdict = classify_job(row.get("title", ""),
+                           row.get("category_original", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 def map_job_type(job_schedule):
@@ -415,7 +395,6 @@ def build_rich_row(req, detail=None):
     title = clean_text(req.get("Title") or detail.get("Title"))
     work_locations = req.get("workLocation") or detail.get("workLocation") or []
     ats_category = clean_text(detail.get("Category"))
-    category, needs_review = classify_category(title, ats_category)
 
     description = strip_html(detail.get("ExternalDescriptionStr")
                              or req.get("ShortDescriptionStr"))
@@ -436,13 +415,20 @@ def build_rich_row(req, detail=None):
         "salary_period_original": "",
         "job_type": map_job_type(detail.get("JobSchedule")),
         "job_shift": clean_text(detail.get("JobShift")),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "category_original": ats_category,
         "education": clean_text(detail.get("StudyLevel")),
         "experience_raw": experience_raw,
         "experience_min_years": exp_min,
         "experience_max_years": exp_max,
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": clean_text(req.get("PostedDate")
                                   or detail.get("ExternalPostedStartDate"))[:10],
         "expires_at": clean_text(req.get("PostingEndDate")
@@ -472,18 +458,21 @@ def rich_row_to_club_row(r):
         "title": val("title"),
         "description": val("description"),
         "job_type": val("job_type") or "full_time",
-        "category": val("category") or "non_clinical",
+        "category": val("category"),
+        "sub_category": val("sub_category"),
         "application_url": val("job_url") or CE_SITE_URL,
         "posted_at": val("posted_date"),
         "min_experience": val("experience_min_years"),
         "max_experience": val("experience_max_years"),
+        # structured source field (Oracle StudyLevel) first, else grounded
+        # extraction from the description — never inferred
+        "qualification": val("education") or extract_qualification(
+            val("description")),
         # no salary data in the Oracle ORC API — left blank, never invented
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        "expires_at": val("expires_at"),
     }
 
 
@@ -563,8 +552,8 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; cutoff: %s",
              len(known_ids), cutoff or "none (keeping all open requisitions)")
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "errors": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0, "errors": 0}
     new_rows, review_log = [], []
 
     for req in iter_requisitions(session, max_pages=args.max_pages):
@@ -605,6 +594,9 @@ def main(argv=None):
             counters["errors"] += 1
             continue
 
+        if not apply_classification(row):
+            counters["excluded_out_of_scope"] += 1
+            continue
         if row["needs_review"]:
             counters["needs_review"] += 1
             review_log.append({"job_id": row["job_id"], "title": row["title"],
@@ -640,6 +632,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Requisitions scanned:  {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff or "no cutoff",
                                                     counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))

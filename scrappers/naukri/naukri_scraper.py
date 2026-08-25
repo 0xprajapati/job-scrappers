@@ -49,14 +49,26 @@ range (e.g. 4,500,000); the card's salary placeholder ("45-60 Lacs PA") is
 kept verbatim as salary_raw. Undisclosed -> "Not Disclosed", numeric fields
 empty. Never filtered on, never invented.
 
+Classification (taxonomy-migration-spec 2026-08-25)
+---------------------------------------------------
+All keep/drop and labeling decisions are made by the shared two-level
+classifier: classify_job(title, tagsAndSkills, strip_html(jobDescription))
+from scrappers/_shared/classification.py. Out-of-scope cards are dropped and
+counted (excluded_out_of_scope); in-scope cards carry category
+("Non Clinical" | "Public Health"), sub_category, and the role_family score
+trace. The source-side "Healthcare & Life Sciences" listing filter merely
+saves capture effort — it never decides scope.
+
 Outputs (per the repo README + master-scraper-spec.md)
 ------------------------------------------------------
 * naukri_jobs.csv            — rich cumulative store (dedup key: job_id),
                                source of truth for the incremental watermark.
 * ../../jobs_csv/<DD-MM-YYYY>/naukri.csv
-                             — the same jobs mapped to the shared
-                               HealthCareers.club 22-column schema.
-* needs_review.csv           — titles the classifier could not place.
+                             — in-scope jobs mapped to the shared
+                               HealthCareers.club 22-column schema
+                               (CLUB_COLUMNS from _shared/classification.py).
+* needs_review.csv           — in-scope rows whose title looks like a
+                               different profession (kept AND flagged).
 
 Time window: first run keeps jobs posted in the last INITIAL_WINDOW_DAYS
 (7); later runs keep only jobs newer than the newest stored posted_date
@@ -69,11 +81,17 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
+import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -100,24 +118,21 @@ CAPTURES_DIR = HERE / "captures"
 CLUB_CSV_DIR = HERE.resolve().parents[1] / "jobs_csv"
 
 # Rich (source-of-truth) columns — superset, keeps everything the card gives.
+# `category` holds "Non Clinical" | "Public Health"; the sub_category /
+# role_family / score-trace columns keep every admission auditable.
 RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_id", "hiring_for",
     "city", "country", "country_code", "country_dial_code", "salary_raw",
     "salary_min", "salary_max", "salary_currency", "salary_period",
     "experience_min_years", "experience_max_years", "job_type", "category",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in", "needs_review",
     "company_type", "role_category_gid", "tags_and_skills", "vacancies",
     "company_logo", "posted_date", "description", "job_url", "scraped_at",
 ]
 
-# Shared HealthCareers.club import schema (must match job_samples.csv exactly).
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
+# The club CSV schema is the shared CLUB_COLUMNS imported from
+# _shared/classification.py (22 columns; is_active/expires_at retired).
 
 # naukri is India-first, but the healthcare listing carries some overseas
 # postings whose location placeholder is a bare country name. Map those; every
@@ -257,56 +272,8 @@ def _exp_int(value):
         return ""
 
 
-# Title classification -> club category enum. Unmatched titles are KEPT,
-# mapped to non_clinical and flagged needs_review (master spec §2); the listing
-# is already source-filtered to the Healthcare functional area so nothing is
-# dropped. Regexes adapted from the naukrigulf scraper.
-_NURSE_RE = re.compile(r"\b(nurse|nursing|midwif\w*|gnm|anm)\b", re.IGNORECASE)
-_PHARM_RE = re.compile(
-    r"\b(pharmacist|pharmacy|pharm\.?\s?d|b\.?pharm\w*|m\.?pharm\w*)\b",
-    re.IGNORECASE)
-# Allied-health + clearly non-clinical roles land in non_clinical (club
-# convention) — checked BEFORE the doctor regex so "Audiologist", "medical
-# coder", etc. don't trip the *ologist / "medical ..." specialty rules.
-_NONCLINICAL_RE = re.compile(
-    r"\b(medical cod\w+|medical bill\w+|clinical documentation|cod(er|ing)\w*|"
-    r"ar caller|accounts?|accountant|finance|"
-    r"sales|business development|marketing|receptionist|driver|secretary|"
-    r"hr\b|human resources|admin\w*|coordinator|executive|analytics|analyst|"
-    r"manager|engineer|developer|software|qa\b|tester|bill(er|ing)\w*|insurance|"
-    r"housekeeping|security|store ?keeper|procurement|liaison|customer|"
-    r"data entry|telecaller|tele caller|counsellor|counselor|content|writer|"
-    r"audiolog\w*|physiotherap\w*|physio\b|radiograph\w*|optometr\w*|"
-    r"optician|paramedic\w*|speech|dietician|dietitian|nutritionist|"
-    r"lab ?technician|technician|technologist|phlebotom\w*|"
-    r"dental hygien\w*|therapist|psycholog\w*|social worker)\b",
-    re.IGNORECASE)
-# Gulf/India boards title doctors "Specialist - Cardiology" / bare "Neurologist".
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|mbbs|bds|md\b|ms\b|dm\b|dentist|"
-    r"medical officer|rmo|cmo|gp\b|general practitioner|consultant|"
-    r"[a-z]{4,}ologist|orthop[ae]?edic\w*|intensivist|hospitalist|"
-    r"anaesthetist|anesthetist|an[ae]sthesiolog\w*|obstetric\w*|gyn[ae]?c\w*|"
-    r"p[ae]?ediatric\w*|psychiatrist|neonat\w*|dermatolog\w*|cardiolog\w*|"
-    r"radiolog\w*|patholog\w*|oncolog\w*|neurolog\w*|neurosurgeon|"
-    r"(family|internal|general|emergency) medicine|registrar|"
-    r"medical director|medical superintendent|resident)\b",
-    re.IGNORECASE)
-
-
-def classify_category(title):
-    """Return (category, needs_review) for a job title."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    return ("non_clinical", True)  # pure default -> flag for review
-
+# Classification is classify_job (shared two-level taxonomy) — see the
+# module docstring. This scraper defines no category regexes of its own.
 
 _PHARMA_COMPANY_RE = re.compile(
     r"pharma|therapeut|laborator|\blabs?\b|\bcro\b|biotech|life ?science|"
@@ -349,12 +316,24 @@ def real_company(job):
     return company, ""
 
 
-def job_to_rich_row(job):
-    """Build one rich-CSV row from a captured jobDetails card."""
+def classify_card(job):
+    """Run the shared classifier on one captured card.
+
+    Signals: title (required), tagsAndSkills as skills, HTML-stripped
+    jobDescription as description.
+    """
+    return classify_job(
+        (job.get("title") or "").strip(),
+        (job.get("tagsAndSkills") or "").strip(),
+        strip_html(job.get("jobDescription") or ""))
+
+
+def job_to_rich_row(job, verdict):
+    """Build one rich-CSV row from a captured jobDetails card and its
+    (in-scope) classify_job verdict."""
     title = (job.get("title") or "").strip()
     company, hiring_for = real_company(job)
     city, country, code, dial = parse_location(placeholder(job, "location"))
-    category, needs_review = classify_category(title)
     salary_raw, sal_min, sal_max, sal_cur, sal_per = parse_salary(job)
     jd_url = (job.get("jdURL") or "").strip()
     if jd_url.startswith("/"):
@@ -379,7 +358,14 @@ def job_to_rich_row(job):
         "experience_min_years": _exp_int(job.get("minimumExperience")),
         "experience_max_years": _exp_int(job.get("maximumExperience")),
         "job_type": map_job_type(job),
-        "category": category,
+        "category": verdict["category"],
+        "sub_category": verdict["sub_category"],
+        "role_family": verdict["role_family"],
+        "all_families": verdict["all_families"],
+        "family_scores": verdict["family_scores"],
+        "family_confidence": verdict["family_confidence"],
+        "matched_in": verdict["matched_in"],
+        "needs_review": "true" if verdict["needs_review"] else "false",
         "company_type": classify_company_type(company, hiring_for),
         "role_category_gid": str(job.get("roleCategoryGid") or ""),
         "tags_and_skills": (job.get("tagsAndSkills") or "").strip(),
@@ -389,7 +375,6 @@ def job_to_rich_row(job):
         "description": strip_html(job.get("jobDescription") or "")[:DESCRIPTION_MAX_CHARS],
         "job_url": jd_url,
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "needs_review": needs_review,
     }
 
 
@@ -423,17 +408,19 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": _clean(r.get("job_type")) or "full_time",
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),
         "max_experience": _clean(r.get("experience_max_years")),
+        # naukri cards have no structured qualification field, so this is
+        # grounded extraction from the description — never inferred.
+        "qualification": extract_qualification(_clean(r.get("description"))),
         "min_salary": lo if exportable else "",
         "max_salary": (hi or lo) if exportable else "",
         "salary_period": period if exportable else "",
         "salary_currency": currency if exportable else "",
-        "is_active": "true",
-        "expires_at": "",
     }
 
 
@@ -542,8 +529,8 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0}
     new_rows, review_log = [], []
 
     for job in cards:
@@ -557,12 +544,16 @@ def main(argv=None):
             if job_id in known_ids:
                 counters["duplicates"] += 1
                 continue
-            row = job_to_rich_row(job)
+            verdict = classify_card(job)
+            if not verdict["in_scope"]:
+                counters["excluded_out_of_scope"] += 1
+                continue          # dropped — never exported
+            row = job_to_rich_row(job, verdict)
         except Exception as exc:  # never let one card crash the run
             log.warning("Skipping malformed card %s: %s", job.get("jobId"), exc)
             continue
 
-        if row.pop("needs_review", False):
+        if row["needs_review"] == "true":
             counters["needs_review"] += 1
             review_log.append({"job_id": row["job_id"], "title": row["title"],
                                "company": row["company"]})
@@ -594,12 +585,21 @@ def main(argv=None):
         log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
 
     if review_log:
-        pd.DataFrame(review_log).to_csv(NEEDS_REVIEW_CSV, index=False)
-        log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, len(review_log))
+        review_df = pd.DataFrame(review_log,
+                                 columns=["job_id", "title", "company"])
+        existing_review = load_existing(NEEDS_REVIEW_CSV)
+        if existing_review is not None:
+            review_df = pd.concat([existing_review, review_df],
+                                  ignore_index=True)
+        review_df = review_df.drop_duplicates(subset="job_id", keep="first")
+        review_df.to_csv(NEEDS_REVIEW_CSV, index=False)
+        log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV,
+                 len(review_df))
 
     print("\n===== Run summary =====")
     print("Cards scanned:            {:>5,}".format(counters["scanned"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
+    print("Excluded (out of scope):  {:>5,}".format(counters["excluded_out_of_scope"]))
     print("Flagged needs_review:     {:>5,}".format(counters["needs_review"]))
     print("New jobs added:           {:>5,}".format(counters["new"]))
     print("Duplicates skipped:       {:>5,}".format(counters["duplicates"]))

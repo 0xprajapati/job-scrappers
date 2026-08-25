@@ -6,9 +6,32 @@ Scrapes job listings for [Max Healthcare](https://www.maxhealthcare.in/careers)
 PeopleStrong (Alt Recruit), covering Max Healthcare Institute Ltd and group
 entities (Alps Hospital, Starlit Medical Centre, Nanavati Max, BLK-Max,
 Max Lab, Max@Home, ...). Because it is a hospital chain's career site, every
-posting is healthcare-industry at the source.
+posting is healthcare-industry at the source — but most are bedside/clinical
+roles, so the shared classifier drops them (see **Classification** below).
 
 Same platform as the `carecareers` scraper; the code is adapted from it.
+
+## Classification
+
+Every candidate job goes through the shared two-level taxonomy in
+`scrappers/_shared/classification.py` — the scraper defines **no** category
+regexes of its own:
+
+* `category` is `Non Clinical` or `Public Health`, `sub_category` one of the
+  20 sub-categories; `role_family` plus the score trace (`all_families`,
+  `family_scores`, `family_confidence`, `matched_in`) land in the rich CSV.
+* Signals: the job title, the description (HTML stripped), and — as the
+  curated `skills` signal — the PeopleStrong **designation**, the org-unit
+  **department** and the requisition's **skill tags** joined together.
+  Those raw fields stay in the rich CSV as source columns; they never decide
+  the category themselves.
+* Out-of-scope jobs are **dropped**, not exported, and counted as
+  `Excluded (out of scope)` in the run summary. Being a hospital chain's
+  ATS, most requisitions (nursing, clinicians, paramedical, hospital admin)
+  fall out this way.
+* `needs_review = True` rows are kept and logged to `needs_review.csv`.
+* Jobs are classified **after** the detail fetch so the description counts
+  towards the score.
 
 ## Data source
 
@@ -44,10 +67,6 @@ it is fetched for **new jobs only** (default on — the index is ~66 jobs;
   hierarchy is 8 levels deep — only country/state/city are used.
 * Entity names carry legal boilerplate ("Alps Hospital Limited (Formerly
   known as ...)"); the parenthetical is stripped for `company_name`.
-* Consultant-style titles map to doctors only in clinical departments;
-  generic corporate titles with no healthcare word in
-  title/designation/department are kept and flagged `needs_review` (also
-  logged to `needs_review.csv`) — nothing is dropped.
 * `employmentType` `"Employee"` → `full_time`; part-time/contract variants
   are mapped if they ever appear.
 * The list is roughly newest-first but tiny, so every run scans all pages
@@ -59,8 +78,13 @@ it is fetched for **new jobs only** (default on — the index is ~66 jobs;
   `requisitionId`; append-only across runs (watermark = newest stored
   `posted_date` − 2 days grace; first run keeps the last 30 days).
 * `../../jobs_csv/<DD-MM-YYYY>/maxhealthcare.csv` — HealthCareers.club
-  22-column import schema, regenerated from the full store each run.
-* `needs_review.csv` — titles with no healthcare signal, for manual review.
+  22-column import schema (`CLUB_COLUMNS` imported from
+  `_shared/classification.py`; `is_active`/`expires_at` are retired),
+  regenerated from the full store each run.
+* `needs_review.csv` — in-scope rows the classifier flagged, for manual
+  review.
+* `out-of-scope.csv` — rows the classifier dropped during the one-off
+  stored-data reclassification (reversible; nothing is silently discarded).
 
 ## Usage
 

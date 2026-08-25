@@ -44,31 +44,31 @@ robots.txt: `User-Agent: * / Allow: / / Disallow: /apply`. /jobs/api is
 allowed; /apply is never requested. A plain descriptive User-Agent is accepted
 — no browser impersonation needed.
 
-Scope filter (master spec §2)
------------------------------
-Only eleven role families are in scope:
+Scope filter (taxonomy migration 2026-08-25)
+--------------------------------------------
+Classification is delegated ENTIRELY to the shared two-level classifier
+`_shared/classification.classify_job(title, skills, description)`:
 
-    Public Health · Clinical Data Management · Clinical Research ·
-    Medical Writer · TMF · Medical Coding · Pharmacovigilance ·
-    Regulatory Affairs · Medical Reviewer · MSL · HEOR
+    category      "Non Clinical" | "Public Health"
+    sub_category  one of the 20 shared sub-categories
+    role_family   rich-CSV trace of the winning role family
 
-The gate matches the JOB TITLE against ROLE_FAMILIES; the first family that
-matches labels the row in `role_family`. Everything else is counted
-`excluded_out_of_scope` — this is a general job board and ~88% of even the
-old broad healthcare catch was out of scope for these families.
+Every candidate job is routed through classify_job with the feed's
+`categories` slugs (hyphens flattened to spaces) as the `skills` signal and
+the HTML-stripped description as `description`. `in_scope == False` rows are
+dropped and counted `excluded_out_of_scope` — this is a general job board
+and the overwhelming majority of listings are out of scope.
 
-The spec prefers source-side filtering, and this feed *looks* like it offers
-it (there are exact `categories` slugs such as Clinical-Data-Management and
-Pharmacovigilance), but measured against 7,930 stored jobs roughly half the
-slug-only admissions were wrong: "Registered Dietitian" tagged
-Clinical-Research, "Nurse Practitioner" tagged Public-Health, "Open
-Application" tagged Medical-Affairs. The tagging is automated and loose, so
-slugs are NOT an admission path — the employer's own title is.
+The feed's own `categories` slugs are auto-tagged and loose (measured
+against 7,930 stored jobs roughly half of slug-only admissions were wrong:
+"Registered Dietitian" tagged Clinical-Research, "Nurse Practitioner" tagged
+Public-Health), so they are passed only as the weighted `skills` signal —
+the shared scorer weights title x5 / skills x2 / description x1, so slugs
+alone cannot admit a job without corroboration.
 
-A title carrying an in-scope term inside a plainly different profession
-(legal counsel, quota-carrying sales, recruiting, engineering) is KEPT,
-flagged needs_review and logged to needs_review.csv — never silently
-dropped, per the spec.
+`needs_review == True` (in-scope but the title looks like a different
+profession — legal counsel, quota sales, recruiting) keeps the row AND
+appends it to needs_review.csv — never a silent drop.
 
 Salary (master spec §3: capture, don't filter)
 ----------------------------------------------
@@ -109,6 +109,10 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+# The one shared classifier + club contract (taxonomy migration 2026-08-25).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
+
 # ----------------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------------
@@ -148,67 +152,29 @@ CLUB_JOB_TYPE = "remote"
 
 RICH_CSV = str(Path(__file__).resolve().parent / "himalayas_jobs.csv")
 NEEDS_REVIEW_CSV = str(Path(__file__).resolve().parent / "needs_review.csv")
+OUT_OF_SCOPE_CSV = str(Path(__file__).resolve().parent / "out-of-scope.csv")
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
+# Rich schema (taxonomy migration 2026-08-25): `category` holds
+# "Non Clinical" | "Public Health"; the family value that used to sit in the
+# club `category` moved into `role_family`; the shared score trace
+# (all_families / family_scores / family_confidence / matched_in) and the
+# needs_review flag are stored so every admission stays auditable. The old
+# `match_signal` column (trace of the removed local two-tier gate) is
+# superseded by `matched_in`.
 RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_slug", "company_logo",
     "locations", "country", "salary_raw", "salary_min", "salary_max",
     "salary_currency", "salary_period", "employment_type", "work_mode",
-    "seniority", "role_family", "company_type", "match_signal",
-    "categories",
-    "parent_categories", "timezones", "posted_date", "expires_date",
-    "description", "job_url", "scraped_at",
+    "seniority", "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in", "needs_review",
+    "company_type", "categories", "parent_categories", "timezones",
+    "posted_date", "expires_date", "description", "job_url", "scraped_at",
 ]
 
-# The 21-column contract from job_samples.csv (repo README: "Every scraper
-# MUST write the same columns as job_samples.csv"). NOTE: this changed after
-# this scraper was first written — `qualification` was added and `is_active` /
-# `expires_at` were removed. Verified against jobs_csv/19-08-2026/
-# pharmabharat_categories.csv. The scraper still stores `expires_date` in the
-# rich CSV; it simply no longer has a column in the club export.
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience", "qualification",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-]
-
-# Credentials to lift verbatim out of a description for `qualification`.
-# Only explicit, unambiguous tokens — never inferred from the job title.
-# Bare "MD" and "DO" are deliberately absent: "Remote, MD" is Maryland and
-# "do" is an English verb. "M.D." with periods and "MD/DO" are safe.
-_QUALIFICATION_PATTERNS = [
-    (r"\bMBBS\b", "MBBS"),
-    (r"\bM\.D\.|\bMD\s*/\s*DO\b|\bMD\s+degree\b", "MD"),
-    (r"\bPharm\.?\s?D\b", "PharmD"),
-    (r"\bB\.?\s?Pharm\b", "B.Pharm"),
-    (r"\bM\.?\s?Pharm\b", "M.Pharm"),
-    (r"\bPh\.?\s?D\b", "PhD"),
-    (r"\bMPH\b", "MPH"),
-    (r"\bDVM\b", "DVM"),
-    (r"\bBSN\b", "BSN"),
-    (r"\bMSN\b", "MSN"),
-    (r"\bM\.?Sc\b|\bMaster of Science\b", "MSc"),
-    (r"\bB\.?Sc\b|\bBachelor of Science\b", "BSc"),
-    (r"\bMBA\b", "MBA"),
-    (r"\bRN\b|\bRegistered Nurse\b", "RN"),
-    (r"\bRAC\b", "RAC"),
-    (r"\bCCRA\b", "CCRA"),
-    (r"\bCCRP\b", "CCRP"),
-    (r"\bRHIA\b", "RHIA"),
-    (r"\bRHIT\b", "RHIT"),
-    (r"\bCPC\b", "CPC"),
-    (r"\bCCS\b", "CCS"),
-    (r"\bCDISC\b", "CDISC"),
-    (r"\bBachelor'?s?\s+degree\b", "Bachelor's degree"),
-    (r"\bMaster'?s?\s+degree\b", "Master's degree"),
-    (r"\bDoctorate\b|\bDoctoral degree\b", "Doctorate"),
-    (r"\blife sciences?\b", "Life Sciences"),
-]
-_QUALIFICATION_RES = [(re.compile(p, re.IGNORECASE), label)
-                      for p, label in _QUALIFICATION_PATTERNS]
-MAX_QUALIFICATIONS = 8
+NEEDS_REVIEW_COLUMNS = ["job_id", "title", "company", "category",
+                        "sub_category", "role_family", "matched_in",
+                        "categories"]
 
 # country name -> (ISO alpha-2, dial code). Covers the countries that actually
 # appear in the feed; anything unseen exports with empty code/dial code.
@@ -377,155 +343,27 @@ def parse_salary(min_salary, max_salary, currency, period):
 
 
 # ----------------------------------------------------------------------------
-# Role-family scope (replaces the old broad "is it healthcare?" gate)
+# Classification — delegated to _shared/classification.classify_job
 # ----------------------------------------------------------------------------
 #
-# The site is scoped to eleven clinical-research / pharma-regulatory role
-# families. A job is IN SCOPE only if its TITLE matches one of them.
-#
-# Why title-only, and not the feed's own `categories` slugs:
-# the slugs looked like the ideal source-side signal (there are exact tags like
-# Clinical-Data-Management, Pharmacovigilance, Medical-Science-Liaison), but
-# measured against 7,930 stored jobs they admit mostly noise — the tagging is
-# automated and loose. Slug-only admissions included "Registered Dietitian" and
-# "Lead Account Manager, Clinical Services" under Clinical-Research, "Nurse
-# Practitioner (Remote, SC License Required)" and "Perinatal Social Worker"
-# under Public-Health, and "Open Application" under Medical-Affairs. Roughly
-# half the slug-only matches were wrong, so they are not an admission path.
-# The job title is the employer's own wording and is far more reliable.
-#
-# Order is precedence: the FIRST family that matches labels the job, so the
-# specific families come before the broad ones (a "Medical Writer - Clinical
-# Regulatory Documentation" is a Medical Writer, not Regulatory Affairs or
-# Clinical Research).
-
-ROLE_FAMILIES = [
-    ("TMF",
-     r"\btmf\b|trial master file"),
-
-    ("HEOR",
-     # Market access is the standard industry pairing with HEOR.
-     r"\bheor\b|health econom\w*|outcomes research|\bhta\b|"
-     r"market access|payer (?:evidence|value|strateg\w*)|"
-     r"real[- ]world evidence|\brwe\b|health technology assessment"),
-
-    ("Medical Reviewer",
-     # Pharma sense only: medical monitoring / medical review at sponsors and
-     # CROs. Deliberately EXCLUDES the two adjacent US markets this feed is
-     # full of, which are a different job despite the shared words:
-     #   * payer-side utilization review/management (43 roles: "Utilization
-     #     Review Nurse-LVN/LPN", "Director of Utilization Management")
-     #   * IME / disability peer review ("Board Certified Physician Reviewer -
-     #     Orthopedic Spine Surgery", "Physician Disability Peer Reviewer")
-     #   * MRO (Medical Review Officer) — workplace drug-testing
-     r"medical review\w*|medical monitor\w*|clinical reviewer|"
-     r"safety reviewer|medical safety review"),
-
-    ("MSL",
-     # "field medical" is NOT here: in this feed it appears in IME titles
-     # like "Physician Reviewer - Field Medical Director, Radiology", which
-     # are disability review, not MSL work.
-     r"medical science liaison|\bmsl\b|medical affairs|scientific affairs|"
-     r"medical advisor"),
-
-    ("Pharmacovigilance",
-     r"pharmacovigilance|\bpv\b|drug safety|\bgvp\b|"
-     r"adverse event|safety (?:physician|scientist|officer|surveillance|"
-     r"domain|database)|aggregate report\w*|signal detection|case processing|"
-     r"\bpsur\b|\bpbrer\b|\bicsr\b"),
-
-    ("Medical Coding",
-     r"medical cod\w*|\bcoder\b|coding (?:specialist|auditor|analyst|manager|"
-     r"quality|compliance|validation|audit)|\bcpc\b|\bccs\b|icd-?10|"
-     r"risk adjustment|\bhcc\b|profee|\bdrg\b|\bapc\b coding|charge capture"),
-
-    ("Medical Writer",
-     r"medical writ\w*|scientific writ\w*|regulatory writ\w*|"
-     r"medical editor|scientific editor|medical communications?|"
-     r"publications? (?:manager|lead|specialist|associate|director)"),
-
-    ("Regulatory Affairs",
-     # NOT bare "regulatory compliance" — in US listings that is usually
-     # revenue-cycle compliance ("Senior Regulatory Compliance and Revenue
-     # Cycle Analyst"), which is a different job entirely.
-     r"regulatory affairs?|regulatory (?:strateg\w*|submission\w*|"
-     r"operation\w*|intelligence|specialist|associate|manager|director|lead|"
-     r"scientist|labeling|labelling|publishing)|"
-     r"\bctd\b|\bind\b\s|\bnda\b|\bmaa\b"),
-
-    ("Clinical Data Management",
-     # "CDM" alone is ambiguous — in US revenue-cycle listings it means Charge
-     # Description Master ("Revenue Integrity & CDM Operations Manager").
-     r"clinical data|clinical database|clinical programm\w*|"
-     r"\bcdisc\b|\bsdtm\b|\bedc\b|"
-     # generic "data management" only counts with a clinical/trial context —
-     # otherwise it swallows "Manager, Client Data Management" and
-     # "Configuration / Data Management Analyst- Federal Health".
-     r"(?:data manage\w*|data steward|\bcdm\b)"
-     r"(?=.*(?:clinical|trial|study|\bedc\b|\bcdisc\b|biometric))|"
-     r"(?:clinical|trial|study)\b.*(?:data manage\w*|data steward)"),
-
-    ("Public Health",
-     # Biostatistics is deliberately absent: in this feed it is pharma
-     # biometrics, not public health, and it was not in the requested scope.
-     r"public health|epidemiolog\w*|population health|community health|"
-     r"global health|health promotion|disease surveillance|health polic\w*"),
-
-    ("Clinical Research",
-     r"clinical research|clinical trial\w*|clinical stud\w*|"
-     r"clinical operations|clinical monitor\w*|clinical development|"
-     r"clinical project|clinical scientist|\bcra\b|"
-     r"(?:study|trial) (?:manager|lead|coordinator|director|start[- ]?up|"
-     r"specialist|associate)|principal investigator|"
-     r"site (?:management|contracts|activation)|"
-     r"research (?:associate|coordinator|nurse|physician)"),
-]
-
-_ROLE_FAMILY_RES = [(name, re.compile(pat, re.IGNORECASE))
-                    for name, pat in ROLE_FAMILIES]
-
-# Titles that carry an in-scope term but are plainly a different profession:
-# legal counsel, quota-carrying sales, recruiting, engineering. "Senior Counsel,
-# Global Commercial Legal - U.S. Market Access and Pricing" is a lawyer, not
-# HEOR. These are KEPT but flagged, never silently dropped (master spec §2).
-OUT_OF_SCOPE_TITLE = re.compile(
-    r"(?:^|[^a-z])(?:"
-    r"counsel|attorney|paralegal|"
-    r"account (?:executive|manager)|sales (?:representative|rep|director|"
-    r"manager|executive|specialist)|business development|"
-    r"recruiter|talent acquisition|"
-    r"software engineer|web developer|frontend|backend|data engineer"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
+# The local ROLE_FAMILIES list and its two-tier rescue gate were removed in
+# the 2026-08-25 taxonomy migration: no scraper defines its own category
+# regexes any more. The feed's auto-tagged `categories` slugs (measured:
+# ~half wrong when trusted alone) are passed only as the weighted `skills`
+# signal; the description (HTML-stripped) as `description`. The final
+# keep/drop and labeling decision is classify_job's alone.
 
 
 def _slug_text(slugs):
+    """Feed slugs -> scorer-friendly text ("Clinical-Data-Management" ->
+    "Clinical Data Management"). Pure normalization, not classification."""
     return " ".join(str(s).replace("-", " ").replace("_", " ") for s in slugs)
 
 
-def match_role_family(title, categories=None):
-    """Return (family, signal, needs_review) — ("", "", False) if out of scope.
-
-    `categories` is accepted and ignored: the feed's slugs are too noisy to
-    admit a job on their own (see the note above). The parameter is kept so
-    callers don't have to care.
-    """
-    title = title or ""
-    for name, title_re in _ROLE_FAMILY_RES:
-        if title_re.search(title):
-            return (name, "title", bool(OUT_OF_SCOPE_TITLE.search(title)))
-    return ("", "", False)
-
-
-# The club `category` column now carries the ROLE FAMILY itself (Clinical
-# Research, Pharmacovigilance, ...). The previous profession classifier
-# (doctors / nurses / pharmacists / non_clinical) has been retired: it was a
-# poor fit here — every one of these families is a non-clinical desk role, so
-# ~97% of rows collapsed into `non_clinical` and the column carried almost no
-# information. ROLE_FAMILIES is now the single source of truth for both the
-# scope gate and the category, so the two can never disagree.
-
-CLUB_CATEGORIES = [name for name, _pat in ROLE_FAMILIES]
+def classify_feed_job(title, categories=None, description=""):
+    """Route one candidate job through the shared classifier."""
+    return classify_job(title or "", skills=_slug_text(categories or []),
+                        description=description or "")
 
 
 _PHARMA_COMPANY_RE = re.compile(
@@ -619,13 +457,9 @@ def fetch_page(session, offset):
 # Row building
 # ----------------------------------------------------------------------------
 
-def job_to_rich_row(job, signal="", role_family="", scope_review=False):
+def job_to_rich_row(job, verdict):
+    """Build one rich-CSV row from a feed job + its classify_job verdict."""
     title = clean_value(job.get("title"))
-    # The role family IS the category, so there is no separate "which
-    # profession is this?" ambiguity left to flag. A row is doubtful only when
-    # the scope match itself looked wrong (an in-scope term sitting inside a
-    # counsel / sales / recruiter title).
-    needs_review = scope_review
 
     categories = parse_listish(job.get("categories"))
     parent_categories = parse_listish(job.get("parentCategories"))
@@ -662,8 +496,14 @@ def job_to_rich_row(job, signal="", role_family="", scope_review=False):
         "work_mode": "remote",
         "seniority": "; ".join(seniority),
         "company_type": classify_company_type(job.get("companyName")),
-        "role_family": role_family,
-        "match_signal": signal,
+        "category": verdict["category"],
+        "sub_category": verdict["sub_category"],
+        "role_family": verdict["role_family"],
+        "all_families": verdict["all_families"],
+        "family_scores": verdict["family_scores"],
+        "family_confidence": verdict["family_confidence"],
+        "matched_in": verdict["matched_in"],
+        "needs_review": verdict["needs_review"],
         "categories": "; ".join(categories),
         "parent_categories": "; ".join(parent_categories),
         "timezones": "; ".join(timezones),
@@ -672,28 +512,7 @@ def job_to_rich_row(job, signal="", role_family="", scope_review=False):
         "description": truncate_description(description),
         "job_url": url,
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "needs_review": needs_review,
     }
-
-
-def extract_qualification(description):
-    """Lift explicit credentials verbatim out of a description.
-
-    Grounded extraction, not inference: a token is only emitted when it
-    literally appears in the posting. Returns "" when the description names
-    none — the club schema's `qualification` is optional and the master spec
-    forbids inventing what the source did not state.
-    """
-    text = description or ""
-    if not text:
-        return ""
-    found = []
-    for regex, label in _QUALIFICATION_RES:
-        if label not in found and regex.search(text):
-            found.append(label)
-        if len(found) >= MAX_QUALIFICATIONS:
-            break
-    return ", ".join(found)
 
 
 def _clean(value):
@@ -704,7 +523,12 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map a rich row to the 22-column club schema.
+    """Map a rich row to the 22-column CLUB_COLUMNS contract.
+
+    `category` / `sub_category` come straight from the shared classifier's
+    values stored in the rich row. `qualification` uses the shared
+    extract_qualification over the description — this feed has no structured
+    qualification field, and inferring one is forbidden.
 
     Only USD/INR annual or monthly pay can be represented by the club enums;
     other currencies and hourly rates keep their values in the rich CSV and
@@ -732,7 +556,8 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": CLUB_JOB_TYPE,
-        "category": _clean(r.get("role_family")),
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",
@@ -766,69 +591,112 @@ def write_club_csv(rich_df, run_date):
     return target, len(club_df)
 
 
+def review_entry(row):
+    """One needs_review.csv line from a rich row (dict or Series)."""
+    get = row.get
+    return {"job_id": get("job_id", ""), "title": get("title", ""),
+            "company": get("company", ""), "category": get("category", ""),
+            "sub_category": get("sub_category", ""),
+            "role_family": get("role_family", ""),
+            "matched_in": get("matched_in", ""),
+            "categories": get("categories", "")}
+
+
+def append_needs_review(entries, overwrite=False):
+    """Append flagged rows to needs_review.csv, deduped on job_id.
+
+    `overwrite=True` (used by --reclassify, which recomputes the whole store)
+    replaces the file with the freshly computed full set instead, so stale
+    flags from a previous taxonomy can't linger.
+    """
+    new_df = pd.DataFrame(entries, columns=NEEDS_REVIEW_COLUMNS, dtype=str)
+    if not overwrite:
+        try:
+            old = pd.read_csv(NEEDS_REVIEW_CSV, dtype=str,
+                              keep_default_na=False)
+            new_df = pd.concat([old, new_df], ignore_index=True)
+        except FileNotFoundError:
+            pass
+    new_df = new_df.reindex(columns=NEEDS_REVIEW_COLUMNS).fillna("")
+    new_df = new_df.drop_duplicates(subset="job_id", keep="last")
+    new_df.to_csv(NEEDS_REVIEW_CSV, index=False)
+    return len(new_df)
+
+
+def move_out_of_scope(dropped_df, target=OUT_OF_SCOPE_CSV):
+    """Append dropped rows to out-of-scope.csv, deduped on job_id.
+
+    Reversible by design: rows are moved, never discarded. Columns are the
+    union of whatever the file already has and the current rich schema, so
+    older vintages of the file keep their extra columns.
+    """
+    try:
+        old = pd.read_csv(target, dtype=str, keep_default_na=False)
+        combined = pd.concat([old, dropped_df], ignore_index=True)
+    except FileNotFoundError:
+        combined = dropped_df
+    combined = combined.fillna("").drop_duplicates(subset="job_id",
+                                                   keep="last")
+    combined.to_csv(target, index=False)
+    return len(combined)
+
+
 def reclassify(args):
-    """Re-apply the role-family gate and category classifier to the stored CSV.
+    """Re-run classify_job over the stored CSV and rewrite the outputs.
 
-    Both are pure functions of the job title plus the stored `categories`
-    slugs, so re-scoping does not require re-crawling. Makes no network
-    requests and never re-dates a row.
+    Classification is a pure function of the stored title + `categories`
+    slugs + description, so re-scoping never requires re-crawling. Makes no
+    network requests and never re-dates a row.
 
-    Rows that no longer match any in-scope role family are DROPPED — narrowing
-    the scope has to narrow the stored data too, or the club export keeps
-    emitting jobs the site no longer wants. Dropped rows are written to
-    `out-of-scope.csv` next to the CSV rather than discarded, so a scope change
-    is reversible and reviewable.
+    Rows the shared classifier rules out of scope are MOVED to
+    `out-of-scope.csv` (append + dedupe on job_id) rather than discarded, so
+    a taxonomy change is reversible and reviewable.
     """
     df = load_existing(args.output)
     if df is None or df.empty:
         sys.exit("Nothing to reclassify: {} not found or empty.".format(args.output))
+    df = df.fillna("")
 
     kept_rows, dropped_rows, review_log = [], [], []
     for _, row in df.iterrows():
-        title = row.get("title", "")
+        title = str(row.get("title", "") or "")
         slugs = [s for s in str(row.get("categories", "") or "").split("; ") if s]
-        family, signal, scope_review = match_role_family(title, slugs)
-        if not family:
+        verdict = classify_feed_job(title, slugs,
+                                    str(row.get("description", "") or ""))
+        if not verdict["in_scope"]:
             dropped_rows.append(row)
             continue
         row = row.copy()
-        row["role_family"] = family
-        row["match_signal"] = signal
+        for col in ("category", "sub_category", "role_family", "all_families",
+                    "family_scores", "family_confidence", "matched_in",
+                    "needs_review"):
+            row[col] = verdict[col]
         kept_rows.append(row)
-        if scope_review:
-            review_log.append({"job_id": row.get("job_id", ""),
-                               "title": title,
-                               "company": row.get("company", ""),
-                               "role_family": family,
-                               "match_signal": signal,
-                               "categories": row.get("categories", "")})
+        if verdict["needs_review"]:
+            review_log.append(review_entry(row))
 
-    kept = pd.DataFrame(kept_rows).reindex(columns=RICH_COLUMNS)
+    kept = pd.DataFrame(kept_rows).reindex(columns=RICH_COLUMNS).fillna("")
     kept.to_csv(args.output, index=False)
-    log.info("Kept %d of %d stored rows; dropped %d now out of scope",
+    log.info("Kept %d of %d stored rows; moved %d now out of scope",
              len(kept), len(df), len(dropped_rows))
-    log.info("role_family: %s", kept["role_family"].value_counts().to_dict())
+    log.info("category: %s", kept["category"].value_counts().to_dict())
+    log.info("sub_category: %s", kept["sub_category"].value_counts().to_dict())
 
     if dropped_rows:
-        out = Path(args.output).with_name("out-of-scope.csv")
-        pd.DataFrame(dropped_rows).reindex(
-            columns=RICH_COLUMNS).to_csv(out, index=False)
-        log.info("Wrote %s (%d dropped rows, kept for review)",
-                 out, len(dropped_rows))
+        total = move_out_of_scope(pd.DataFrame(dropped_rows))
+        log.info("Moved %d rows to %s (%d total, kept for review)",
+                 len(dropped_rows), OUT_OF_SCOPE_CSV, total)
 
     target, n = write_club_csv(kept, args.run_date)
     log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
 
-    pd.DataFrame(review_log,
-                 columns=["job_id", "title", "company", "role_family",
-                          "match_signal", "categories"]).to_csv(
-                              NEEDS_REVIEW_CSV, index=False)
-    log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, len(review_log))
+    n_review = append_needs_review(review_log, overwrite=True)
+    log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, n_review)
 
     print("\n===== Reclassify summary =====")
     print("Rows in stored CSV:   {:>6,}".format(len(df)))
     print("Kept (in scope):      {:>6,}".format(len(kept)))
-    print("Dropped (out of scope):{:>5,}".format(len(dropped_rows)))
+    print("Moved (out of scope): {:>6,}".format(len(dropped_rows)))
     print("Flagged needs_review: {:>6,}".format(len(review_log)))
 
 
@@ -916,9 +784,10 @@ def main(argv=None):
                     counters["excluded_old"] += 1
                     continue
 
-                family, signal, scope_review = match_role_family(
-                    job.get("title"), parse_listish(job.get("categories")))
-                if not family:
+                verdict = classify_feed_job(
+                    job.get("title"), parse_listish(job.get("categories")),
+                    strip_html(job.get("description") or ""))
+                if not verdict["in_scope"]:
                     counters["excluded_out_of_scope"] += 1
                     continue
 
@@ -933,19 +802,14 @@ def main(argv=None):
                     counters["duplicates"] += 1
                     continue
 
-                row = job_to_rich_row(job, signal, family, scope_review)
+                row = job_to_rich_row(job, verdict)
             except Exception as exc:  # never let one job crash the run
                 log.warning("Skipping malformed job at offset %d: %s", offset, exc)
                 continue
 
-            if row.pop("needs_review", False):
+            if verdict["needs_review"]:
                 counters["needs_review"] += 1
-                review_log.append({"job_id": row["job_id"],
-                                   "title": row["title"],
-                                   "company": row["company"],
-                                   "role_family": row["role_family"],
-                                   "match_signal": row["match_signal"],
-                                   "categories": row["categories"]})
+                review_log.append(review_entry(row))
             known_ids.add(row["job_id"])
             new_rows.append(row)
             counters["new"] += 1
@@ -987,8 +851,8 @@ def main(argv=None):
         log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
 
     if review_log:
-        pd.DataFrame(review_log).to_csv(NEEDS_REVIEW_CSV, index=False)
-        log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, len(review_log))
+        n_review = append_needs_review(review_log)
+        log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, n_review)
 
     print("\n===== Run summary =====")
     print("Jobs scanned:              {:>6,}".format(counters["scanned"]))

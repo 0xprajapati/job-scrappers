@@ -4,7 +4,28 @@ Scrapes job listings from [Manipal Hospitals careers](https://careers.manipalhos
 (`www.manipalhospitals.com/careers/` redirects there) — the hospital chain's
 own ATS, hosted on the Zwayam recruitment platform (company id 15590).
 Because it is a hospital chain's career site, every posting is
-healthcare-industry at the source.
+healthcare-industry at the source — but most are bedside/clinical roles, so
+the shared classifier drops them (see **Classification** below).
+
+## Classification
+
+Every candidate job goes through the shared two-level taxonomy in
+`scrappers/_shared/classification.py` — the scraper defines **no** category
+regexes of its own:
+
+* `category` is `Non Clinical` or `Public Health`, `sub_category` one of the
+  20 sub-categories; `role_family` plus the score trace (`all_families`,
+  `family_scores`, `family_confidence`, `matched_in`) land in the rich CSV.
+* Signals: the job title, the description (HTML stripped), and — as the
+  curated `skills` signal — `departmentName` joined with the listing's
+  `mandatorySkills`. Both stay in the rich CSV as raw source columns; they
+  never decide the category themselves.
+* Out-of-scope jobs are **dropped**, not exported, and counted as
+  `Excluded (out of scope)` in the run summary.
+* `needs_review = True` rows are kept and logged to `needs_review.csv`.
+* Jobs are classified **after** the detail fetch so department and
+  description count; with `--no-details` only the title + skill tags are
+  available.
 
 ## Data source
 
@@ -53,10 +74,8 @@ Public job page (used as `application_url`):
 * `jobType` is always `"J"` and `workMode` is null → `job_type` defaults
   to `full_time`.
 * `departmentName` (e.g. "ICU (Intensive care Unit)") also comes only
-  from the detail call; it refines classification (a "Consultant - HR"
-  is not a doctor) and clears `needs_review` for clinical-department
-  support roles. Corporate roles (Finance, IT, Supply Chain) are kept
-  and flagged `needs_review`, never dropped.
+  from the detail call, so `--no-details` runs classify on the title and
+  skill tags alone.
 * All locations are Indian cities (Delhi, Bangalore, Mysuru, Pune, …);
   country is fixed to India.
 
@@ -75,8 +94,11 @@ python test_filters.py            # unit tests (no network)
 * `manipalhospitals_jobs.csv` — rich cumulative store (dedup key: numeric
   Zwayam job id)
 * `../../jobs_csv/<DD-MM-YYYY>/manipalhospitals.csv` — HealthCareers.club
-  22-column schema
-* `needs_review.csv` — titles with no healthcare signal (log only)
+  22-column schema (`CLUB_COLUMNS` imported from
+  `_shared/classification.py`; `is_active`/`expires_at` are retired)
+* `needs_review.csv` — in-scope rows the classifier flagged (log only)
+* `out-of-scope.csv` — rows the classifier dropped during the one-off
+  stored-data reclassification (reversible; nothing is silently discarded)
 
 Time window per the master spec: first run keeps the last 30 days; later
 runs keep jobs newer than the stored watermark minus 2 days of overlap.

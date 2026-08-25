@@ -44,10 +44,16 @@ Quirks
 * Kuwait's healthcare listing is tiny (1 live job on 2026-07-27); the same
   scraper serves any country slug via `--country` (uae, saudi-arabia, qatar…).
 
-Healthcare filter: the listing is already industry-filtered, so the classifier
-only maps a job onto the club category enum. Titles with no clinical or
-healthcare signal (GulfTalent lists commercial/admin roles at pharma
-companies) are KEPT and flagged `needs_review` (master spec §2).
+Scope filter: the listing is industry-filtered at the source, but that facet is
+crawl-side scoping only — the final keep/drop and labeling decision belongs to
+the shared two-level classifier (`_shared/classification.classify_job`). Every
+candidate is scored across the eleven role families; out-of-scope jobs are
+dropped (counted as `excluded_out_of_scope`), and in-scope jobs get `category`
+("Non Clinical" | "Public Health") + `sub_category`. GulfTalent's own
+"Job Function" grid value is passed as the `skills` signal and stays in the
+rich CSV as a raw source column. In-scope jobs whose title looks like a
+different profession are kept AND flagged `needs_review` (also appended to
+needs_review.csv).
 
 Time window: the listing only holds live postings, so the first run keeps ALL
 of them (`INITIAL_WINDOW_DAYS = None`); later runs use the master-spec
@@ -61,7 +67,8 @@ Outputs
 -------
 * gulftalent_jobs.csv                          — rich cumulative store
                                                  (dedup key: numeric job id)
-* ../../jobs_csv/<DD-MM-YYYY>/gulftalent.csv   — HealthCareers.club 22-col schema
+* ../../jobs_csv/<DD-MM-YYYY>/gulftalent.csv   — HealthCareers.club schema
+                                                 (CLUB_COLUMNS, 22 columns)
 * needs_review.csv                             — titles flagged for review
 
 Run `python scraper.py --help` for options.
@@ -71,6 +78,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -80,6 +88,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -140,17 +152,10 @@ RICH_COLUMNS = [
     "job_type", "job_type_original", "job_function", "site_industry",
     "nationality", "gender", "arabic_fluency", "easy_apply",
     "experience_raw", "experience_min_years", "experience_max_years",
-    "category", "company_type", "needs_review", "posted_date", "expires_at",
+    "qualification", "category", "sub_category", "role_family",
+    "all_families", "family_scores", "family_confidence", "matched_in",
+    "company_type", "needs_review", "posted_date", "expires_at",
     "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("gulftalent_scraper")
@@ -462,50 +467,34 @@ def parse_experience(description):
 
 # ---- classification ---------------------------------------------------------
 
-_NURSE_RE = re.compile(r"nurs|midwif|\bgnm\b|\banm\b", re.IGNORECASE)
-_PHARMACIST_RE = re.compile(r"pharmacist|\bpharmacy\b|\bpharm ?d\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"doctor|physician|surgeon|\bmbbs\b|dentist|medical officer|\brmo\b|"
-    r"general practitioner|\bgp\b|[a-z]+ologist|intensivist|hospitalist|"
-    r"an(a)?esthetist|obstetrician|p(a?)ediatrician|psychiatrist|veterinar|"
-    r"medical director|medical superintendent|medical affairs|"
-    r"medical science liaison|\bmsl\b|consultant\s+(?:physician|surgeon)",
-    re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-_HEALTHCARE_SIGNAL_RE = re.compile(
-    r"medical|pharma|health|nurs|doctor|clinic|hospital|\blab\b|laborator|"
-    r"diagnost|patient|dental|surgi|therap|physio|radiol|patholog|"
-    r"life ?science|biotech|\bcro\b|clinical|vaccin|wellness|med.?tech|"
-    r"device|dermat|optic|care\b", re.IGNORECASE)
+    GulfTalent has no keyword search — its only server-side filter is the
+    industry listing ("Healthcare, Pharmaceuticals & Medical Services"), which
+    is crawl-side scoping only — so the keep/drop and labeling decision is
+    `classify_job`'s alone. The site's own "Job Function" grid value is the
+    curated `skills` signal; it stays in the rich CSV as a raw source column
+    and never decides the category.
 
-
-def classify_category(title, job_function="", company="", description=""):
-    """Club enum doctors|nurses|pharmacists|non_clinical + needs_review flag.
-
-    The listing is industry-filtered, so the site industry ("Healthcare,
-    Pharmaceuticals & Medical Services") carries no signal and is deliberately
-    left out of the review haystack: a commercial role at a pharma company
-    would otherwise never be flagged. Nothing is dropped either way.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
     """
-    title = title or ""
-    if _NURSE_RE.search(title):
-        category = "nurses"
-    elif _PHARMACIST_RE.search(title):
-        category = "pharmacists"
-    elif _DOCTOR_RE.search(title):
-        category = "doctors"
-    else:
-        # Everything else — including the site's broad "Healthcare" job
-        # function (technicians, receptionists, allied staff) — is non_clinical.
-        category = "non_clinical"
-    haystack = " ".join(filter(None, [title, job_function, company,
-                                      (description or "")[:400]]))
-    needs_review = (category == "non_clinical"
-                    and clean_text(job_function).lower() != "healthcare"
-                    and not _HEALTHCARE_SIGNAL_RE.search(haystack))
-    return category, needs_review
+    verdict = classify_job(row.get("title", ""),
+                           row.get("job_function", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
+# company_type (hospital|pharma) is a separate club field, NOT a category —
+# it survives the taxonomy migration untouched.
 _PHARMA_RE = re.compile(
     r"pharma|therapeut|laborator|\bcro\b|clinical research|biotech|"
     r"life ?science|med.?tech|medical device|vaccin|diagnost|\bapi\b",
@@ -684,8 +673,6 @@ def build_row(row, posting=None, attributes=None, about="", country_slug=""):
 
     description = strip_html(posting.get("description") or "")
     experience_raw, experience_min, experience_max = parse_experience(description)
-    category, needs_review = classify_category(title, job_function, company,
-                                               description)
 
     posted_date = clean_text(posting.get("datePosted"))[:10]
     if not posted_date:
@@ -722,9 +709,19 @@ def build_row(row, posting=None, attributes=None, about="", country_slug=""):
         "experience_raw": experience_raw,
         "experience_min_years": experience_min,
         "experience_max_years": experience_max,
-        "category": category,
+        # GulfTalent has no structured qualification field — grounded
+        # extraction from the description only, never inferred.
+        "qualification": extract_qualification(description),
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": classify_company_type(company, title, job_function),
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": posted_date,
         "expires_at": clean_text(posting.get("validThrough"))[:10],
         "description": description[:DESCRIPTION_MAX_CHARS],
@@ -777,17 +774,20 @@ def rich_row_to_club_row(r):
         "title": _blank(r.get("title")),
         "description": _blank(r.get("description")),
         "job_type": _blank(r.get("job_type")) or "full_time",
-        "category": _blank(r.get("category")) or "non_clinical",
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("experience_min_years")),
         "max_experience": _int_str(r.get("experience_max_years")),
+        # stored grounded extraction first, else re-extract from the
+        # description — never inferred
+        "qualification": (_blank(r.get("qualification"))
+                          or extract_qualification(_blank(r.get("description")))),
         "min_salary": min_salary if has_salary else "",
         "max_salary": _int_str(r.get("salary_max_monthly")) if has_salary else "",
         "salary_period": "per_month" if has_salary else "",
         "salary_currency": currency if has_salary else "",
-        "is_active": "true",
-        "expires_at": _blank(r.get("expires_at")),
     }
 
 
@@ -814,8 +814,9 @@ def write_club_csv(rich_df, run_date):
 
 def scrape(session, country, cutoff, known_ids, max_pages=None, limit=None):
     """Walk the listing, fetch details for unseen jobs, return (rows, counters)."""
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows = []
     page, empty_pages, last_page = 1, 0, None
 
@@ -865,6 +866,9 @@ def scrape(session, country, cutoff, known_ids, max_pages=None, limit=None):
                 continue
             if not within_window(built["posted_date"], cutoff):
                 counters["excluded_old"] += 1
+                continue
+            if not apply_classification(built):
+                counters["excluded_out_of_scope"] += 1
                 continue
             if built["needs_review"]:
                 counters["needs_review"] += 1
@@ -966,6 +970,8 @@ def main(argv=None):
 
     print("\n===== Run summary ({}) =====".format(args.country))
     print("Jobs scanned:          {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(
+        counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(
         cutoff or "n/a", counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))

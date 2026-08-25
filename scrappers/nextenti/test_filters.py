@@ -8,15 +8,17 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
+    CLUB_COLUMNS,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
+    apply_classification,
     build_job_url,
-    classify_category,
     classify_company_type,
     compute_cutoff,
     map_job_type,
     parse_range,
     parse_salary,
+    rich_row_to_club_row,
     salary_period,
     slugify,
 )
@@ -45,18 +47,59 @@ def test_salary_period_and_job_type():
     assert map_job_type(None) == "full_time"
 
 
-def test_classify_category():
-    # profession-driven (the primary signal)
-    assert classify_category("Doctor", "Anything") == ("doctors", False)
-    assert classify_category("Nurse", "Staff X") == ("nurses", False)
-    assert classify_category("Pharmacist", "X") == ("pharmacists", False)
-    assert classify_category("Physiotherapy", "Physiotherapist") == ("non_clinical", False)
-    assert classify_category("Human Resources", "Assistant Manager") == ("non_clinical", False)
-    # generic profession -> fall back to the title
-    assert classify_category("Others", "Consultant Cardiologist") == ("doctors", False)
-    assert classify_category("Others", "Staff Nurse ICU") == ("nurses", False)
-    # truly unknown -> non_clinical but flagged for review
-    assert classify_category("", "Zonal Head") == ("non_clinical", True)
+def _row(title, profession="", description=""):
+    return {"title": title, "profession": profession,
+            "description": description, "category": "", "sub_category": "",
+            "role_family": "", "all_families": "", "family_scores": "",
+            "family_confidence": "", "matched_in": "", "needs_review": ""}
+
+
+def test_shared_classifier_wiring_in_scope():
+    # the wiring only — the engine is covered by _shared/test_classification
+    row = _row("Clinical Research Coordinator", "Others")
+    verdict = apply_classification(row)
+    assert verdict["in_scope"] is True
+    assert row["category"] == "Non Clinical"
+    assert row["sub_category"] == "Clinical Research"
+    assert row["role_family"] == "Clinical Research"
+    assert row["needs_review"] in ("true", "false")
+
+
+def test_shared_classifier_wiring_out_of_scope():
+    # a clinical title drops even when `profession` says Doctor: the raw
+    # profession field is only a skills signal, it no longer decides anything
+    for title, profession in (("Consultant Cardiologist", "Doctor"),
+                              ("Staff Nurse ICU", "Nurse"),
+                              ("Zonal Head", "")):
+        verdict = apply_classification(_row(title, profession))
+        assert verdict["in_scope"] is False, title
+        assert verdict["category"] == ""
+
+
+def test_profession_travels_as_skills_signal():
+    # profession corroborates a weak title through the skills channel
+    weak = apply_classification(_row("Senior Associate"))
+    assert weak["in_scope"] is False
+    helped = apply_classification(
+        _row("Senior Associate", "Pharmacovigilance",
+             "ICSR case processing and signal detection."))
+    assert helped["in_scope"] is True
+    assert helped["role_family"] == "Pharmacovigilance"
+
+
+def test_club_row_matches_shared_contract():
+    row = _row("Clinical Research Coordinator", "Others",
+               "Requires B.Pharm and GCP knowledge.")
+    apply_classification(row)
+    club = rich_row_to_club_row(dict(row, country="India", city="Pune",
+                                     salary_min=15000, salary_max=30000,
+                                     salary_period="per_month"))
+    assert sorted(club) == sorted(CLUB_COLUMNS)
+    assert len(CLUB_COLUMNS) == 22
+    assert "is_active" not in club and "expires_at" not in club
+    assert club["category"] == "Non Clinical"
+    assert club["sub_category"] == "Clinical Research"
+    assert "B.Pharm" in club["qualification"]
 
 
 def test_company_type():

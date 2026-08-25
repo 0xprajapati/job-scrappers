@@ -10,12 +10,15 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
-    classify_category,
+    apply_classification,
+    classification_skills,
     compute_cutoff,
     epoch_ms_to_date,
     parse_experience,
     parse_job_salary,
+    rich_row_to_club_row,
     strip_html,
+    CLUB_COLUMNS,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
 )
@@ -60,55 +63,59 @@ class TestSalaryParser(unittest.TestCase):
                          (324000, 360000))
 
 
-class TestClassifier(unittest.TestCase):
-    """Titles from the live index (2026-07)."""
+class TestClassificationWiring(unittest.TestCase):
+    """The scraper delegates every keep/drop + label decision to
+    _shared/classification.py; these tests check the wiring only (the engine
+    itself is covered by _shared/test_classification.py). Titles are from
+    the live index (2026-07)."""
 
-    def test_nurse_titles(self):
-        for title in ("Senior Nurse - ICU", "Nurse - Emergency-AER",
-                      "Staff Nurse", "Nursing Superintendent"):
-            category, needs_review = classify_category(title)
-            self.assertEqual(category, "nurses", title)
-            self.assertFalse(needs_review, title)
+    @staticmethod
+    def _row(title, department="", skills="", description=""):
+        return {"title": title, "department": department, "skills": skills,
+                "description": description}
 
-    def test_nurse_by_department(self):
-        category, _ = classify_category("Sister In-charge",
-                                        "Nursing Administration")
-        self.assertEqual(category, "nurses")
+    def test_skills_signal_joins_department_and_tags(self):
+        row = self._row("Clinical Research Associate", "Clinical Research",
+                        "GCP; CRF")
+        self.assertEqual(classification_skills(row),
+                         "Clinical Research GCP; CRF")
 
-    def test_pharmacist(self):
-        category, _ = classify_category("Clinical Pharmacist")
-        self.assertEqual(category, "pharmacists")
-        category, _ = classify_category("Pharmacy Incharge", "Pharmacy")
-        self.assertEqual(category, "pharmacists")
+    def test_in_scope_role_is_labelled(self):
+        row = self._row("Clinical Research Associate", "Clinical Research")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
 
-    def test_doctor_titles(self):
-        for title in ("Consultant - Radiology", "Medical Officer",
-                      "Anaesthetist", "Intensivist - Critical Care"):
-            category, _ = classify_category(title)
-            self.assertEqual(category, "doctors", title)
+    def test_public_health_role_is_labelled(self):
+        row = self._row("Infection Control Nurse", "Infection Control")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Infection Prevention & Control")
 
-    def test_hr_consultant_is_not_a_doctor(self):
-        category, _ = classify_category("Consultant - HR", "Human Resources")
-        self.assertEqual(category, "non_clinical")
+    def test_bedside_nursing_is_dropped(self):
+        row = self._row("Senior Nurse - ICU", "ICU (Intensive care Unit)")
+        self.assertFalse(apply_classification(row))
+        self.assertEqual(row["category"], "")
 
-    def test_ot_technician_clinical_support(self):
-        # "Kanakapura Road - Operation Theatre Technician" (live listing)
-        category, needs_review = classify_category(
-            "Operation Theatre Technician", "OT")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(needs_review)
+    def test_corporate_and_paramedical_titles_are_dropped(self):
+        for title, dept in (("Consultant - HR", "Human Resources"),
+                            ("Finance Head - Pune", "Unit Finance Controlling"),
+                            ("Operation Theatre Technician", "OT")):
+            self.assertFalse(apply_classification(self._row(title, dept)),
+                             title)
 
-    def test_corporate_title_flagged(self):
-        # "Finance Head - Pune" (live listing): kept, but flagged
-        category, needs_review = classify_category(
-            "Finance Head - Pune", "Unit Finance Controlling")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)
-
-    def test_clinical_department_clears_flag(self):
-        _, needs_review = classify_category(
-            "Executive", "ICU (Intensive care Unit)")
-        self.assertFalse(needs_review)
+    def test_club_row_uses_shared_columns(self):
+        row = self._row("Clinical Research Associate", "Clinical Research",
+                        description="MBBS preferred; coordinates trials.")
+        apply_classification(row)
+        club = rich_row_to_club_row(row)
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        self.assertIn("MBBS", club["qualification"])
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
 
 
 class TestExperienceParser(unittest.TestCase):

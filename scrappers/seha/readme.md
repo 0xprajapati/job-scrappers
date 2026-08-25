@@ -29,19 +29,22 @@ which exposes the standard public, token-free Oracle CE REST API:
 
 - **No salary data** anywhere on the portal → `salary_raw = "Not Disclosed"`,
   numeric/club salary fields blank (never invented, master spec §3).
+- **Classification is the shared two-level taxonomy**
+  (`scrappers/_shared/classification.py`): `category` is `Non Clinical` |
+  `Public Health`, plus a `sub_category` (Clinical Research, Medical Coding,
+  Regulatory Affairs, Infection Prevention & Control, Epidemiology, …). SEHA
+  runs Abu Dhabi's public hospitals, so the large majority of requisitions
+  (physicians, nursing, allied health, generic head-office roles) are **out of
+  scope and dropped**, counted as `excluded_out_of_scope` in the run summary.
+  In-scope rows whose title looks like another profession are kept and flagged
+  `needs_review` → `needs_review.csv`.
 - **Oracle's CATEGORIES facet is populated on only ~40% of requisitions**
-  (Medical / Nursing / Allied Health / Administration), so the title classifier
-  carries most of the load. Order of decision: facet → pharmacy/nursing title →
-  ambiguous → allied/corporate → clinical keywords → flag. `Allied Health` and
-  `Administration` both map to the club's `non_clinical` (no closer bucket).
-- **Corporate titles borrow clinical words** — SEHA heads head-office roles
-  "Specialist - Talent & Performance", "Assistant Manager - Business
-  Development". Allied/corporate keywords are therefore tested *before*
-  `Consultant`/`Specialist`/`Physician`, so those don't land in `doctors`.
-- **Behavioural-health clinicians have no club bucket** (Clinical/Child
-  Psychologist, Genetic Counsellor, Neuro Physiologist, Health Care Assistant).
-  They are kept as `non_clinical` **and** flagged `needs_review` → written to
-  `needs_review.csv` for a human to place — never silently dropped (§2).
+  (Medical / Nursing / Allied Health / Administration) and no longer decides
+  anything. It is kept verbatim in the rich CSV as `category_original` and,
+  together with `job_function`, is passed to the classifier as its `skills`
+  signal only.
+- **Qualification**: Oracle's structured `StudyLevel` when present, else a
+  grounded extraction from the description — never inferred.
 - **A trailing parenthetical is ambiguous**: it is either the facility
   (`Sonographer (Tawam Fertility Center)`, `Consultant Dermatology (STMC)`) or a
   role qualifier (`Embryologist (IVF)`, `Consultant Neurology (Arabic Speaker)`).
@@ -82,7 +85,9 @@ Useful flags:
 - `--run-date DD-MM-YYYY` — target `jobs_csv/` folder (default: today).
 - `--verbose` — debug logging.
 
-Unit tests (parsers, classifier, cutoff logic — all examples taken from real
+Unit tests — 34 covering the parsers, the classification wiring (in-scope role
+gets the right category/sub_category; clinical titles are dropped; the ATS
+facet can never admit a job) and the cutoff logic; all examples taken from real
 SEHA listings):
 
 ```bash
@@ -93,12 +98,17 @@ SEHA listings):
 
 - `seha_jobs.csv` — rich cumulative store, deduplicated on `job_id`. Running
   twice in a row adds 0 rows and leaves the file byte-identical.
-- `../../jobs_csv/<DD-MM-YYYY>/seha.csv` — HealthCareers.club 22-column schema.
-- `needs_review.csv` — titles the classifier could not confidently place.
+- `../../jobs_csv/<DD-MM-YYYY>/seha.csv` — HealthCareers.club 22-column schema
+  (`CLUB_COLUMNS` imported from `_shared/classification.py`; `is_active` /
+  `expires_at` are retired, `sub_category` and `qualification` are in).
+- `needs_review.csv` — in-scope rows whose title looks like another profession.
+- `out-of-scope.csv` — rows the shared classifier rejected during the one-off
+  stored-data reclassification (reversible; never silently discarded).
 
-## First run (2026-07-27)
+## Coverage note
 
-131 open requisitions, all captured: 72 `doctors`, 20 `nurses`,
-2 `pharmacists`, 37 `non_clinical` (4 of them flagged `needs_review`).
-Cities: Abu Dhabi 94, Al Ain 33, Al Dhafra 4. Descriptions on 126/131
-(mean ~3.7k chars), experience on 89/131, education on 50/131.
+The first crawl (2026-07-27) captured all 131 then-open requisitions. Under the
+two-level taxonomy almost all of them are clinical and therefore out of scope:
+the stored rich CSV now keeps only the handful of Non Clinical / Public Health
+roles, with the rest preserved in `out-of-scope.csv`. Cities seen: Abu Dhabi,
+Al Ain, Al Dhafra.

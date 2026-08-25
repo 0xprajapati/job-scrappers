@@ -66,28 +66,29 @@ https://careers.phcc.gov.qa/OA_HTML/OA.jsp?OAFunc=IRC_VIS_VAC_DISPLAY&p_svid=<n>
 | One vacancy lists location as bare `QA` | Falls back to `Doha` |
 | `Minimum 1 year of internship/training` sits next to `Minimum 3 years of experience` | Training/residency/probation spans are discarded; only the experience bar is recorded |
 | No salary anywhere on the portal | `salary_raw = "Not Disclosed"`, numeric salary fields blank |
-| No closing date on the portal | `expires_at` blank |
+| No closing date on the portal | no expiry data exported (the club schema retired `expires_at`) |
 
-## Healthcare filter & categories
+## Classification
 
-Everything PHCC posts is healthcare-sector employment, so nothing is dropped.
-Classification uses the portal's own **Job Category** facet (a source-side
-field, which master spec §2 prefers over title guessing); it is populated on
-every row. The title only *overrides* the facet where it is unmistakable — a
-"Consultant Radiologist" filed under Radiology is a doctor, not a technologist.
+Classification is the shared two-level taxonomy
+(`scrappers/_shared/classification.py`): `category` is
+`Non Clinical` | `Public Health`, plus a `sub_category` from the 20-name list.
+`classify_job(title, skills, description)` makes the only keep/drop decision;
+this scraper defines no category regexes or keyword lists of its own.
 
-Bare seniority words (`Consultant`, `Specialist`) are deliberately **not**
-doctor keywords, because PHCC titles corporate roles that way too.
+Everything PHCC posts is healthcare-sector employment, but the great majority
+of it is bedside primary care, which is **out of scope** — those rows are
+dropped and counted as `excluded_out_of_scope` in the run summary.
 
-An unrecognised facet (PHCC adds a new Job Category) falls back to the title
-classifier and flags the row `needs_review`. Nothing is ever silently dropped.
+The portal's own **Job Category** (`ProfessionalArea`) facet no longer decides
+anything. It is passed to the classifier as the curated `skills` signal and
+kept verbatim in the rich CSV as `category_original`, a raw source column.
+The job requirements are folded into the `description` signal, so rows are
+classified **after** the detail fetch.
 
-| Portal Job Category | Club category |
-|---|---|
-| Physicians, Dentist | `doctors` |
-| Nursing | `nurses` |
-| Pharmacy | `pharmacists` |
-| Lab, Radiology, Dental Health, Other Allied Health Services, HIM, Administration & Support Services, Corporate Communications, Engineering, Executive Leadership, Governance, ICT, Supervisory, Technical Administration | `non_clinical` |
+`needs_review` is the union of two things: the classifier's own flag (in scope
+but the title reads like another profession), and the HR-code title unpacking
+flag (a reconstructed title a human should confirm).
 
 ## Time window
 
@@ -121,13 +122,29 @@ python test_filters.py
 
 ## Outputs
 
-* `phcc_jobs.csv` — rich cumulative store, deduped on `job_id` (the `IRC…`
-  requisition code). Re-running adds 0 rows.
+* `phcc_jobs.csv` — rich cumulative store of the **in-scope** vacancies,
+  deduped on `job_id` (the `IRC…` requisition code). Re-running adds 0 rows.
+* `out-of-scope.csv` — vacancies `classify_job` rejected, archived verbatim
+  (same columns) rather than discarded, so any admission decision is
+  reversible.
 * `needs_review.csv` — rows a human should confirm.
 * `../../jobs_csv/<DD-MM-YYYY>/phcc.csv` — HealthCareers.club 22-column schema.
 
-## First run (27-07-2026)
+## Run history
 
-15 open vacancies: 7 `doctors`, 5 `non_clinical`, 2 `nurses`, 1 `pharmacists`.
-1 flagged `needs_review` (IRC40694, the HR-code title). Posted dates span
-2025-12-17 → 2026-07-23. All in Doha, all `full_time`, all salary undisclosed.
+* **First run (27-07-2026)** — 15 open vacancies captured (7 physician, 2
+  nursing, 1 pharmacy, 5 allied/technical). 1 flagged `needs_review`
+  (IRC40694, the HR-code title). Posted dates span 2025-12-17 → 2026-07-23.
+  All in Doha, all `full_time`, all salary undisclosed.
+* **Taxonomy migration (25-08-2026)** — the stored 15 rows were re-run through
+  the shared classifier: **0 kept, 15 moved** to `out-of-scope.csv`. PHCC's
+  open board at that point was entirely bedside primary care plus lab/radiology
+  technologists. The two `Clinical Coding Officer` rows were the closest calls —
+  see the note below.
+
+> **Known classifier gap.** `Clinical Coding Officer` (PHCC's wording for a
+> medical coder, and the standard Commonwealth/Gulf title) is *not* matched by
+> `_shared/role_families.py`, whose Medical Coding pattern covers
+> `medical cod*`, `\bcoder\b` and `coding (specialist|auditor|analyst|manager)`
+> but not `coding officer` / `clinical coding`. Both PHCC rows were dropped as
+> out of scope for that reason. Fixing it is a deliberate `_shared` change.

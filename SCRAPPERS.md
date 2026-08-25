@@ -19,31 +19,43 @@
 | 15 | Indeed | Remote | India |
 | 16 | Internshala | — | India |
 | 17 | Jobberman | — | Others |
-| 18 | Jobslly | — | India |
-| 19 | KFSHRC | — | Others |
-| 20 | Manipal Hospitals | — | India |
-| 21 | Max Healthcare | — | India |
-| 22 | Medcare | — | Others |
-| 23 | Michael Page | — | India |
-| 24 | MOH | — | Others |
-| 25 | Narayana Health | — | India |
-| 26 | NaukriGulf | — | Others |
-| 27 | Nextenti | — | India |
-| 28 | NHM | — | India |
-| 29 | Pharma Recruiter | — | India |
-| 30 | PharmaBharat | — | India |
-| 31 | PHCC | — | Others |
-| 32 | Profco | — | Others |
-| 33 | Public Health Career | — | India |
-| 34 | PureHealth | — | Others |
-| 35 | Reed | — | Others |
-| 36 | SEHA | — | Others |
-| 37 | Shine | — | India |
-| 38 | Sidra Medicine | — | Others |
-| 39 | SimplyHired | — | India |
-| 40 | Swaasa | — | India |
-| 41 | Vaidyog | — | India |
-| 42 | WorkIndia | — | India |
-| 43 | Zulekha Hospitals | — | Others |
+| 18 | KFSHRC | — | Others |
+| 19 | Manipal Hospitals | — | India |
+| 20 | Max Healthcare | — | India |
+| 21 | Medcare | — | Others |
+| 22 | Michael Page | — | India |
+| 23 | MOH | — | Others |
+| 24 | Narayana Health | — | India |
+| 25 | NaukriGulf | — | Others |
+| 26 | Nextenti | — | India |
+| 27 | NHM | — | India |
+| 28 | Pharma Recruiter | — | India |
+| 29 | PharmaBharat | — | India |
+| 30 | PHCC | — | Others |
+| 31 | Profco | — | Others |
+| 32 | Public Health Career | — | India |
+| 33 | PureHealth | — | Others |
+| 34 | Reed | — | Others |
+| 35 | SEHA | — | Others |
+| 36 | Shine | — | India |
+| 37 | Sidra Medicine | — | Others |
+| 38 | SimplyHired | — | India |
+| 39 | Swaasa | — | India |
+| 40 | Vaidyog | — | India |
+| 41 | WorkIndia | — | India |
+| 42 | Zulekha Hospitals | — | Others |
+| 43 | Foundit (ex-Monster India) | — | India |
+| 44 | DoctHub (roles fork) | — | India |
+| 45 | GulfTalent (roles fork) | — | Others |
+| 46 | Naukri | — | India |
+| 47 | Naukri (roles fork) | — | India |
+| 48 | Pharma Recruiter (roles fork) | — | India |
+| 49 | Shine (roles fork) | — | India |
 
-**Total:** 43 scrapers (23 India · 20 Others · 2 Remote-focused)
+**Total:** 49 scraper folders under `scrappers/` (28 India · 21 Others · 2 of
+them Remote-focused), excluding `scrappers/_shared/`, which is the shared
+classification library, not a scraper.
+
+A `*_roles` folder is a re-scoped fork of its parent site's scraper (different
+query/facet coverage); both are counted because both are runnable scrapers with
+their own stores and outputs.

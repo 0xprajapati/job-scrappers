@@ -13,10 +13,10 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
-    INITIAL_WINDOW_DAYS, WATERMARK_GRACE_DAYS, apply_detail,
-    classify_category, clean_text, compute_cutoff, country_meta,
-    family_fallback, job_to_rich_row, parse_job_type, parse_location,
-    rich_row_to_club_row, strip_html,
+    CLUB_COLUMNS, INITIAL_WINDOW_DAYS, WATERMARK_GRACE_DAYS,
+    apply_classification, apply_detail, clean_text, compute_cutoff,
+    country_meta, family_name_for, job_to_rich_row, parse_job_type,
+    parse_location, rich_row_to_club_row, strip_html,
 )
 
 # Trimmed real payloads from the live API (2026-07-24).
@@ -50,65 +50,62 @@ DETAIL_JOB = {
 }
 
 
-class TestClassifier(unittest.TestCase):
-    def test_titles_map_to_club_categories(self):
-        cases = [
-            # (title, family_name, family_fallback) -> category
-            ("NICU Nurse", "Nursing", "nurses", "nurses"),
-            ("Staff Nurse - ICU", "", "", "nurses"),
-            ("Clinical Pharmacist", "Medical Support", "non_clinical",
-             "pharmacists"),
-            ("Attending Consultant Radiology", "Clinicians", "doctors",
-             "doctors"),
-            ("Senior Resident - Cardiology", "Clinicians", "doctors",
-             "doctors"),
-            ("OT Technician", "Technicians", "non_clinical", "non_clinical"),
-            ("Executive - Finance", "Other Functions", "non_clinical",
-             "non_clinical"),
-            # Allied health stays non_clinical even in the Clinicians family
-            ("Physiotherapist", "Clinicians", "doctors", "non_clinical"),
-            ("Audiologist", "Clinicians", "doctors", "non_clinical"),
-            # Title-only (no family info in the list payload)
-            ("Attending Consultant Non Invasive Cardiology", "", "",
-             "doctors"),
-        ]
-        for title, family, fallback, expected in cases:
-            category, _ = classify_category(title, family, fallback)
-            self.assertEqual(category, expected, title)
+class TestSharedClassifierWiring(unittest.TestCase):
+    """apply_classification() wires the shared two-level classifier; the
+    engine itself is covered by _shared/test_classification.py."""
 
-    def test_consultant_is_doctor_only_in_clinicians_family(self):
-        self.assertEqual(
-            classify_category("Consultant - Anaesthesia", "Clinicians",
-                              "doctors")[0], "doctors")
-        self.assertEqual(
-            classify_category("Consultant - Taxation", "Other Functions",
-                              "non_clinical")[0], "non_clinical")
+    @staticmethod
+    def row(title, job_family="", category_source="", description=""):
+        return {"title": title, "job_family": job_family,
+                "category_source": category_source,
+                "description": description}
 
-    def test_needs_review_only_for_signal_free_corporate_titles(self):
-        # Generic corporate title in Other Functions -> flagged, never dropped
-        _, review = classify_category("Executive - Procurement",
-                                      "Other Functions", "non_clinical")
-        self.assertTrue(review)
-        # Same family but with a healthcare word -> not flagged
-        _, review = classify_category("Medical Records Officer",
-                                      "Other Functions", "non_clinical")
-        self.assertFalse(review)
-        # Known clinical family -> never flagged
-        _, review = classify_category("OT Technician", "Technicians",
-                                      "non_clinical")
-        self.assertFalse(review)
+    def test_in_scope_role_gets_taxonomy_labels(self):
+        row = self.row("Clinical Research Coordinator", "Other Functions",
+                       "OTHERS",
+                       "Run clinical trials to ICH-GCP; ethics submissions "
+                       "and CRF completion.")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+        self.assertTrue(row["matched_in"])
 
-    def test_family_fallback_from_both_identifiers(self):
-        self.assertEqual(family_fallback("300000787442029"),
-                         ("Nursing", "nurses"))
-        self.assertEqual(family_fallback(300000787441924),
-                         ("Clinicians", "doctors"))
-        self.assertEqual(family_fallback(category_code="TECHINICIANS"),
-                         ("Technicians", "non_clinical"))
+    def test_public_health_role_in_scope(self):
+        row = self.row("Infection Prevention and Control Officer",
+                       "Other Functions", "",
+                       "Hospital infection surveillance, hand hygiene audits, "
+                       "outbreak investigation.")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+
+    def test_clinician_requisitions_are_dropped(self):
+        # The chain's bread-and-butter postings are bedside/clinical work,
+        # which the shared taxonomy puts out of scope.
+        for title, family in [("NICU Nurse", "Nursing"),
+                              ("Attending Consultant Radiology", "Clinicians"),
+                              ("Senior Resident - Cardiology", "Clinicians"),
+                              ("OT Technician", "Technicians"),
+                              ("Physiotherapist", "Clinicians")]:
+            row = self.row(title, family)
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "", title)
+
+    def test_job_family_never_decides_the_category(self):
+        # A finance title inside any ATS family stays out of scope; the
+        # Fortis family name is only a `skills` signal + rich-CSV column.
+        row = self.row("Executive - Finance", "Clinicians", "CLINICIAN")
+        self.assertFalse(apply_classification(row))
+
+    def test_family_name_is_source_data_only(self):
+        self.assertEqual(family_name_for("300000787442029"), "Nursing")
+        self.assertEqual(family_name_for(300000787441924), "Clinicians")
+        self.assertEqual(family_name_for(category_code="TECHINICIANS"),
+                         "Technicians")
         # Some requisitions only carry RequisitionType ("Clinicians")
-        self.assertEqual(family_fallback(category_code="Clinicians"),
-                         ("Clinicians", "doctors"))
-        self.assertEqual(family_fallback("999", "UNKNOWN"), ("", ""))
+        self.assertEqual(family_name_for(category_code="Clinicians"),
+                         "Clinicians")
+        self.assertEqual(family_name_for("999", "UNKNOWN"), "")
 
 
 class TestParsers(unittest.TestCase):
@@ -154,14 +151,15 @@ class TestRowBuilding(unittest.TestCase):
                          ("Mumbai", "Maharashtra"))
         self.assertTrue(row["job_url"].endswith("/sites/CX_1/job/11900"))
         self.assertEqual(row["company_type"], "hospital")
-        # List payload has no family info; the title alone decides.
-        self.assertEqual(row["category"], "doctors")
+        # The builder never labels: apply_classification() stamps the
+        # taxonomy after the detail fetch, so these start blank.
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["sub_category"], "")
 
     def test_apply_detail_refines_row(self):
         row = job_to_rich_row(LIST_JOB)
         apply_detail(row, DETAIL_JOB)
         self.assertEqual(row["job_family"], "Clinicians")
-        self.assertEqual(row["category"], "doctors")
         self.assertFalse(row["needs_review"])
         self.assertEqual(row["facility"], "IHL-Kalyan")
         # Facility address city overrides the vaguer PrimaryLocation
@@ -175,15 +173,23 @@ class TestRowBuilding(unittest.TestCase):
     def test_club_row_schema(self):
         row = job_to_rich_row(LIST_JOB)
         apply_detail(row, DETAIL_JOB)
+        row["title"] = "Clinical Research Coordinator"
+        row["description"] = ""
+        apply_classification(row)
         club = rich_row_to_club_row(row)
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
+        # is_active / expires_at are retired from the club contract.
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
         self.assertEqual(club["country_name"], "India")
         self.assertEqual(club["city_name"], "Kalyan")
         self.assertEqual(club["company_name"], "Fortis Healthcare")
         self.assertEqual(club["company_type"], "hospital")
-        self.assertEqual(club["category"], "doctors")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
         self.assertEqual(club["posted_at"], "2026-07-24")
-        self.assertEqual(club["expires_at"], "2026-07-31")
-        self.assertEqual(club["is_active"], "true")
+        # StudyLevel is the structured qualification field for this source.
+        self.assertEqual(club["qualification"], "Post Graduation")
         # Empty description falls back to the hiring facility
         self.assertEqual(club["description"], "Hiring facility: IHL-Kalyan")
 

@@ -6,8 +6,11 @@ site (Indeed family).
 
 Source listing URL (agreed filters):
 `https://www.simplyhired.co.in/search?q=healthcare&l=india&s=d&t=15`
-→ keyword **healthcare**, location **India**, **newest-first**, posted
-within the **last 15 days** (`t` accepts arbitrary day counts server-side).
+→ location **India**, **newest-first**, posted within the **last 15 days**
+(`t` accepts arbitrary day counts server-side). One search per keyword in
+`SEARCH_QUERIES` (broad `healthcare` plus the Non Clinical role families
+and, since 2026-08-25, terms covering all ten Public Health
+sub-categories).
 
 ## Data source
 

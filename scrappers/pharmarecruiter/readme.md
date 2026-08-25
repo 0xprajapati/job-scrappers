@@ -38,6 +38,32 @@ Every post embeds a labelled bullet list under a **Job Details** heading:
 The first value seen per label wins (the Job Details list precedes venue /
 eligibility lists in the body).
 
+## Classification
+
+Every candidate post goes through the one shared classifier,
+`scrappers/_shared/classification.py`:
+
+```python
+verdict = classify_job(title, site_categories, description)
+```
+
+- `title` — the post title; `skills` — the site's own category slugs
+  (`jobs; production-jobs; qc-jobs`, …); `description` — the HTML-stripped
+  body.
+- `in_scope == False` → the post is **dropped** and counted as
+  `excluded_out_of_scope` in the run summary. This site is pharma-industry
+  but mostly manufacturing / QC / QA / R&D, none of which is one of the
+  eleven in-scope role families, so a large share of posts is now dropped.
+- In-scope posts get `category` (`Non Clinical` | `Public Health`) and
+  `sub_category`, plus the audit trail (`role_family`, `all_families`,
+  `family_scores`, `family_confidence`, `matched_in`) in the rich CSV.
+- `needs_review == True` → the row is kept **and** appended to
+  `needs_review.csv`.
+
+The site's category slugs are a raw source column (`site_categories`) and a
+scoring signal only — they never decide the category. This scraper defines
+no category regexes or profession enums of its own.
+
 ## Quirks
 
 - One post often advertises a multi-role walk-in drive; the post title is
@@ -45,18 +71,23 @@ eligibility lists in the body).
 - Salary is almost never disclosed → `salary_raw = "Not Disclosed"`, numeric
   fields empty. When present, LPA / k / Indian-grouping amounts are parsed;
   no salary filtering ever (master spec).
-- Club `category`: the site is pharma-industry, so production / QC / QA /
-  R&D / regulatory titles are `non_clinical`; explicit pharmacist / doctor /
-  nurse titles map to their clinical buckets. `company_type` defaults to
-  `pharma` (hospital-keyword companies become `hospital`).
-- Posts with no parseable company, or news-shaped titles that slipped into
-  the jobs category, are kept and flagged `needs_review` (never dropped).
+- `company_type` defaults to `pharma` (hospital-keyword companies become
+  `hospital`).
+- `_NEWSY_TITLE_RE` is **junk detection only**: a listicle / guide / exam-result
+  title that slipped into the jobs category, or a post with no parseable
+  company, is kept and flagged `needs_review` — it never decides a category.
+- Club `qualification` uses the labelled `Qualification:` bullet when the post
+  has one, else `extract_qualification(description)`; it is never inferred.
+  `is_active` and `expires_at` are retired from the club schema.
 
 ## Outputs
 
 - `pharmarecruiter_jobs.csv` — rich cumulative store, deduped on WP post id.
-- `../../jobs_csv/<DD-MM-YYYY>/pharmarecruiter.csv` — 22-column club schema.
+- `../../jobs_csv/<DD-MM-YYYY>/pharmarecruiter.csv` — the shared 22-column
+  club schema (`CLUB_COLUMNS`, imported from `_shared/classification.py`).
 - `needs_review.csv` — flagged rows from the latest run.
+- `out-of-scope.csv` — rows the one-off stored-data reclassification moved
+  out of the rich store; reversible, never silently discarded.
 
 ## Usage
 

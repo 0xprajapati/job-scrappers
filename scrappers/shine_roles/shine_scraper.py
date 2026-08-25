@@ -51,26 +51,27 @@ Verified quirks
   query is cut off by the cap rather than by the date window (no silent
   truncation). Dedup by job id absorbs the re-served reposts across runs.
 * Every record also carries its industry in `jInd` ("Medical /
-  Healthcare" for ~70% of bare healthcare-query results) — the per-record
-  signal the healthcare gate uses for cards found via keyword queries.
+  Healthcare" for ~70% of bare healthcare-query results). Since the
+  2026-08-25 taxonomy migration this is a RAW SOURCE COLUMN only — it is
+  recorded in the rich CSV and decides nothing.
 * Salary strings: "Rs 4.0  - 4.5 Lakh/Yr", "< Rs 50,000  - 2.5 Lakh/Yr"
   (mixed absolute + lakh!), or "[Salary Hidden]" (the majority).
 * jLoc can be ["All India"] — kept verbatim; it is a real answer, not a city.
 
-Healthcare filter (master spec §2)
-----------------------------------
-Keyword searches drag in non-healthcare noise (BPO, insurance, IT — visible
-in jInd). Gate, in order:
+Classification (taxonomy migration 2026-08-25)
+----------------------------------------------
+The ONLY keep/drop and labeling decision is the shared
+`classification.classify_job(jJT, jKwd, strip_html(jJD))` — the weighted
+role-family gate plus the two-level taxonomy split. Out-of-scope records
+are dropped (counted excluded_out_of_scope); in-scope records get
+category ("Non Clinical" | "Public Health"), sub_category, role_family
+and the score trace. This scraper was already family-scored; the change
+here is that the family moves out of `category` into `role_family` and
+`category`/`sub_category` now carry the two-level taxonomy.
 
-1. DENY_TITLE_KEYWORDS (telecallers, admissions counsellors, software…)
-   -> excluded_non_healthcare, even at a healthcare employer.
-2. ALLOW_TITLE_KEYWORDS (clinical + healthcare-business vocabulary) -> kept.
-3. jInd == "Medical / Healthcare" -> kept (title said nothing; the category
-   classifier decides whether it still needs human review).
-4. jInd empty or "Others" -> kept, flagged needs_review (never silently
-   dropped when the source is non-committal).
-5. Any other named industry (IT Services, BFSI, BPO…) with a non-matching
-   title -> excluded_non_healthcare.
+Title-only matching would drop roughly a third of genuine hits: many
+Indian CRO listings carry a generic title such as "Senior Executive" and
+name the domain only in the keyword tags — hence jKwd as `skills`.
 
 Salary (master spec §3): capture, don't filter. Never excluded, never
 invented. Monthly normalization: Lakh = 100,000 INR; /Yr divided by 12.
@@ -101,12 +102,11 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
-
-# The eleven role families live in ONE place, shared by every re-scoped
-# scraper (see ../_shared/role_families.py).
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
-import role_families as RF
 import requests
+
+# The one shared classifier (see ../../instructions/taxonomy-migration-spec.md).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -131,6 +131,17 @@ USER_AGENT = "HealthCareersJobScraper/1.0 (+https://github.com/0xprajapati/job-s
 # the site for these roles instead of crawling all of healthcare and
 # discarding ~85% of it.
 SEARCH_QUERIES = [
+    # Industry facet browses (verified live 2026-08-24: /job-search/jobs
+    # composes with ind= and sort=1, paginates as jobs-N, echoes query.ind).
+    # These catch garbage-titled jobs no keyword query can find; the
+    # classifier's skills/description rescue does the reading. Facet IDs from
+    # the jIndID facet block on the browse-all page:
+    #   ind=13 Medical / Healthcare (~25k)  ind=63 Pharma / Biotech (139)
+    #   ind=31 NGO / Social Work (6)        ind=61 KPO / Analytics (46)
+    # Deliberately NOT browsed: ind=20 BPO / Call Center (19k rows of
+    # telecalling; the medical-coding keyword queries below already search
+    # across all industries, so a full BPO browse buys ~0 unique keeps).
+    "jobs?ind=13", "jobs?ind=63", "jobs?ind=31", "jobs?ind=61",
     # Clinical Research
     "clinical-research", "clinical-research-associate", "clinical-trials",
     "clinical-operations", "clinical-data-coordinator",
@@ -152,8 +163,29 @@ SEARCH_QUERIES = [
     "heor", "health-economics", "market-access",
     # TMF
     "trial-master-file",
-    # Public Health
-    "public-health", "epidemiology",
+    # Public Health — expanded 2026-08-24 to the ten-sub-category taxonomy
+    # (Epidemiology, Program Management, M&E, Community Health, Health
+    # Promotion & Education, Disease Programs, Nutrition, IPC, Health
+    # Informatics & Data, PH Research). Every slug below was probed live on
+    # 2026-08-24; only slugs with real PH density on page 1 are kept.
+    # Shine's multi-word matching is erratic: some slugs behave as exact
+    # phrases ("public-health" -> 2 results), others as OR-noise
+    # ("health-program" -> 69,829; "monitoring-and-evaluation" -> 46,585
+    # of IT monitoring; "community-health" -> 5,684 with ZERO in-scope on
+    # page 1) — the noisy ones were dropped: 50 capped pages of noise per
+    # run bought ~0 PH jobs. M&E / Community Health / WASH roles barely
+    # exist on shine (it is a private-sector board); the classifier still
+    # catches any that surface via the other queries.
+    "public-health", "epidemiology", "epidemiologist",
+    "disease-surveillance",                          # 18/20 in-scope
+    "tuberculosis", "hiv", "malaria",                # disease programs
+    "immunization", "vaccination",                   # 8 PH/page
+    "nutritionist", "public-health-nutrition",       # 7 PH/page
+    "infection-control",                             # 10 PH/page
+    "health-informatics", "hmis",
+    "health-promotion",
+    "public-health-research",
+    "maternal-child-health", "asha", "anganwadi",    # tiny but exact
 ]
 
 # First-run window, narrowed from the master spec §4 default of 7 to 2:
@@ -175,11 +207,6 @@ BACKOFF_BASE_SECONDS = 3.0
 MAX_EMPTY_PAGES = 3
 DESCRIPTION_MAX_CHARS = 20_000
 
-HEALTHCARE_INDUSTRY = "Medical / Healthcare"
-# Industries that are non-committal about the work itself; a title the
-# classifier can't read + one of these -> keep, flag for review.
-NEUTRAL_INDUSTRIES = {"", "Others"}
-
 RICH_CSV = str(Path(__file__).resolve().parent / "shine_roles_jobs.csv")
 NEEDS_REVIEW_CSV = str(Path(__file__).resolve().parent / "needs_review.csv")
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
@@ -190,18 +217,10 @@ RICH_COLUMNS = [
     "salary_period_original", "job_type", "employment_type", "is_walkin",
     "work_mode", "experience_raw", "experience_min_years",
     "experience_max_years", "industry", "keywords", "category",
+    "sub_category", "role_family",
     "all_families", "family_scores", "family_confidence", "matched_in",
     "company_type", "match_signal", "needs_review", "posted_date",
     "expires_date", "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "qualification", "min_salary", "max_salary", "salary_period",
-    "salary_currency",
 ]
 
 # jTypeC / jEType / jJobType enum decodings (from the search facets block).
@@ -212,109 +231,38 @@ EMPLOYMENT_TYPE = {1: "Regular", 2: "Contractual", 3: "Internship",
 log = logging.getLogger("shine_scraper")
 
 # ----------------------------------------------------------------------------
-# Healthcare classification (master spec §2)
+# Classification — the shared two-level taxonomy is the ONLY decision maker
 # ----------------------------------------------------------------------------
 
-# Applied to titles only (jKwd/jJD mention "healthcare" too loosely).
-ALLOW_TITLE_KEYWORDS = re.compile(
-    r"(?:^|[^a-z])(?:"
-    r"nurse|nursing|midwif\w*|\bgnm\b|\banm\b|"
-    r"physician|doctor|surgeon|dentist|dental|mbbs|\bmd\b|intensivist|"
-    r"practitioner|"
-    r"pediatric\w*|paediatric\w*|geriatric\w*|obstetric\w*|gyn[ae]?colog\w*|"
-    r"[a-z]{4,}ologist|diabetolog\w*|ayurved\w*|homeopath\w*|unani|"
-    r"psychiatr\w*|psycholog\w*|psychotherap\w*|psychometri\w*|therapist|"
-    r"mental[- ]?health|behaviou?ral[- ]?health|"
-    r"clinical|clinician|clinic|medical|medicine|healthcare|health[- ]?care|"
-    r"health\b|patient|telehealth|telemedicine|tele[- ]?consult\w*|"
-    r"pharmac\w*|pharma\b|drug[- ]?safety|regulatory[- ]?affairs|"
-    r"radiolog\w*|radiograph\w*|sonograph\w*|phlebotom\w*|patholog\w*|"
-    r"paramedic\w*|epidemiolog\w*|oncolog\w*|cardiolog\w*|neurolog\w*|"
-    r"dermatolog\w*|endocrinolog\w*|an[ae]sthes\w*|optometr\w*|"
-    r"ophthalmolog\w*|dietit\w*|dietic\w*|nutrition\w*|"
-    r"physiotherap\w*|occupational[- ]?therap\w*|speech[- ]?(?:therap|language)\w*|"
-    r"audiolog\w*|respiratory[- ]?therap\w*|"
-    r"caregiver|care[- ]?giver|home[- ]?health|hospice|hospital|"
-    r"wellness|\brcm\b|revenue[- ]?cycle|prior[- ]?auth\w*|"
-    r"\bicd(?:-10)?\b|\bcpt\b|coder|coding|claims?\b|"
-    r"lab\b|laboratory|\bdmlt\b|"
-    r"life[- ]?science|biotech|pharmacovigilance|"
-    r"\bemr\b|\behr\b|\boet\b"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared taxonomy onto a rich row.
 
-# Clearly non-healthcare occupations that healthcare-shaped queries drag in
-# (the Telesales/FMCG cards on the healthcare query, IT roles at hospital
-# chains, hospitality "hospital housekeeping vendor sales"…). DENY wins even
-# when jInd says Medical / Healthcare: the occupation, not the employer,
-# decides (same convention as the indeed scraper).
-DENY_TITLE_KEYWORDS = re.compile(
-    r"(?:^|[^a-z])(?:"
-    r"telesales|telecaller|tele[- ]?calling|telemarket\w*|"
-    r"admissions?[- ]?counsell?or|academic[- ]?counsel\w*|"
-    r"education[- ]?counsel\w*|visa[- ]?counsell?or|career[- ]?counsel\w*|"
-    r"sales[- ]?executive|business[- ]?development|"
-    r"software[- ]?(?:engineer|developer)|web[- ]?developer|"
-    r"frontend|front[- ]?end|backend|back[- ]?end|full[- ]?stack|devops|"
-    r"java[- ]?developer|python[- ]?developer|\.net|salesforce|"
-    r"data[- ]?engineer\w*|cloud[- ]?engineer|network[- ]?engineer|"
-    r"civil[- ]?engineer|mechanical[- ]?engineer|electrical[- ]?engineer|"
-    r"accountant|chartered[- ]?accountant|"
-    r"data[- ]?annotat\w*|transcriber\b|transcription\w*|"
-    r"graphic[- ]?designer|ui[- ]?designer|ux[- ]?designer|copywriter|"
-    r"chef|housekeeping|driver|security[- ]?guard"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
-
-
-def match_families(record):
-    """Score one shine record against the eleven families.
-
-    Uses all three fields shine exposes — jJT (title), jKwd (keywords) and
-    jJD (description HTML). Title-only matching would drop roughly a third
-    of genuine hits: many Indian CRO listings carry a generic title such as
+    Uses all three fields shine exposes — jJT (title), jKwd (keywords, the
+    site's curated tag list, passed as `skills`) and the HTML-stripped jJD
+    (description). Title-only matching would drop roughly a third of
+    genuine hits: many Indian CRO listings carry a generic title such as
     "Senior Executive" and name the domain only in the keyword tags.
+
+    jInd (the industry facet) is NOT a signal — it is a raw source column.
+
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
     """
-    return RF.classify(
-        title=clean_value(record.get("jJT")),
-        skills=clean_value(record.get("jKwd")),
-        description=strip_html(record.get("jJD") or ""),
-    )
+    verdict = classify_job(row.get("title", ""),
+                           row.get("keywords", ""),
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = "true" if verdict["needs_review"] else "false"
+    return verdict["in_scope"]
 
 
-# Title -> club category enum (same regex family as the indeed scraper).
-_NURSE_RE = re.compile(
-    r"(?:^|[^a-z])(?:nurse|nursing|midwif\w*|\brn\b|\bgnm\b|\banm\b|"
-    r"nursing[- ]?attendant)(?:[^a-z]|$)", re.IGNORECASE)
-_PHARM_RE = re.compile(
-    r"(?:^|[^a-z])(?:pharmacist|pharmacy|pharm\.?\s?d|dispenser|"
-    r"pharmacolog\w*)(?:[^a-z]|$)", re.IGNORECASE)
-# Psychology-family clinicians map to non_clinical in the club schema, but
-# "...ologist" would drag them into doctors — checked before doctors.
-_PSYCH_RE = re.compile(r"ps[cy]{1,2}h\w*olog|psychotherap", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"(?:^|[^a-z])(?:physician|doctor|surgeon|dentist|\bmd\b|mbbs|"
-    r"psychiatrist|medical[- ]?director|medical[- ]?officer|intensivist|"
-    r"[a-z]{4,}ologist|diabetolog\w*|general[- ]?practitioner|"
-    r"p[ae]diatrician|"
-    r"(?:family|internal|emergency)[- ]?medicine|\bgp\b)(?:[^a-z]|$)",
-    re.IGNORECASE)
-_NONCLINICAL_RE = re.compile(
-    r"(?:^|[^a-z])(?:therapist|therapy|counselor|counsellor|psycholog\w*|"
-    r"psychometri\w*|coach|caregiver|attendant|technician|"
-    r"technologist|dietit\w*|dietic\w*|nutrition\w*|physiotherap\w*|"
-    r"coder|coding|biller|billing|claims|transcription\w*|scribe|"
-    r"coordinator|specialist|manager|director|analyst|administrator|"
-    r"assistant|associate|executive|representative|consultant|advisor|"
-    r"recruiter|scientist|researcher|writer|editor|educator|trainer|tutor|"
-    r"faculty|reviewer|auditor|support|operations|lead|supervisor|"
-    r"liaison|student|intern\w*|fellow\w*|officer|head\b|receptionist"
-    r")(?:[^a-z]|$)",
-    re.IGNORECASE)
-
-
-# The club `category` column now carries the ROLE FAMILY itself; the old
-# profession classifier (doctors/nurses/...) has been retired here.
+# company_type is NOT a category — it fills the club schema's company_type
+# column ("pharma" | "hospital") and never influences classify_job.
 _PHARMA_COMPANY_RE = re.compile(
     r"pharma|therapeut|laborator|\blabs?\b|\bcro\b|biotech|bioscience|"
     r"life ?science|diagnostic|clinical|drug|"
@@ -461,9 +409,13 @@ def compute_cutoff(existing_df, today=None, since=None):
 
 def page_url(query, page):
     """"healthcare" -> .../healthcare-jobs?sort=1; page N appends -N to the
-    slug; a "?k=v" suffix on the query becomes extra URL params."""
+    slug; a "?k=v" suffix on the query becomes extra URL params. The bare
+    slug "jobs" is the browse-all listing (/job-search/jobs, paginating as
+    jobs-2), used with an ind= facet for industry browses — it must not
+    grow a second "-jobs"."""
     slug, _, extra = query.partition("?")
-    slug = slug if slug.endswith("-jobs") else slug + "-jobs"
+    if slug != "jobs" and not slug.endswith("-jobs"):
+        slug = slug + "-jobs"
     path = SEARCH_PATH + slug + ("-{}".format(page) if page > 1 else "")
     return SITE_BASE + path + "?sort=1" + ("&" + extra if extra else "")
 
@@ -547,10 +499,8 @@ def fetch_page(session, robots, query, page):
 # Row building
 # ----------------------------------------------------------------------------
 
-def job_to_rich_row(record, query, verdict):
+def job_to_rich_row(record, query):
     title = clean_value(record.get("jJT"))
-    category = verdict["family"]
-    needs_review = verdict["needs_review"]
 
     salary_raw, sal_min, sal_max, sal_period = parse_salary(record.get("jSal"))
     exp_min, exp_max = parse_experience(record.get("jExp"))
@@ -582,14 +532,18 @@ def job_to_rich_row(record, query, verdict):
         "experience_max_years": exp_max,
         "industry": clean_value(record.get("jInd")),
         "keywords": clean_value(record.get("jKwd")),
-        "all_families": verdict["all_families"],
-        "family_scores": verdict["family_scores"],
-        "family_confidence": verdict["confidence"],
-        "matched_in": verdict["matched_in"],
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "company_type": classify_company_type(record.get("jCName")),
-        "match_signal": "{}:{}".format(query, verdict["matched_in"]),
-        "needs_review": "true" if needs_review else "false",
+        # which crawl query surfaced this card (provenance, not a decision)
+        "match_signal": query,
+        "needs_review": "false",
         "posted_date": parse_date(record.get("jPDate")),
         "expires_date": parse_date(record.get("jExpDate")),
         "description": truncate_description(strip_html(record.get("jJD") or "")),
@@ -610,7 +564,7 @@ def club_salary(salary_raw):
 
     The rich CSV stores normalized monthly values (spec §3); the club export
     carries the ORIGINAL full amounts with their original period, matching
-    export_club_csv.py: "Rs 4.0 - 4.5 Lakh/Yr" -> (400000, 450000, per_annum).
+    the club export: "Rs 4.0 - 4.5 Lakh/Yr" -> (400000, 450000, per_annum).
     """
     raw = _clean(salary_raw)
     if not raw or raw.lower() in ("not disclosed", "[salary hidden]"):
@@ -647,13 +601,15 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": club_type,
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),
-        "qualification": RF.extract_qualification(
-            _clean(r.get("description"))),
         "max_experience": _clean(r.get("experience_max_years")),
+        # shine has no structured qualification field — grounded extraction
+        # from the description only, never inferred
+        "qualification": extract_qualification(_clean(r.get("description"))),
         "min_salary": lo,
         "max_salary": hi,
         "salary_period": period,
@@ -717,11 +673,6 @@ def crawl_query(session, robots, query, cutoff, known_ids, counters,
                     counters["excluded_old"] += 1
                     continue
 
-                verdict = match_families(record)
-                if not verdict["family"]:
-                    counters["excluded_out_of_scope"] += 1
-                    continue
-
                 job_id = clean_value(record.get("id"))
                 if not job_id:
                     log.warning("[%s] page %d: record without id — skipped",
@@ -731,10 +682,14 @@ def crawl_query(session, robots, query, cutoff, known_ids, counters,
                     counters["duplicates"] += 1
                     continue
 
-                row = job_to_rich_row(record, query, verdict)
+                row = job_to_rich_row(record, query)
             except Exception as exc:   # never let one card crash the run
                 log.warning("[%s] page %d: skipping malformed record (%s)",
                             query, page, exc)
+                continue
+
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
                 continue
 
             if row["needs_review"] == "true":

@@ -33,12 +33,30 @@ page are the legacy platform and are not crawled.
   (master spec: capture, never filter).
 - Descriptions are populated for some requisitions (mostly Nursing) and
   genuinely empty for many others.
-- All postings are Apollo group hospital jobs, so everything is healthcare-
-  industry by construction; non-clinical hospital roles (marketing,
-  engineering, call center) are kept with `category = non_clinical` and are
-  **not** flagged for review. Only junk/empty titles land in
+- `ExternalPostedEndDate` is kept in the rich CSV as `posting_end_date`.
+
+## Classification (shared taxonomy)
+
+Every candidate job goes through the shared classifier
+(`scrappers/_shared/classification.py`):
+
+```python
+verdict = classify_job(title, skills=site_category, description=description)
+```
+
+- `in_scope == False` → the job is **dropped** and counted as
+  `excluded_out_of_scope` in the run summary. On this hospital board that is
+  most requisitions (nursing, doctors, paramedical) — the scope is
+  **Non Clinical + Public Health** roles only.
+- In-scope jobs get `category` ("Non Clinical" | "Public Health") and
+  `sub_category` (one of the 20 sub-categories), plus the rich-CSV trace
+  columns `role_family`, `all_families`, `family_scores`,
+  `family_confidence`, `matched_in`.
+- The Oracle `RequisitionType` facet no longer decides the category; it is
+  stored raw as `site_category` and passed to the classifier as its curated
+  `skills` signal.
+- `needs_review == True` rows are kept and also appended to
   `needs_review.csv`.
-- `ExternalPostedEndDate` is exported as `expires_at`.
 
 ## Usage
 
@@ -52,9 +70,15 @@ python test_filters.py            # unit tests
 ## Outputs
 
 - `apollohospitals_jobs.csv` — rich cumulative store (dedup key: requisition `Id`)
-- `../../jobs_csv/<DD-MM-YYYY>/apollohospitals.csv` — HealthCareers.club
-  22-column import schema
-- `needs_review.csv` — junk/empty titles flagged during the run
+- `../../jobs_csv/<DD-MM-YYYY>/apollohospitals.csv` — club CSV with exactly
+  the 22 `CLUB_COLUMNS` imported from `_shared/classification.py`
+  (includes `sub_category` and `qualification`; the old
+  `is_active`/`expires_at` columns are retired). `qualification` is the
+  structured `StudyLevel` when present, else
+  `extract_qualification(description)`.
+- `needs_review.csv` — in-scope rows the classifier flagged for review
+- `out-of-scope.csv` — rows moved out of the rich store by the one-off
+  taxonomy migration (reversible archive)
 
 First run keeps the last 30 days; later runs keep only jobs newer than the
 newest stored `posted_date` minus 2 days of grace (dedup absorbs the overlap).

@@ -26,12 +26,15 @@ from the detail endpoint, fetched for NEW jobs only (on by default,
         ?expand=all&onlyData=true&finder=ById;Id="<id>",siteNumber=CX_1
 
 Salary is never exposed by this portal -> `salary_raw = "Not Disclosed"`.
-Everything SEHA posts is healthcare-sector employment (it operates Abu Dhabi's
-public hospitals), so the healthcare filter reduces to mapping Oracle's
-CATEGORIES facet (Medical / Nursing / Allied Health / Administration) onto the
-club category enum. That facet is populated on only ~40% of requisitions, so
-the title classifier carries most of the load; anything it cannot place is kept
-as `non_clinical` + `needs_review` (master spec §2 — never silently dropped).
+
+Classification is the shared two-level taxonomy (scrappers/_shared/
+classification.py): category "Non Clinical" | "Public Health" plus a
+sub_category. SEHA operates Abu Dhabi's public hospitals, so most requisitions
+(physicians, nursing, allied health) are out of scope and dropped (counted as
+excluded_out_of_scope). Oracle's CATEGORIES facet (Medical / Nursing / Allied
+Health / Administration, populated on only ~40% of requisitions) and the
+JobFunction stay in the rich CSV as raw source columns and feed the classifier
+as its curated `skills` signal — they never decide the category themselves.
 
 Time window: an ATS only lists OPEN requisitions (SEHA keeps some live for well
 over a year), so the first run keeps ALL of them (`INITIAL_WINDOW_DAYS = None`);
@@ -53,6 +56,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -62,6 +66,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -116,19 +124,12 @@ RICH_COLUMNS = [
     "work_location", "city", "country",
     "salary_raw", "salary_min_monthly", "salary_max_monthly",
     "salary_period_original", "job_type", "job_shift", "category",
+    "sub_category", "role_family", "all_families", "family_scores",
+    "family_confidence", "matched_in",
     "category_original", "job_function", "education",
     "experience_min_years", "experience_max_years",
     "needs_review", "posted_date", "expires_at", "description", "job_url",
     "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("seha_scraper")
@@ -265,85 +266,30 @@ def parse_min_experience_years(text):
 
 
 # ----------------------------------------------------------------------------
-# Category mapping (club enum: doctors | nurses | pharmacists | non_clinical)
+# Classification (shared two-level taxonomy)
 # ----------------------------------------------------------------------------
 
-# Oracle CATEGORIES facet values on the SEHA tenant -> club category.
-# "Allied Health" has no club bucket of its own, so it lands in non_clinical
-# (same treatment medcare gives "Paramedical").
-CATEGORY_MAP = {
-    "medical": "doctors",
-    "nursing": "nurses",
-    "allied health": "non_clinical",
-    "administration": "non_clinical",
-    "pharmacy": "pharmacists",
-}
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-_NURSE_RE = re.compile(r"\bnurs(e|es|ing)\b|\bmidwi(fe|ves|fery)\b", re.IGNORECASE)
-_PHARM_RE = re.compile(r"\b(pharmac(y|ist|ists|ies))\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|surgery|dentist|general practitioner|"
-    r"consultant|specialist|registrar|medical officer|gp|intensivist|"
-    r"anaesthetist|anesthetist|anesthesiologist|anaesthesiologist|"
-    r"obstetrician|gynecologist|gynaecologist|p(a?)ediatrician|psychiatrist|"
-    r"radiologist|pathologist|neonatologist|oncologist|cardiologist|"
-    r"dermatologist|endocrinologist|gastroenterologist|neurologist|"
-    r"ophthalmologist|otolaryngologist|rheumatologist|urologist|nephrologist|"
-    r"pulmonologist|hematologist|haematologist)\b",
-    re.IGNORECASE)
-# Allied-health / technical / corporate roles: clinical-adjacent at most, and
-# checked BEFORE _DOCTOR_RE so "Consultant" in an admin title can't win.
-_ALLIED_RE = re.compile(
-    r"\b(sonographer|radiographer|technologist|technician|therapist|"
-    r"physiotherapist|dietit(ian|ician)|nutritionist|embryologist|"
-    r"phlebotomist|optometrist|audiologist|paramedic|coder|"
-    r"engineer|officer|manager|representative|assistant|analyst|"
-    r"coordinator|administrator|secretary|clerk|accountant|receptionist)\b",
-    re.IGNORECASE)
-# Corporate-function words. SEHA titles head-office roles "Specialist - ..." /
-# "Consultant - ...", which would otherwise trip _DOCTOR_RE, so these are
-# checked alongside _ALLIED_RE, before the clinical keywords.
-_CORPORATE_RE = re.compile(
-    r"\b(talent|performance|business|commercial|finance|financial|procurement|"
-    r"marketing|communications|human\s+resources|recruitment|payroll|legal|"
-    r"quality|excellence|strategy|supply\s+chain|information\s+technology|"
-    r"facilities|housekeeping|catering|security)\b",
-    re.IGNORECASE)
-# Titles SEHA posts that no club bucket fits (behavioural-health clinicians).
-# Kept as non_clinical AND flagged so a human decides (master spec §2).
-_AMBIGUOUS_RE = re.compile(
-    r"\b(psychologist|physiologist|counsell?or|analyst|health\s*care\s*assistant)\b",
-    re.IGNORECASE)
-
-
-def classify_category(title, oracle_category=""):
-    """Return (club_category, needs_review).
-
-    Oracle's category facet is authoritative when present (it is populated on
-    only ~40% of SEHA requisitions); otherwise the title decides. Nursing and
-    pharmacy titles override a coarse facet value. A title that matches nothing
-    — or matches a role with no club bucket — is kept as non_clinical and
-    flagged needs_review, never dropped.
+    Oracle's CATEGORIES facet (`category_original`, populated on only ~40% of
+    SEHA requisitions) plus the JobFunction are the curated `skills` signal;
+    both raw values stay in the rich CSV as source columns only.  Returns
+    in_scope — False means DROP the row (excluded_out_of_scope).
     """
-    mapped = CATEGORY_MAP.get(clean_text(oracle_category).lower())
-    if mapped:
-        # the facet is department-level, so an unmistakable title still wins
-        if mapped != "pharmacists" and _PHARM_RE.search(title):
-            return ("pharmacists", False)
-        if mapped == "non_clinical" and _NURSE_RE.search(title):
-            return ("nurses", False)
-        return (mapped, False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _AMBIGUOUS_RE.search(title):
-        return ("non_clinical", True)
-    if _ALLIED_RE.search(title) or _CORPORATE_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    return ("non_clinical", True)
+    skills = " ".join(x for x in (row.get("category_original", ""),
+                                  row.get("job_function", "")) if x)
+    verdict = classify_job(row.get("title", ""), skills,
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
 def map_job_type(job_schedule):
@@ -454,7 +400,6 @@ def fetch_detail(session, job_id):
 def requisition_to_rich_row(req):
     raw_title = clean_text(req.get("Title") or "")
     title, facility = split_title(raw_title)
-    category, needs_review = classify_category(title)
 
     return {
         "source": SITE,
@@ -473,13 +418,20 @@ def requisition_to_rich_row(req):
         "salary_period_original": "",
         "job_type": map_job_type(req.get("JobSchedule")),
         "job_shift": clean_text(req.get("JobShift") or ""),
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
         "category_original": "",
         "job_function": "",
         "education": clean_text(req.get("StudyLevel") or ""),
         "experience_min_years": "",
         "experience_max_years": "",
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": clean_text(req.get("PostedDate") or "")[:10],
         "expires_at": clean_text(req.get("PostingEndDate") or "")[:10],
         "description": strip_html(req.get("ShortDescriptionStr") or "")[:DESCRIPTION_MAX_CHARS],
@@ -502,16 +454,14 @@ def build_description(detail):
 
 
 def apply_detail(row, detail):
-    """Overlay detail-endpoint fields (Oracle category facet, schedule, study
-    level, work location, full description) onto a listing row, and re-run the
-    classifier with the authoritative category."""
+    """Overlay detail-endpoint fields (raw Oracle category facet, schedule,
+    study level, work location, full description) onto a listing row.
+    Classification runs afterwards, once these richer signals are in place."""
     if not detail:
         return row
     oracle_category = clean_text(detail.get("Category") or "")
     if oracle_category:
         row["category_original"] = oracle_category
-    row["category"], row["needs_review"] = classify_category(
-        row["title"], oracle_category)
     if detail.get("JobSchedule"):
         row["job_type"] = map_job_type(detail["JobSchedule"])
     if detail.get("JobShift"):
@@ -569,18 +519,21 @@ def rich_row_to_club_row(r):
         "title": _s("title"),
         "description": _s("description"),
         "job_type": _s("job_type", "full_time"),
-        "category": _s("category", "non_clinical"),
+        "category": _s("category"),
+        "sub_category": _s("sub_category"),
         "application_url": _s("job_url"),
         "posted_at": _s("posted_date"),
         "min_experience": _s("experience_min_years"),
         "max_experience": _s("experience_max_years"),
+        # structured source field (Oracle StudyLevel) first, else grounded
+        # extraction from the description — never inferred
+        "qualification": _s("education") or extract_qualification(
+            _s("description")),
         # no salary data on the Oracle portal — left blank, never invented
         "min_salary": "",
         "max_salary": "",
         "salary_period": "",
         "salary_currency": "",
-        "is_active": "true",
-        "expires_at": _s("expires_at"),
     }
 
 
@@ -659,8 +612,9 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; cutoff: %s",
              len(known_ids), cutoff or "none (keeping all open requisitions)")
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0, "detail_failed": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0,
+                "detail_failed": 0}
     new_rows, review_log = [], []
     offset, page = 0, 1
 
@@ -709,6 +663,10 @@ def main(argv=None):
                         counters["detail_failed"] += 1
                 else:
                     counters["detail_failed"] += 1
+            # classify only once the detail signals (facet, description) are in
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                continue
             if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({"job_id": row["job_id"],
@@ -755,6 +713,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Requisitions scanned:  {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>3,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(
         cutoff or "no cutoff", counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))

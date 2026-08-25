@@ -24,7 +24,25 @@ window.__cap = {status:'starting', progress:'', keywords:{}, jobs:{},
   const KEYWORDS = ['healthcare','medical','doctor','nurse',
     'medical-representative','physiotherapist','pharmacist','lab-technician',
     'radiographer','hospital','paramedical','dentist','medical-coding',
-    'nursing'];
+    'nursing',
+    // 2026-08-24 role-family widening: fetch wide, filter at ingest.
+    // Niche terms end after a page or two, so the added run time is small.
+    'clinical-research','clinical-trials','clinical-data-management',
+    'pharmacovigilance','drug-safety','regulatory-affairs','medical-writing',
+    'medical-affairs','market-access','public-health','epidemiology',
+    // 2026-08-25 Public Health widening: cover all ten PH sub-categories,
+    // mirroring the shine_roles list. Niche terms end after a page or two,
+    // so the added run time stays small.
+    'epidemiologist','disease-surveillance',
+    'public-health-program',
+    'monitoring-and-evaluation',
+    'community-health-officer','asha',
+    'health-educator','health-promotion',
+    'tuberculosis','hiv','malaria','immunization','vaccination',
+    'public-health-nutrition','nutritionist',
+    'infection-control',
+    'health-informatics','hmis',
+    'public-health-research'];
   const MAX_PAGES = 30;          // per keyword; scraper logs every cap hit
   const LIMIT = 20;              // cards per page (site constant)
   const DELAY_MS = 4000, JITTER_MS = 3000;

@@ -42,6 +42,30 @@ robots.txt: /jobs/ is allowed for User-agent: *; /api/ is disallowed and
 therefore never called (master spec: robots.txt is binding). Reed accepts a
 plain descriptive User-Agent — no browser impersonation needed.
 
+Classification (taxonomy migration 2026-08-25)
+----------------------------------------------
+Reed previously had NO scope gate at all: every card in the Health &
+Medicine / Scientific sector listings was kept and stamped with the old
+profession enum (in practice non_clinical). It now runs the same gate as
+the rest of the fleet — the shared
+`classification.classify_job(jobTitle, taxonomy/sector, description)`:
+
+* out-of-scope rows are DROPPED and counted excluded_out_of_scope
+  (expect this to remove most of a UK health-sector listing: care
+  assistants, support workers, RGNs and locum doctors are all out of
+  scope now);
+* in-scope rows get category ("Non Clinical" | "Public Health"),
+  sub_category, role_family and the score trace;
+* reed's own taxonomyLevel1/taxonomyLevel2 and jobSector are the curated
+  `skills` signal and stay in the rich CSV as raw source columns — they
+  never decide the category themselves.
+
+The gate runs AFTER --enrich fetches the detail page, so the classifier
+sees the full description rather than the 200-char snippet. That costs
+detail requests for jobs that are then dropped; it is the honest order
+(a pre-gate on the snippet would be a second, weaker classifier making
+the real keep/drop decision).
+
 Salary (master spec §3: capture, don't filter)
 ----------------------------------------------
 UK salaries are GBP; the club schema's salary_currency enum only allows
@@ -75,9 +99,16 @@ import urllib.robotparser
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+import os
+
 import pandas as pd
 from curl_cffi import requests
 from curl_cffi.requests import exceptions as requests_exceptions
+
+# The one shared classifier (see ../../instructions/taxonomy-migration-spec.md).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -86,7 +117,17 @@ from curl_cffi.requests import exceptions as requests_exceptions
 SITE = "reed"
 SITE_BASE = "https://www.reed.co.uk"
 ROBOTS_URL = SITE_BASE + "/robots.txt"
-SEARCH_URL = SITE_BASE + "/jobs/health-jobs"
+# Widened 2026-08-25 (fetch-wide/filter-tight pass): clinical research,
+# pharmacovigilance and regulatory jobs on reed sit in the Scientific
+# sector, not Health & Medicine, so both sector listings are walked and the
+# title gate decides. NOTE: /jobs/scientific-jobs is a best-guess slug not
+# yet probed live — a wrong slug 404s, search_page returns None, and that
+# sector is skipped with an error log; the health walk is unaffected.
+SEARCH_URLS = [
+    SITE_BASE + "/jobs/health-jobs",        # sector 36, Health & Medicine
+    SITE_BASE + "/jobs/scientific-jobs",    # Scientific (pharma/clinical R&D)
+]
+SEARCH_URL = SEARCH_URLS[0]   # kept for tests/back-compat
 
 USER_AGENT = "HealthCareersJobScraper/1.0 (+https://github.com/0xprajapati/job-scrappers)"
 
@@ -119,18 +160,11 @@ RICH_COLUMNS = [
     "source", "job_id", "title", "company", "company_kind", "city", "county",
     "region", "salary_raw", "salary_min", "salary_max", "salary_currency",
     "salary_period", "job_type", "remote_working", "contract_type",
-    "category", "company_type", "sponsored", "sector", "taxonomy_l1",
+    "category", "sub_category", "role_family", "all_families",
+    "family_scores", "family_confidence", "matched_in", "needs_review",
+    "company_type", "sponsored", "sector", "taxonomy_l1",
     "taxonomy_l2", "company_logo", "posted_date", "expires_date",
     "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
 ]
 
 log = logging.getLogger("reed_scraper")
@@ -233,55 +267,34 @@ def map_job_type(remote_working, is_full_time, is_part_time):
     return "full_time"
 
 
-# Title -> club category. UK flavour: heavy on care/support/agency roles.
-# Unmatched titles are KEPT as non_clinical and flagged needs_review.
-_NURSE_RE = re.compile(
-    r"\b(nurse|nursing|midwif\w*|matron|health visitor|rgn|rmn|rnld)\b",
-    re.IGNORECASE)
-_PHARM_RE = re.compile(
-    r"\b(pharmacist|pharmacy|dispenser|pharm\.?\s?d)\b", re.IGNORECASE)
-_ALLIED_RE = re.compile(
-    r"\b(audiolog\w*|physiotherap\w*|radiograph\w*|optometr\w*|paramedic\w*|"
-    r"sonograph\w*|speech|phlebotom\w*|dental (hygien|nurse)\w*|"
-    r"odp|operating department practitioner|dialysis technician)\b",
-    re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"\b(doctor|physician|surgeon|mbbs|dentist|medical officer|\bgp\b|"
-    r"[a-z]+ologist|[a-z]{4,}ology|orthop[ae]?edic\w*|intensivist|"
-    r"anaesthetist|anesthetist|an[ae]sthesiolog\w*|obstetric\w*|"
-    r"p[ae]?ediatric\w*|psychiatrist|neonat\w*|general practitioner|"
-    r"(family|internal|general|emergency) medicine|sonologist|"
-    r"medical director|registrar|consultant (physician|psychiatrist))\b",
-    re.IGNORECASE)
-_NONCLINICAL_RE = re.compile(
-    r"\b(care assistant|support worker|carer|healthcare assistant|hca\b|"
-    r"care coordinator|deputy manager|home manager|care manager|"
-    r"accountant|finance|sales|marketing|receptionist|driver|secretary|"
-    r"hr\b|human resources|admin\w*|technician|technologist|therapist|"
-    r"dietician|dietitian|nutritionist|coordinator|executive|manager|"
-    r"officer|engineer|analyst|assistant|recruiter|consultant|advisor|"
-    r"adviser|trainer|tutor|practitioner|counsel(l)?or|instructor|"
-    r"housekeeping|chef|cook|cleaner|porter|warden|scheduler|planner|"
-    r"supervisor|lead|specialist|worker|therapy)\b",
-    re.IGNORECASE)
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
+
+    Reed's own taxonomyLevel1 / taxonomyLevel2 / jobSector are joined into
+    the curated `skills` signal (they name the discipline — "Clinical
+    Research", "Pharmacovigilance" — where the title often does not); the
+    raw values stay in the rich CSV as source columns only.
+
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
+    """
+    site_taxonomy = ", ".join(t for t in (row.get("taxonomy_l1", ""),
+                                          row.get("taxonomy_l2", ""),
+                                          row.get("sector", "")) if t)
+    verdict = classify_job(row.get("title", ""), site_taxonomy,
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    return verdict["in_scope"]
 
 
-def classify_category(title):
-    """Return (category, needs_review) for a job title."""
-    title = title or ""
-    if _NURSE_RE.search(title):
-        return ("nurses", False)
-    if _PHARM_RE.search(title):
-        return ("pharmacists", False)
-    if _ALLIED_RE.search(title):
-        return ("non_clinical", False)
-    if _DOCTOR_RE.search(title):
-        return ("doctors", False)
-    if _NONCLINICAL_RE.search(title):
-        return ("non_clinical", False)
-    return ("non_clinical", True)
-
-
+# company_type is NOT a category — it fills the club schema's company_type
+# column ("pharma" | "hospital") and never influences classify_job.
 _PHARMA_COMPANY_RE = re.compile(
     r"pharma|therapeut|laborator|\blabs?\b|\bcro\b|biotech|life ?science|"
     r"diagnostic|clinical research|medical devices?", re.IGNORECASE)
@@ -323,7 +336,7 @@ def check_robots(session):
     except requests_exceptions.RequestException as exc:
         log.warning("Could not fetch robots.txt (%s); assuming allowed", exc)
         return
-    for url in (SEARCH_URL, SITE_BASE + "/jobs/some-job/1"):
+    for url in SEARCH_URLS + [SITE_BASE + "/jobs/some-job/1"]:
         if not rp.can_fetch(USER_AGENT, url):
             sys.exit("robots.txt disallows {} — aborting.".format(url))
     log.info("robots.txt check passed")
@@ -355,12 +368,12 @@ def _get_html(session, url, params=None):
     return None
 
 
-def search_page(session, page_no):
+def search_page(session, page_no, search_url=SEARCH_URL):
     """Fetch one listing page. Returns (jobs, promoted, count) or
     (None, None, None) on failure; job dicts are the flattened jobDetail
     merged with the card's url."""
     params = dict(SEARCH_PARAMS, pageno=page_no)
-    html = _get_html(session, SEARCH_URL, params=params)
+    html = _get_html(session, search_url, params=params)
     props = extract_page_props(html) if html else None
     if props is None:
         return (None, None, None)
@@ -408,7 +421,6 @@ def job_to_rich_row(job, detail=None):
     """Build one rich row from a flattened listing job (+ detail payload)."""
     detail = detail or {}
     title = (job.get("jobTitle") or detail.get("title") or "").strip()
-    category, needs_review = classify_category(title)
 
     if detail.get("jobSalary"):
         salary = parse_display_salary(
@@ -446,7 +458,15 @@ def job_to_rich_row(job, detail=None):
         "job_type": map_job_type(job.get("remoteWorkingOption"), is_full, is_part),
         "remote_working": (job.get("remoteWorkingOption") or "").strip(),
         "contract_type": contract,
-        "category": category,
+        # taxonomy fields are stamped by apply_classification()
+        "category": "",
+        "sub_category": "",
+        "role_family": "",
+        "all_families": "",
+        "family_scores": "",
+        "family_confidence": "",
+        "matched_in": "",
+        "needs_review": False,
         "company_type": classify_company_type(job.get("ouName")),
         "sponsored": bool(job.get("isPromoted")),
         "sector": sector,
@@ -459,7 +479,6 @@ def job_to_rich_row(job, detail=None):
         "description": description[:DESCRIPTION_MAX_CHARS],
         "job_url": SITE_BASE + (job.get("url") or ""),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "needs_review": needs_review,
     }
 
 
@@ -471,9 +490,11 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map to the 22-column club schema. GBP cannot be represented by the
-    club salary_currency enum, so salary columns stay empty (rich CSV keeps
-    the verbatim values). expiryDate populates expires_at."""
+    """Map to the 22-column club schema (CLUB_COLUMNS, shared). GBP cannot
+    be represented by the club salary_currency enum, so salary columns stay
+    empty (the rich CSV keeps the verbatim values). is_active/expires_at
+    are retired; reed's expiryDate lives on in the rich CSV's
+    expires_date."""
     currency = _clean(r.get("salary_currency"))
     period = _clean(r.get("salary_period"))
     lo, hi = _clean(r.get("salary_min")), _clean(r.get("salary_max"))
@@ -491,17 +512,19 @@ def rich_row_to_club_row(r):
         "title": _clean(r.get("title")),
         "description": _clean(r.get("description")),
         "job_type": _clean(r.get("job_type")) or "full_time",
-        "category": _clean(r.get("category")) or "non_clinical",
+        "category": _clean(r.get("category")),
+        "sub_category": _clean(r.get("sub_category")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",
         "max_experience": "",
+        # reed has no structured qualification field — grounded extraction
+        # from the description only, never inferred
+        "qualification": extract_qualification(_clean(r.get("description"))),
         "min_salary": lo if exportable else "",
         "max_salary": (hi or lo) if exportable else "",
         "salary_period": period if exportable else "",
         "salary_currency": currency if exportable else "",
-        "is_active": "true",
-        "expires_at": _clean(r.get("expires_date")),
     }
 
 
@@ -556,19 +579,27 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s",
              len(known_ids), cutoff)
 
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
-                "new": 0, "duplicates": 0}
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0, "new": 0, "duplicates": 0}
     new_rows, review_log = [], []
-    page_no, total, empty_pages, stop = 1, None, 0, False
+    stop = False
 
-    while not stop:
+    # One newest-first walk per sector listing (--max-pages caps each walk;
+    # --limit caps the TOTAL). jobId dedup absorbs cross-sector overlap.
+    for search_url in SEARCH_URLS:
+      if stop:
+          break
+      log.info("--- listing: %s ---", search_url)
+      page_no, total, empty_pages = 1, None, 0
+      while not stop:
         if args.max_pages is not None and page_no > args.max_pages:
             break
         if total is not None and (page_no - 1) * PAGE_SIZE >= total:
             break
-        jobs, promoted, count = search_page(session, page_no)
+        jobs, promoted, count = search_page(session, page_no, search_url)
         if jobs is None:
-            log.error("Page %d failed after retries — stopping", page_no)
+            log.error("Page %d of %s failed after retries — stopping this "
+                      "listing", page_no, search_url)
             break
         if total is None and count is not None:
             total = count
@@ -607,7 +638,11 @@ def main(argv=None):
                 log.warning("Skipping malformed job on page %d: %s", page_no, exc)
                 continue
 
-            if row.pop("needs_review", False):
+            if not apply_classification(row):
+                counters["excluded_out_of_scope"] += 1
+                continue
+
+            if row["needs_review"]:
                 counters["needs_review"] += 1
                 review_log.append({"job_id": row["job_id"], "title": row["title"],
                                    "company": row["company"]})
@@ -652,6 +687,7 @@ def main(argv=None):
 
     print("\n===== Run summary =====")
     print("Jobs scanned:            {:>5,}".format(counters["scanned"]))
+    print("Excluded (out of scope): {:>5,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:    {:>5,}".format(counters["needs_review"]))
     print("New jobs added:          {:>5,}".format(counters["new"]))

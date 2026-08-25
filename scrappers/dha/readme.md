@@ -53,20 +53,16 @@ cards client-side from one public, token-free JSON resource URL:
   `--full` walks every page (used for the initial crawl).
 - **No salary** is published → `salary_raw = "Not Disclosed"`, all numeric and
   club salary fields blank.
-- **Healthcare filter** is satisfied at the source: every posting is a job at
-  a DHA-licensed healthcare facility. The portal's own `category`
-  (Physician / Dentist / Nurse and Midwife / Allied Health / T&CM) is
-  authoritative — it comes from the licence register and is set on every
-  `Medical` vacancy — and maps onto the club enum: allied health has no club
-  bucket and lands in `non_clinical` (as in `export_club_csv.py`), T&CM
-  follows the project's "AYUSH/Alternative Therapy → doctors" convention.
-  One title overrides it: **Pharmacist**, which the portal files under
-  "Allied Health" and which would otherwise lose the `pharmacists` bucket.
-  Titles otherwise decide only where the portal is silent — its `Admin`
-  vacancies, all of which are `non_clinical`. Trusting the regulator's bucket
-  over the title is what keeps e.g. "Clinical Psychologist" and "Speech and
-  Language Pathologist" out of `doctors`. Anything unmappable is **kept** as
-  `non_clinical` and flagged `needs_review` → `needs_review.csv` (spec §2).
+- **Classification** is the shared two-level taxonomy
+  (`_shared/classification.classify_job`): `category` is
+  `Non Clinical | Public Health`, with `sub_category` and the role-family
+  trace columns alongside. The portal's licence-register `category`
+  (Physician / Dentist / Nurse and Midwife / Allied Health / T&CM) no longer
+  decides anything — it travels only as a *skills* signal into the classifier
+  and is kept raw in the rich `category_original` column. Out-of-scope jobs
+  (most bedside clinical vacancies on this board) are dropped and counted as
+  `excluded_out_of_scope`; in-scope jobs whose titles look like a different
+  profession are kept and flagged `needs_review` → `needs_review.csv`.
 - **No structured location / schedule / experience.** These are read out of
   the free text and only when it says so explicitly: `city` falls back to
   Dubai (DHA licenses Dubai facilities) but honours a stated emirate — a few
@@ -91,11 +87,15 @@ python scraper.py                 # incremental daily run (details on)
 python scraper.py --full          # walk every page, no early stop
 python scraper.py --no-details    # listing fields only (fast)
 python scraper.py --limit 5       # test run (5 new jobs)
-python test_filters.py            # 33 offline unit tests
+python test_filters.py            # offline unit tests
 ```
 
-Outputs: `dha_jobs.csv` (rich cumulative store, dedup key `job_id`) and
-`../../jobs_csv/<DD-MM-YYYY>/dha.csv` (HealthCareers.club 22-column schema).
+Outputs: `dha_jobs.csv` (rich cumulative store, dedup key `job_id`),
+`../../jobs_csv/<DD-MM-YYYY>/dha.csv` (HealthCareers.club schema — the 22
+`CLUB_COLUMNS` from `_shared/classification.py`, including `sub_category`
+and `qualification`; `is_active`/`expires_at` are retired), and
+`out-of-scope.csv` (rows the classifier dropped from the rich store during
+the one-off taxonomy migration — a reversible archive).
 Running twice in a row adds 0 rows.
 
 Etiquette: descriptive User-Agent, ≥1 s between requests, retries with

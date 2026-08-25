@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""Unit tests for the shine.com scraper's parsers and filters.
+"""Unit tests for the role-scoped shine.com scraper's parsers and filters.
 
 Run with plain `python test_filters.py` (no pytest needed). Worked examples
-come from real listings captured on 2026-08-08.
+come from real listings captured on 2026-08-08. Family-scoring logic itself
+lives in ../_shared/classification.py and is tested there
+(../_shared/test_classification.py); these tests cover the shine-specific
+wiring (jJT/jKwd/jJD -> classify_job) and the parsers.
 """
 
 import unittest
 
 from shine_scraper import (
-    classify_category,
+    SEARCH_QUERIES,
+    apply_classification,
     classify_company_type,
     club_salary,
     compute_cutoff,
     decode_job_type,
-    is_healthcare,
     page_url,
     parse_date,
     parse_experience,
@@ -94,69 +97,89 @@ class TestParseExperience(unittest.TestCase):
         self.assertEqual(parse_experience(None), ("", ""))
 
 
-class TestIsHealthcare(unittest.TestCase):
-    def test_deny_wins_even_in_healthcare_industry(self):
-        # Real card: telesales for ayurvedic products, industry "Others".
-        keep, signal = is_healthcare(
-            "Urgent Requirement | Telesales (Ayurvedic, Healthcare & FMCG "
-            "Sector)", "Others")
-        self.assertFalse(keep)
-        self.assertEqual(signal, "deny")
-
-    def test_clinical_title(self):
-        keep, signal = is_healthcare("Staff Nurse - ICU", "Others")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "title")
-
-    def test_industry_rescues_blank_title(self):
-        keep, signal = is_healthcare("Front Office Executive",
-                                     "Medical / Healthcare")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "industry")
-
-    def test_neutral_industry_kept_for_review(self):
-        keep, signal = is_healthcare("Ward Boy", "Others")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "needs_review")
-
-    def test_named_other_industry_excluded(self):
-        keep, signal = is_healthcare("Process Associate",
-                                     "IT Services & Consulting")
-        self.assertFalse(keep)
-        self.assertEqual(signal, "industry")
-
-    def test_it_role_denied(self):
-        keep, _ = is_healthcare("Java Developer - Hospital Chain",
-                                "Medical / Healthcare")
-        self.assertFalse(keep)
+def _row(title, keywords="", description=""):
+    return {"title": title, "keywords": keywords, "description": description}
 
 
-class TestClassifyCategory(unittest.TestCase):
-    def test_nurse(self):
-        self.assertEqual(
-            classify_category("Wanted Staff Nurse, GNM, DGNM, ANM & Midwifery"),
-            ("nurses", False))
+class TestClassificationWiring(unittest.TestCase):
+    """The shine record -> classification.classify_job wiring."""
 
-    def test_pharmacist(self):
-        self.assertEqual(classify_category("Pharmacist - Retail"),
-                         ("pharmacists", False))
+    def test_title_hit_gets_two_level_taxonomy(self):
+        row = _row("Senior Clinical Research Associate")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+        self.assertEqual(row["family_confidence"], "high")
 
-    def test_doctor(self):
-        self.assertEqual(classify_category("Nephrologist"), ("doctors", False))
-        self.assertEqual(classify_category("Psychiatrist"), ("doctors", False))
+    def test_keywords_rescue_a_generic_title(self):
+        # Common shine pattern: CRO posts "Senior Executive" and names the
+        # domain only in the keyword tags (jKwd is passed as `skills`).
+        row = _row("Senior Executive", "pharmacovigilance,drug safety,argus")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["role_family"], "Pharmacovigilance")
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
 
-    def test_psychologist_is_non_clinical_not_doctor(self):
-        self.assertEqual(classify_category("Clinical Psychologist"),
-                         ("non_clinical", False))
+    def test_description_only_admission(self):
+        # The scraper hands the HTML-stripped jJD to the classifier.
+        row = _row("Officer", "", "Runs clinical trials under GCP with full "
+                                  "site management responsibility.")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["role_family"], "Clinical Research")
 
-    def test_non_clinical(self):
-        self.assertEqual(classify_category("Medical Coding Executive"),
-                         ("non_clinical", False))
+    def test_out_of_scope_record_is_dropped(self):
+        row = _row("Java Developer - Hospital Chain")
+        self.assertFalse(apply_classification(row))
+        self.assertEqual(row["category"], "")
 
-    def test_ambiguous_flagged(self):
-        category, ambiguous = classify_category("Ward Boy")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(ambiguous)
+    def test_bedside_role_is_dropped(self):
+        row = _row("Staff Nurse - ICU", "icu, ward")
+        self.assertFalse(apply_classification(row))
+
+    def test_sales_title_is_kept_but_flagged(self):
+        row = _row("Sales Manager - Medical Affairs")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["role_family"], "MSL")
+        self.assertEqual(row["needs_review"], "true")
+
+
+class TestPublicHealthCoverage(unittest.TestCase):
+    """PH expanded 2026-08-24 to the ten-sub-category taxonomy."""
+
+    PH_TITLES = [
+        "Field Epidemiologist",
+        "Public Health Programme Manager",
+        "M&E Officer - Health Projects",
+        "Community Health Worker Supervisor",
+        "Health Education Specialist",
+        "District Tuberculosis Coordinator (NTEP)",
+        "Public Health Nutritionist",
+        "Infection Prevention and Control Nurse",
+        "HMIS / DHIS2 Data Analyst",
+        "Health Systems Research Associate",
+    ]
+
+    def test_each_sub_category_lands_in_public_health(self):
+        for title in self.PH_TITLES:
+            row = _row(title)
+            self.assertTrue(apply_classification(row), title)
+            self.assertEqual(row["category"], "Public Health", title)
+            self.assertEqual(row["role_family"], "Public Health", title)
+
+    def test_ph_slugs_present(self):
+        # The data-driven slug set (probed live 2026-08-24). M&E and
+        # Community Health have no dedicated slug — shine's matching turns
+        # those into tens of thousands of noise results with zero PH yield;
+        # the classifier still catches strays from the other queries.
+        for slug in ("public-health", "epidemiology", "epidemiologist",
+                     "disease-surveillance", "health-promotion",
+                     "tuberculosis", "hiv", "immunization", "vaccination",
+                     "public-health-nutrition", "infection-control",
+                     "health-informatics", "public-health-research"):
+            self.assertIn(slug, SEARCH_QUERIES, slug)
+
+    def test_search_slugs_are_unique(self):
+        self.assertEqual(len(SEARCH_QUERIES), len(set(SEARCH_QUERIES)))
 
 
 class TestCompanyType(unittest.TestCase):
@@ -173,8 +196,9 @@ class TestCompanyType(unittest.TestCase):
 
 class TestCutoff(unittest.TestCase):
     def test_first_run_window(self):
+        # INITIAL_WINDOW_DAYS is 2 in the roles variant
         self.assertEqual(
-            compute_cutoff(None, today=date(2026, 8, 8)), "2026-08-01")
+            compute_cutoff(None, today=date(2026, 8, 8)), "2026-08-06")
 
     def test_watermark_with_grace(self):
         df = pd.DataFrame({"posted_date": ["2026-08-01", "2026-08-06"]})
@@ -186,7 +210,7 @@ class TestCutoff(unittest.TestCase):
     def test_empty_dates_fall_back_to_window(self):
         df = pd.DataFrame({"posted_date": ["", ""]})
         self.assertEqual(
-            compute_cutoff(df, today=date(2026, 8, 8)), "2026-08-01")
+            compute_cutoff(df, today=date(2026, 8, 8)), "2026-08-06")
 
 
 class TestSmallParsers(unittest.TestCase):
@@ -196,18 +220,23 @@ class TestSmallParsers(unittest.TestCase):
         self.assertEqual(parse_date("soon"), "")
 
     def test_page_url(self):
-        self.assertEqual(page_url("healthcare", 1),
-                         "https://www.shine.com/job-search/healthcare-jobs?sort=1")
-        self.assertEqual(page_url("staff-nurse", 3),
-                         "https://www.shine.com/job-search/staff-nurse-jobs-3?sort=1")
+        self.assertEqual(page_url("public-health", 1),
+                         "https://www.shine.com/job-search/public-health-jobs?sort=1")
+        self.assertEqual(page_url("epidemiology", 3),
+                         "https://www.shine.com/job-search/epidemiology-jobs-3?sort=1")
 
-    def test_page_url_with_industry_param(self):
-        self.assertEqual(
-            page_url("healthcare?ind=13", 1),
-            "https://www.shine.com/job-search/healthcare-jobs?sort=1&ind=13")
+    def test_page_url_with_extra_param(self):
         self.assertEqual(
             page_url("healthcare?ind=13", 2),
             "https://www.shine.com/job-search/healthcare-jobs-2?sort=1&ind=13")
+
+    def test_page_url_industry_browse(self):
+        # The bare "jobs" slug is the browse-all listing; it must not become
+        # "jobs-jobs", and page N paginates as jobs-N (verified 2026-08-24).
+        self.assertEqual(page_url("jobs?ind=63", 1),
+                         "https://www.shine.com/job-search/jobs?sort=1&ind=63")
+        self.assertEqual(page_url("jobs?ind=63", 2),
+                         "https://www.shine.com/job-search/jobs-2?sort=1&ind=63")
 
     def test_strip_html(self):
         self.assertEqual(
@@ -233,20 +262,26 @@ class TestSmallParsers(unittest.TestCase):
 class TestClubRow(unittest.TestCase):
     def test_full_mapping(self):
         rich = {
-            "location": "Noida, Delhi", "company": "Apollo Hospitals",
-            "company_type": "hospital", "title": "Staff Nurse",
-            "description": "ICU nurse.", "job_type": "Full time",
-            "employment_type": "Regular", "category": "nurses",
-            "job_url": "https://www.shine.com/jobs/staff-nurse/x/1",
+            "location": "Noida, Delhi", "company": "IQVIA",
+            "company_type": "pharma", "title": "Epidemiologist",
+            "description": "MPH required. Disease surveillance role.",
+            "job_type": "Full time", "employment_type": "Regular",
+            "category": "Public Health",
+            "sub_category": "Epidemiology",
+            "job_url": "https://www.shine.com/jobs/epidemiologist/x/1",
             "posted_date": "2026-08-07", "experience_min_years": "1",
             "experience_max_years": "5",
-            "salary_raw": "Rs 2.0  - 3.5 Lakh/Yr", "expires_date": "2026-09-19",
+            "salary_raw": "Rs 2.0  - 3.5 Lakh/Yr",
         }
         row = rich_row_to_club_row(rich)
         self.assertEqual(row["country_code"], "IN")
         self.assertEqual(row["city_name"], "Noida")
         self.assertEqual(row["job_type"], "full_time")
-        self.assertEqual(row["category"], "nurses")
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Epidemiology")
+        self.assertNotIn("is_active", row)
+        self.assertNotIn("expires_at", row)
+        self.assertEqual(row["qualification"], "MPH")
         self.assertEqual((row["min_salary"], row["max_salary"]),
                          ("200000", "350000"))
         self.assertEqual(row["salary_period"], "per_annum")
@@ -259,4 +294,4 @@ class TestClubRow(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    unittest.main(verbosity=1)

@@ -10,13 +10,16 @@ https://in.indeed.com/jobs?q=...&l=Remote. Run with:
 import unittest
 
 from indeed_scraper import (
-    classify_category,
+    CLUB_COLUMNS,
+    card_skills,
+    card_to_rich_row,
+    classify_card,
     classify_company_type,
     compute_cutoff,
     epoch_ms_to_date,
-    is_healthcare,
     is_remote,
     parse_salary,
+    rich_row_to_club_row,
     cards_from_html,
 )
 
@@ -60,83 +63,77 @@ class TestSalaryParser(unittest.TestCase):
         self.assertEqual((lo, hi), ("15000", "20000"))
 
 
-class TestHealthcareFilter(unittest.TestCase):
-    def test_clinical_titles_kept(self):
+class TestSharedClassifierWiring(unittest.TestCase):
+    """classify_card() wires the shared two-level classifier; the engine
+    itself is covered by _shared/test_classification.py."""
+
+    @staticmethod
+    def card(title, snippet="", jt="", ben=""):
+        return {"t": title, "sn": snippet, "jt": jt, "ben": ben}
+
+    def test_in_scope_role_gets_taxonomy_labels(self):
+        verdict = classify_card(self.card(
+            "Medical Coder",                                   # MedCoded
+            "Assign ICD-10 and CPT codes from physician documentation.",
+            jt="Full-time"))
+        self.assertTrue(verdict["in_scope"])
+        self.assertEqual(verdict["category"], "Non Clinical")
+        self.assertEqual(verdict["sub_category"], "Medical Coding")
+
+    def test_second_in_scope_family(self):
+        verdict = classify_card(self.card(
+            "Drug Safety Associate",
+            "ICSR case processing, MedDRA coding, Argus Safety database."))
+        self.assertTrue(verdict["in_scope"])
+        self.assertEqual(verdict["category"], "Non Clinical")
+        self.assertEqual(verdict["sub_category"], "Pharmacovigilance")
+
+    def test_clinical_titles_are_dropped(self):
         for title in [
-            "Clinical Coordinator (Remote-Night Shift)",       # ZYLA Health
             "Assistant Nurse / Registered Nurse – Germany Opportunities",
             "Consulting Pediatrician, Telemedicine",           # NeoKids Pro
-            "Medical Coder",                                   # MedCoded
-            "Pharmacist- (Prescription Digitization & Verification)",
-            "Psychiatrist Job in India",                       # Mantra Care
-            "Clinical Nutritionist / Dietician",               # ZYLA Health
             "Paediatric Physiotherapist",
-            "RCM Specialist - Quality (US Healthcare - DME/HME)",
-            "Prior Authorization Specialist Remote (IN)",      # Snapscale
+            "Patient Care Assistant",
         ]:
-            keep, signal = is_healthcare(title)
-            self.assertTrue(keep, title)
-            self.assertEqual(signal, "title", title)
+            self.assertFalse(classify_card(self.card(title))["in_scope"], title)
 
-    def test_non_healthcare_titles_denied(self):
+    def test_non_healthcare_cards_are_dropped(self):
+        # Junk the broad remote queries surface; never exported.
         for title in [
             "Admissions Counsellor",                # UniAthena (education)
-            "Academic counselor (WFH )",            # Brightchamps
-            "Visa counsellor",                      # Canam Consultants
-            "Telecaller / Admission Counsellor",
             "Hindi Transcriber",                    # Lionbridge (AI data)
-            "Telugu Audio Annotation Specialist",
             "Data Annotator- Marathi",
-            "Hindi Voice Collection Contributors",
             "English voice over artist",
-            "IGCSE A Level Psychology Tutor (Online)",
             "Legal Transcriptionist (Australian Accent) – Remote",
+            "Assistant Manager",                    # Vaighai Agro
         ]:
-            keep, _ = is_healthcare(title)
-            self.assertFalse(keep, title)
+            self.assertFalse(classify_card(self.card(title))["in_scope"], title)
 
-    def test_ambiguous_title_kept_flagged(self):
-        # Vaighai Agro "Assistant Manager" — junk card the nurse query
-        # surfaced; spec: keep + flag, never silently drop.
-        keep, signal = is_healthcare("Assistant Manager")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "needs_review")
-
-    # "Medical transcriptionist" itself is healthcare; only the generic
-    # language-data gigs are denied.
-    def test_medical_transcription_kept(self):
-        keep, signal = is_healthcare(
-            "Online Medical Transcription Faculty (Remote) – Kerala Candidates Only")
-        self.assertTrue(keep)
-        self.assertEqual(signal, "title")
-
-
-class TestCategoryClassifier(unittest.TestCase):
-    def test_nurses(self):
+    def test_card_skills_uses_taxonomy_attributes_only(self):
         self.assertEqual(
-            classify_category("Assistant Nurse / Registered Nurse – Germany Opportunities"),
-            ("nurses", False))
+            card_skills({"jt": "Full-time|Permanent", "ben": "Health insurance"}),
+            "Full-time | Permanent | Health insurance")
+        self.assertEqual(card_skills({}), "")
 
-    def test_doctors(self):
-        for title in ["General Practitioner",
-                      "Consulting Pediatrician, Telemedicine",
-                      "Diabetologist",
-                      "Consultant Dermatologist (Teleconsultation & AI Validation)",
-                      "Medical Reviewer(MBBS/MD)",
-                      "Psychiatrist"]:
-            self.assertEqual(classify_category(title)[0], "doctors", title)
 
-    def test_pharmacists(self):
-        for title in ["Pharmacist- (Prescription Digitization & Verification)",
-                      "PHARMACY TUTOR", "Clinical Pharmacologist"]:
-            self.assertEqual(classify_category(title)[0], "pharmacists", title)
-
-    def test_non_clinical(self):
-        for title in ["Medical Coder", "Healthcare Content Editor",
-                      "Prior Authorization Specialist Remote (IN)",
-                      "Part Time Clinical Pschyologist",   # sic, real card
-                      "Patient Care Assistant"]:
-            self.assertEqual(classify_category(title)[0], "non_clinical", title)
+class TestClubRow(unittest.TestCase):
+    def test_club_schema_and_taxonomy(self):
+        card = {"k": "abc123", "t": "Clinical Research Associate",
+                "c": "Catalyst Clinical Research, LLC",
+                "loc": "Remote", "pd": 1783573200000,
+                "sn": "Monitor trial sites to ICH-GCP. B.Pharm required.",
+                "jt": "Full-time"}
+        verdict = classify_card(card)
+        self.assertTrue(verdict["in_scope"])
+        club = rich_row_to_club_row(card_to_rich_row(card, verdict))
+        self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
+        # is_active / expires_at are retired from the club contract.
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        self.assertEqual(club["qualification"], "B.Pharm")
+        self.assertEqual(club["job_type"], "remote")
 
 
 class TestRemoteGate(unittest.TestCase):

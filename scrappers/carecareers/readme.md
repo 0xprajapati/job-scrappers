@@ -35,21 +35,48 @@ for **new jobs only** (default on — the index is tiny; `--no-details` skips).
   0/null budget values → `Not Disclosed` (never invented). `misSalary`/
   `maxSalary` in the detail payload are 0 even when budget values exist —
   only the budget fields are used.
-* Titles carry typos ("Counsultant"); classification also uses the
-  designation and the department segment of the org hierarchy. Consultant-
-  style titles map to doctors (clinical depts); generic corporate titles
-  with no healthcare word in title/designation/department are kept and
-  flagged `needs_review` (also logged to `needs_review.csv`).
+* Titles carry typos ("Counsultant"); the classifier therefore also gets the
+  designation and the department segment of the org hierarchy as its
+  `skills` signal.
 * `employmentType` "Regular" → `full_time`; part-time/contract variants are
   mapped if they ever appear.
+
+## Classification (shared taxonomy)
+
+Every candidate job goes through the shared classifier
+(`scrappers/_shared/classification.py`) — the scraper defines no category
+rules of its own:
+
+```python
+verdict = classify_job(title, skills=designation + department, description=description)
+```
+
+* `in_scope == False` → the job is **dropped** and counted as
+  `excluded_out_of_scope` in the run summary. On this hospital-chain ATS that
+  is most postings (consultants, nursing, technicians): the scope is
+  **Non Clinical + Public Health** roles only.
+* In-scope jobs get `category` (`Non Clinical` | `Public Health`) and
+  `sub_category` (one of the 20 sub-categories), plus the rich-CSV trace
+  columns `role_family`, `all_families`, `family_scores`,
+  `family_confidence`, `matched_in`.
+* The PeopleStrong department/designation fields never decide the category;
+  they stay raw in the rich CSV and travel only as the classifier's `skills`
+  signal.
+* `needs_review == True` rows are kept **and** appended to `needs_review.csv`.
 
 ## Outputs
 
 * `carecareers_jobs.csv` — rich cumulative store, deduped on `requisitionId`;
   append-only across runs.
-* `../../jobs_csv/<DD-MM-YYYY>/carecareers.csv` — HealthCareers.club
-  22-column schema (all cumulative rows), refreshed every run.
-* `needs_review.csv` — titles with no healthcare signal, for manual review.
+* `../../jobs_csv/<DD-MM-YYYY>/carecareers.csv` — the 22 `CLUB_COLUMNS`
+  imported from `_shared/classification.py` (all cumulative rows, refreshed
+  every run). It carries `sub_category` and `qualification`; the old
+  `is_active`/`expires_at` columns are retired. `qualification` is the
+  structured `qualifications` detail field when present, else
+  `extract_qualification(description)` — never inferred.
+* `needs_review.csv` — in-scope rows the classifier flagged, for manual review.
+* `out-of-scope.csv` — rows the classifier dropped from the rich store during
+  the one-off taxonomy migration (reversible archive).
 
 ## Usage
 

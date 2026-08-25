@@ -17,13 +17,12 @@ from himalayas_scraper import (
     DESCRIPTION_MAX_CHARS,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
-    CLUB_CATEGORIES,
     classify_company_type,
+    classify_feed_job,
     clean_value,
     compute_cutoff,
     epoch_to_date,
     extract_qualification,
-    match_role_family,
     job_id_from_guid,
     parse_listish,
     parse_salary,
@@ -166,185 +165,51 @@ class TestParseSalary(unittest.TestCase):
                          ("Not Disclosed", "", "", "", ""))
 
 
-class TestRoleFamilyGate(unittest.TestCase):
-    """The scope is 11 clinical-research / pharma-regulatory families.
+class TestSharedClassifierWiring(unittest.TestCase):
+    """classify_feed_job routes everything through _shared/classification.
 
-    Every title below is verbatim from the 7,930-job stored corpus.
+    Only the WIRING is tested here (signals in, verdict fields out); the
+    engine itself is covered by _shared/test_classification.py.
     """
 
-    def fam(self, title):
-        return match_role_family(title)[0]
+    def test_in_scope_role_gets_two_level_category(self):
+        v = classify_feed_job("Senior Medical Writer")
+        self.assertTrue(v["in_scope"])
+        self.assertEqual(v["category"], "Non Clinical")
+        self.assertEqual(v["sub_category"], "Medical Writer")
+        self.assertEqual(v["role_family"], "Medical Writer")
 
-    # ---- each family admits its own ----
-    def test_tmf(self):
-        self.assertEqual(self.fam("Team Lead, TMF Operations - Argentina- Remote"), "TMF")
+    def test_public_health_split(self):
+        v = classify_feed_job("Population Health Program Coordinator")
+        self.assertTrue(v["in_scope"])
+        self.assertEqual(v["category"], "Public Health")
+        self.assertEqual(v["sub_category"], "Public Health Program Management")
 
-    def test_heor(self):
-        self.assertEqual(self.fam("Senior Director, HEOR & Evidence Strategy"), "HEOR")
+    def test_out_of_scope_title_is_dropped(self):
+        v = classify_feed_job("Android Software Engineer - AI Neobank App")
+        self.assertFalse(v["in_scope"])
+        self.assertEqual(v["category"], "")
 
-    def test_heor_market_access(self):
-        self.assertEqual(self.fam("Market Access & Payer Manager"), "HEOR")
+    def test_vetoed_title_is_dropped(self):
+        v = classify_feed_job(
+            "Senior Medical Billing Specialist", ["medical-billing"],
+            "ICD-10 coding review, CPT charge capture, coding compliance.")
+        self.assertFalse(v["in_scope"])
+        self.assertTrue(v["vetoed_by"])
 
-    def test_msl(self):
-        self.assertEqual(self.fam("Medical Science Liaison - Metabolism"), "MSL")
+    def test_slugs_alone_cannot_admit(self):
+        # feed slugs are auto-tagged and loose: passed only as the weighted
+        # skills signal, they must not admit a clinical title on their own
+        v = classify_feed_job("Registered Dietitian", ["Clinical-Research"])
+        self.assertFalse(v["in_scope"])
 
-    def test_msl_medical_affairs(self):
-        self.assertEqual(self.fam("Assoc Director, Medical Affairs"), "MSL")
-
-    def test_pharmacovigilance(self):
-        self.assertEqual(
-            self.fam("Senior Associate, Pharmacovigilance - Mexico/Brazil - Remote"),
-            "Pharmacovigilance")
-
-    def test_pharmacovigilance_pv_abbreviation(self):
-        self.assertEqual(self.fam("PV Officer- Senior PV Officer, Team Leader"),
-                         "Pharmacovigilance")
-
-    def test_pharmacovigilance_drug_safety(self):
-        self.assertEqual(self.fam("Senior Drug Safety Specialist"), "Pharmacovigilance")
-
-    def test_medical_coding(self):
-        self.assertEqual(self.fam("Medical Coder (SC Upstate Residents)"), "Medical Coding")
-
-    def test_medical_coding_bare_coder(self):
-        self.assertEqual(self.fam("Coder, Edits/Denials"), "Medical Coding")
-
-    def test_medical_writer(self):
-        self.assertEqual(self.fam("Senior Medical Writer"), "Medical Writer")
-
-    def test_regulatory_affairs(self):
-        self.assertEqual(self.fam("Senior Associate, Regulatory Affairs (US)"),
-                         "Regulatory Affairs")
-
-    def test_medical_reviewer(self):
-        self.assertEqual(self.fam("Medical Monitor (Gastroenterology)"), "Medical Reviewer")
-
-    def test_clinical_data_management(self):
-        self.assertEqual(self.fam("Senior Clinical Data Manager"),
-                         "Clinical Data Management")
-
-    def test_public_health(self):
-        self.assertEqual(self.fam("Population Health Program Coordinator"), "Public Health")
-
-    def test_clinical_research(self):
-        self.assertEqual(self.fam("Senior Clinical Research Associate - UK - Remote"),
-                         "Clinical Research")
-
-    # ---- out of scope ----
-    def test_therapist_is_out_of_scope(self):
-        # the behavioural-health market the old broad gate let in
-        self.assertEqual(self.fam("Licensed Clinical Social Worker (LCSW) - Quincy, MA"), "")
-
-    def test_nurse_practitioner_is_out_of_scope(self):
-        self.assertEqual(self.fam("Nurse Practitioner (Remote, SC License Required)"), "")
-
-    def test_software_engineer_is_out_of_scope(self):
-        self.assertEqual(self.fam("Android Software Engineer - AI Neobank App"), "")
-
-    def test_generic_data_management_is_out_of_scope(self):
-        # bare "data management" is not Clinical Data Management
-        self.assertEqual(self.fam("Configuration / Data Management Analyst- Federal Health"), "")
-        self.assertEqual(self.fam("Manager, Client Data Management"), "")
-
-    def test_charge_description_master_is_not_cdm(self):
-        # "CDM" in US revenue-cycle listings = Charge Description Master
-        self.assertEqual(self.fam("Revenue Integrity & CDM Operations Manager"), "")
-
-    def test_revenue_cycle_regulatory_compliance_is_out_of_scope(self):
-        self.assertEqual(
-            self.fam("Senior Regulatory Compliance and Revenue Cycle Analyst"), "")
-
-    def test_utilization_review_is_out_of_scope(self):
-        # payer-side US insurance work, not pharma medical review
-        self.assertEqual(self.fam("Utilization Review Nurse-LVN/LPN"), "")
-        self.assertEqual(self.fam("Regional Director of Utilization Management"), "")
-
-    def test_ime_physician_reviewer_is_out_of_scope(self):
-        self.assertEqual(
-            self.fam("Board Certified Neurotology Physician Disability Peer Reviewer"), "")
-
-    def test_ime_field_medical_director_not_msl(self):
-        # "field medical" in this feed means IME review, not MSL
-        self.assertEqual(
-            self.fam("Physician Reviewer Internal Medicine-Field Medical Director, Radiology"), "")
-
-    # ---- precedence ----
-    def test_medical_writer_beats_regulatory_affairs(self):
-        self.assertEqual(self.fam("Medical Writer - Clinical Regulatory Documentation"),
-                         "Medical Writer")
-
-    def test_regulatory_affairs_beats_clinical_research(self):
-        self.assertEqual(self.fam("Principal Clinical Trial Regulatory Affairs"),
-                         "Regulatory Affairs")
-
-    def test_tmf_beats_clinical_research(self):
-        self.assertEqual(self.fam("Team Lead, TMF Operations"), "TMF")
-
-    # ---- kept but flagged, never silently dropped (master spec §2) ----
-    def test_legal_counsel_is_flagged(self):
-        family, _signal, review = match_role_family(
-            "Senior Counsel, Global Commercial Legal - U.S. Market Access and Pricing")
-        self.assertEqual(family, "HEOR")
-        self.assertTrue(review)
-
-    def test_business_development_is_flagged(self):
-        family, _s, review = match_role_family("Business Development Director (Clinical Research)")
-        self.assertEqual(family, "Clinical Research")
-        self.assertTrue(review)
-
-    def test_msl_meaning_medical_stop_loss_is_flagged(self):
-        # real listing: "MSL" here is an insurance product, not a liaison
-        family, _s, review = match_role_family(
-            "Regional Account Manager, Medical Stop Loss (MSL) Distribution-2")
-        self.assertEqual(family, "MSL")
-        self.assertTrue(review)
-
-    def test_clean_title_is_not_flagged(self):
-        self.assertFalse(match_role_family("Senior Medical Writer")[2])
-
-    def test_signal_is_title(self):
-        self.assertEqual(match_role_family("Senior Medical Writer")[1], "title")
-
-    def test_categories_argument_is_ignored(self):
-        # slugs are too noisy to admit a job on their own
-        self.assertEqual(
-            match_role_family("Registered Dietitian", ["Clinical-Research"])[0], "")
-
-
-class TestClubCategories(unittest.TestCase):
-    """`category` now carries the role family itself."""
-
-    EXPECTED = {
-        "Public Health", "Clinical Data Management", "Clinical Research",
-        "Medical Writer", "TMF", "Medical Coding", "Pharmacovigilance",
-        "Regulatory Affairs", "Medical Reviewer", "MSL", "HEOR",
-    }
-
-    def test_exactly_the_eleven_requested_families(self):
-        self.assertEqual(set(CLUB_CATEGORIES), self.EXPECTED)
-
-    def test_no_duplicates(self):
-        self.assertEqual(len(CLUB_CATEGORIES), len(set(CLUB_CATEGORIES)))
-
-    def test_every_family_is_reachable_from_a_real_title(self):
-        # one real listing title per family — the gate must produce each one,
-        # or a category could be declared but never emitted
-        samples = {
-            "TMF": "Associate Director, TMF Operations Lead",
-            "HEOR": "Senior Director, HEOR & Evidence Strategy",
-            "MSL": "Medical Science Liaison - Southeast",
-            "Pharmacovigilance": "Executive Director, Pharmacovigilance (PV)",
-            "Medical Coding": "Multi-Specialty Profee and/or Facility Medical Coder",
-            "Medical Writer": "Senior Medical Writer",
-            "Regulatory Affairs": "Senior Associate, Regulatory Affairs (US)",
-            "Medical Reviewer": "Medical Monitor (Gastroenterology)",
-            "Clinical Data Management": "Senior Clinical Data Manager",
-            "Public Health": "Population Health Program Coordinator",
-            "Clinical Research": "Senior Clinical Research Associate - UK - Remote",
-        }
-        self.assertEqual(set(samples), self.EXPECTED)
-        for family, title in samples.items():
-            self.assertEqual(match_role_family(title)[0], family, title)
+    def test_slugs_are_flattened_to_scorer_text(self):
+        # hyphenated slugs must still count as a skills signal
+        v = classify_feed_job("Senior Director, DSPV",
+                              ["drug-safety", "pharmacovigilance"],
+                              "ICSR case processing and signal detection.")
+        self.assertTrue(v["in_scope"])
+        self.assertEqual(v["role_family"], "Pharmacovigilance")
 
 
 class TestCompanyType(unittest.TestCase):
@@ -447,7 +312,8 @@ class TestClubMapping(unittest.TestCase):
     BASE = {
         "title": "Nurse Practitioner", "company": "Galileo, Inc.",
         "company_type": "hospital", "company_logo": "https://cdn/x.png",
-        "country": "United States", "role_family": "Clinical Research",
+        "country": "United States", "category": "Non Clinical",
+        "sub_category": "Clinical Research", "role_family": "Clinical Research",
         "description": "Provide virtual primary care.",
         "job_url": "https://himalayas.app/companies/galileo/jobs/np-123456",
         "posted_date": "2026-07-29", "expires_date": "2026-09-27",
@@ -508,16 +374,18 @@ class TestClubMapping(unittest.TestCase):
         self.assertIn(row["company_type"], ("hospital", "pharma"))
         self.assertIn(row["job_type"], ("full_time", "part_time", "remote",
                                         "hybrid"))
-        self.assertIn(row["category"], CLUB_CATEGORIES)
+        self.assertIn(row["category"], ("Non Clinical", "Public Health"))
 
     def test_club_columns_match_the_current_contract(self):
-        # job_samples.csv gained `qualification` and dropped is_active /
-        # expires_at after this scraper was first written.
+        # The 22-column contract is imported from _shared/classification —
+        # never hand-copied — and carries category + sub_category but no
+        # is_active / expires_at.
         from himalayas_scraper import CLUB_COLUMNS
         self.assertIn("qualification", CLUB_COLUMNS)
+        self.assertIn("sub_category", CLUB_COLUMNS)
         self.assertNotIn("is_active", CLUB_COLUMNS)
         self.assertNotIn("expires_at", CLUB_COLUMNS)
-        self.assertEqual(len(CLUB_COLUMNS), 21)
+        self.assertEqual(len(CLUB_COLUMNS), 22)
         self.assertEqual(sorted(rich_row_to_club_row(self.BASE)),
                          sorted(CLUB_COLUMNS))
 

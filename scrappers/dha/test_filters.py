@@ -43,65 +43,36 @@ class TestTextHelpers(unittest.TestCase):
                          "Canadian Specialist Hospital")
 
 
-class TestCategoryClassifier(unittest.TestCase):
-    def test_portal_category_maps_to_club_enum(self):
-        self.assertEqual(scraper.classify_category("Registered Nurse",
-                                                   "Nurse and Midwife", "Medical"),
-                         ("nurses", False))
-        self.assertEqual(scraper.classify_category("General Practitioner",
-                                                   "Physician", "Medical"),
-                         ("doctors", False))
-        self.assertEqual(scraper.classify_category("Orthodontist",
-                                                   "Dentist", "Medical"),
-                         ("doctors", False))
+class TestSharedClassifierWiring(unittest.TestCase):
+    """classify_row wires the shared two-level classifier (the engine itself
+    is covered by _shared/test_classification.py)."""
 
-    def test_allied_health_lands_in_non_clinical(self):
-        # No club bucket exists for allied health (export_club_csv.py note).
-        self.assertEqual(scraper.classify_category("Physiotherapy Technician",
-                                                   "Allied Health", "Medical"),
-                         ("non_clinical", False))
+    @staticmethod
+    def row(title, portal_category="", description=""):
+        return {"title": title, "raw_title": title,
+                "category_original": portal_category,
+                "description": description, "requirements": ""}
 
-    def test_tcm_follows_the_ayush_convention(self):
-        self.assertEqual(
-            scraper.classify_category(
-                "Homeopathy Practitioner",
-                "Traditional And Complementary Medicine (T&CM)", "Medical"),
-            ("doctors", False))
+    def test_in_scope_role_gets_taxonomy_labels(self):
+        row = self.row("Clinical Research Coordinator", "Allied Health",
+                       "Coordinate clinical trials, ICH-GCP, ethics submissions")
+        verdict = scraper.classify_row(row)
+        self.assertTrue(verdict["in_scope"])
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
 
-    def test_pharmacist_title_beats_portal_category(self):
-        # The portal files pharmacists under "Allied Health"; the title must win
-        # so the pharmacists bucket is not lost.
-        self.assertEqual(scraper.classify_category("Pharmacist",
-                                                   "Allied Health", "Medical"),
-                         ("pharmacists", False))
+    def test_out_of_scope_clinical_title_is_dropped(self):
+        # The board's bread-and-butter vacancy: bedside clinical, out of scope.
+        verdict = scraper.classify_row(self.row("Registered Nurse",
+                                                "Nurse and Midwife"))
+        self.assertFalse(verdict["in_scope"])
 
-    def test_portal_category_beats_the_title_regex(self):
-        # Real postings: allied-health roles whose titles read clinical must
-        # follow the regulator's own bucket, not the title.
-        for title in ("Clinical Psychologist",
-                      "Speech and Language Pathologist - Therapist",
-                      "Chiropractor - Part Time",
-                      "DHA licenced Massage Specialist"):
-            self.assertEqual(
-                scraper.classify_category(title, "Allied Health", "Medical"),
-                ("non_clinical", False), title)
-
-    def test_title_decides_when_the_portal_is_silent(self):
-        self.assertEqual(scraper.classify_category("Medical Officer", "", ""),
-                         ("doctors", False))
-        self.assertEqual(scraper.classify_category("Staff Nurse", "", ""),
-                         ("nurses", False))
-
-    def test_admin_vacancy_without_category_is_non_clinical(self):
-        self.assertEqual(scraper.classify_category("Sales Executive", "", "Admin"),
-                         ("non_clinical", False))
-        self.assertEqual(scraper.classify_category("Receptionist", None, "Admin"),
-                         ("non_clinical", False))
-
-    def test_unmappable_job_is_kept_and_flagged(self):
-        category, needs_review = scraper.classify_category("Team Member", "", "")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(needs_review)          # kept, never dropped (spec §2)
+    def test_portal_category_travels_as_a_skills_signal_only(self):
+        # The licence-register bucket never decides the category by itself:
+        # an admin title stays out of scope even with a Medical bucket.
+        verdict = scraper.classify_row(self.row("Receptionist", "Allied Health"))
+        self.assertFalse(verdict["in_scope"])
 
     def test_company_type_enum(self):
         self.assertEqual(scraper.classify_company_type("Life Pharmacy"), "pharma")
@@ -236,7 +207,11 @@ class TestRowBuilding(unittest.TestCase):
         row = self.build()
         self.assertEqual(row["job_id"], "OPP-2026-00000037")
         self.assertEqual(row["company"], "Your Choice Healthcare")
-        self.assertEqual(row["category"], "nurses")
+        # The builder no longer labels: classify_row() stamps the taxonomy
+        # after detail enrichment, so these start blank.
+        self.assertEqual(row["category"], "")
+        self.assertEqual(row["sub_category"], "")
+        self.assertEqual(row["category_original"], "Nurse and Midwife")
         self.assertFalse(row["needs_review"])
         self.assertEqual(row["first_seen_date"], "2026-07-27")
         self.assertEqual(row["posted_date"], "")     # never published by DHA
@@ -258,10 +233,18 @@ class TestRowBuilding(unittest.TestCase):
         self.assertEqual(row["experience_min_years"], "3")
 
     def test_club_row_matches_the_contract(self):
-        club = scraper.rich_row_to_club_row(self.build())
+        row = self.build()
+        row["title"] = row["raw_title"] = "Clinical Research Coordinator"
+        row["description"] = ("Coordinate clinical trials, ICH-GCP, ethics "
+                              "submissions. MSc required.")
+        scraper.classify_row(row)
+        club = scraper.rich_row_to_club_row(row)
         self.assertEqual(sorted(club), sorted(scraper.CLUB_COLUMNS))
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
         self.assertEqual(club["country_code"], "AE")
-        self.assertEqual(club["category"], "nurses")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
         self.assertEqual(club["company_type"], "hospital")
         self.assertEqual(club["job_type"], "full_time")
         self.assertIn(club["salary_currency"], ("", "INR", "USD"))

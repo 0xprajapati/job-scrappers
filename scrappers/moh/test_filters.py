@@ -205,61 +205,56 @@ class TestAnnouncementClassification(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Category mapping
+# Scope & labelling (shared two-level taxonomy)
 # ---------------------------------------------------------------------------
 
-class TestCategoryClassifier(unittest.TestCase):
+class TestClassificationWiring(unittest.TestCase):
+    """`classify_announcement()` decides "is this a job ad at all"; the shared
+    classifier then decides scope and labels. This scraper owns no category
+    keyword lists of its own."""
 
-    def test_doctors(self):
-        for title in ("MOH Announces Vacancies for Deputy Doctor and Dental "
-                      "Consultants",
-                      "MOH Announces Resident Dentist Jobs for Bachelor Degree "
-                      "Holders",
-                      "Physicians & Nursing"):
-            self.assertEqual(s.classify_category(title)[0], "doctors", title)
+    @staticmethod
+    def _row(title, specialties="", description="", needs_review=False):
+        return {"title": title, "specialties": specialties,
+                "description": description, "needs_review": needs_review}
 
-    def test_nurses(self):
-        self.assertEqual(s.classify_category("Nursing Vacancies")[0], "nurses")
-        self.assertEqual(s.classify_category("MOH Announces Midwifery Jobs")[0],
-                         "nurses")
+    def test_in_scope_role_is_stamped(self):
+        row = self._row("MOH Announces Clinical Research Coordinator Vacancies")
+        self.assertTrue(s.apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+        self.assertTrue(row["matched_in"])
 
-    def test_pharmacists(self):
-        self.assertEqual(
-            s.classify_category("MOH Announces Pharmacist Jobs for Bachelor "
-                                "Holders")[0], "pharmacists")
+    def test_public_health_role_is_stamped(self):
+        row = self._row("MOH Announces Epidemiologist Vacancies")
+        self.assertTrue(s.apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Epidemiology")
 
-    def test_pharmacy_wins_over_doctor_wording(self):
-        # "Consultant" alone would read as a doctor; the specialty decides
-        self.assertEqual(
-            s.classify_category("MOH Announces Consultant Jobs",
-                                "Clinical Pharmacy")[0], "pharmacists")
-
-    def test_allied_health_is_non_clinical_without_review(self):
+    def test_clinical_announcements_are_dropped(self):
         for title, specialty in (
-                ("MOH Announces Cardiac Perfusion Technician Jobs", ""),
-                ("MOH Announces Non-Physician Specialist Jobs",
-                 "Prosthetics; Physiotherapy; Occupational Therapy"),
-                ("Respiratory Therapy and Prosthetics", "")):
-            category, review = s.classify_category(title, specialty)
-            self.assertEqual(category, "non_clinical", title)
-            self.assertFalse(review, title)
+                ("MOH Announces Resident Dentist Jobs", ""),
+                ("Nursing Vacancies", ""),
+                ("MOH Announces Consultant Jobs", "Clinical Pharmacy"),
+                ("MOH Announces Cardiac Perfusion Technician Jobs", "")):
+            row = self._row(title, specialty)
+            self.assertFalse(s.apply_classification(row), title)
+            self.assertEqual(row["category"], "")
 
-    def test_corporate_posts_are_non_clinical(self):
-        for title in ("Cyber Security", "Documents & Archives",
-                      "Ministry of Health Announces Vacancies for IT "
-                      "Specialties"):
-            category, review = s.classify_category(title)
-            self.assertEqual(category, "non_clinical", title)
-            self.assertFalse(review, title)
+    def test_specialties_feed_the_skills_signal(self):
+        row = self._row("MOH Announces Vacancies",
+                        specialties="Pharmacovigilance; Drug Safety")
+        self.assertTrue(s.apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
 
-    def test_unknown_title_is_flagged(self):
-        category, review = s.classify_category("MOH Announces WA'ED Track")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(review)
-
-    def test_technologist_is_not_a_doctor(self):
-        self.assertEqual(s.classify_category("Medical Technologist Jobs")[0],
-                         "non_clinical")
+    def test_announcement_review_flag_survives_classification(self):
+        # classify_announcement() flags training/scholarship tracks; the shared
+        # classifier's flag is OR'd on, it never clears the earlier one
+        row = self._row("MOH Announces Epidemiologist Vacancies",
+                        needs_review=True)
+        self.assertTrue(s.apply_classification(row))
+        self.assertTrue(row["needs_review"])
 
 
 # ---------------------------------------------------------------------------
@@ -421,7 +416,8 @@ class TestAnnouncementParsing(unittest.TestCase):
                             "ads/pages/ads-2023-10-04-001.aspx"}
         row = s.build_rich_row(candidate, self.parsed, needs_review=False)
         self.assertEqual(row["job_id"], "ads-2023-10-04-001")
-        self.assertEqual(row["category"], "doctors")
+        # taxonomy fields are blank here; apply_classification() stamps them
+        self.assertEqual(row["category"], "")
         self.assertEqual(row["specialties"], "dentistry")
         self.assertEqual(row["qualification"], "Bachelor's degree")
         self.assertEqual(row["application_opens"], "2023-10-05")
@@ -513,10 +509,13 @@ class TestWorkForUs(unittest.TestCase):
         self.assertEqual(dental["opens"][:4], "2022")    # 14-8-1443H
         self.assertTrue(dental["opens"] < dental["closes"])
 
-    def test_running_row_is_active_and_categorised(self):
+    def test_running_row_is_active(self):
         row = s.build_plan_row(self.rows[0], first_seen="2026-07-27")
         self.assertEqual(row["is_active"], "true")
-        self.assertEqual(row["category"], "doctors")     # Physicians & Nursing
+        # taxonomy fields are blank here; apply_classification() stamps them,
+        # and "Physicians & Nursing" is dropped as out of scope
+        self.assertEqual(row["category"], "")
+        self.assertFalse(s.apply_classification(row))
         self.assertEqual(row["posted_date"], "2026-07-27")
         self.assertEqual(row["specialties"], "Physicians; Nursing")
         self.assertEqual(row["announcement_type"], "recruitment_plan")
@@ -525,7 +524,6 @@ class TestWorkForUs(unittest.TestCase):
     def test_expired_row_is_inactive(self):
         row = s.build_plan_row(self.rows[2], first_seen="2026-07-27")
         self.assertEqual(row["is_active"], "false")
-        self.assertEqual(row["category"], "non_clinical")   # Cyber Security
         self.assertTrue(row["job_id"].startswith("workforus-2022-"))
 
     def test_job_ids_are_stable_and_unique(self):
@@ -619,6 +617,9 @@ class TestClubRow(unittest.TestCase):
                      "url": "https://www.moh.gov.sa/en/ministry/mediacenter/"
                             "ads/pages/ads-2023-10-04-001.aspx"}
         self.rich = s.build_rich_row(candidate, parsed, needs_review=False)
+        # an announcement only reaches the club export once it is in scope
+        self.rich["title"] = "MOH Announces Pharmacovigilance Officer Vacancies"
+        s.apply_classification(self.rich)
         self.club = s.rich_row_to_club_row(self.rich)
 
     def test_columns_match_contract(self):
@@ -628,10 +629,20 @@ class TestClubRow(unittest.TestCase):
         self.assertIn(self.club["company_type"], {"hospital", "pharma"})
         self.assertIn(self.club["job_type"],
                       {"full_time", "part_time", "remote", "hybrid"})
-        self.assertIn(self.club["category"],
-                      {"doctors", "nurses", "pharmacists", "non_clinical"})
+        self.assertIn(self.club["category"], {"Non Clinical", "Public Health"})
+        self.assertEqual(self.club["sub_category"], "Pharmacovigilance")
         self.assertIn(self.club["salary_period"], {"per_annum", "per_month", ""})
         self.assertIn(self.club["salary_currency"], {"INR", "USD", ""})
+
+    def test_retired_lifecycle_columns_are_not_exported(self):
+        # is_active / expires_at live in the rich CSV only now
+        self.assertNotIn("is_active", self.club)
+        self.assertNotIn("expires_at", self.club)
+        self.assertEqual(self.rich["is_active"], "false")
+        self.assertEqual(self.rich["application_closes"], "2023-10-14")
+
+    def test_qualification_uses_the_structured_field(self):
+        self.assertEqual(self.club["qualification"], "Bachelor's degree")
 
     def test_country_and_city_fallback(self):
         self.assertEqual(self.club["country_name"], "Saudi Arabia")
@@ -650,8 +661,7 @@ class TestClubRow(unittest.TestCase):
         self.assertEqual(self.club["max_salary"], "")
         self.assertEqual(self.club["salary_period"], "")
 
-    def test_expiry_from_application_window(self):
-        self.assertEqual(self.club["expires_at"], "2023-10-14")
+    def test_posted_at_from_the_announcement(self):
         self.assertEqual(self.club["posted_at"], "2023-10-04")
 
     def test_region_becomes_city_when_stated(self):

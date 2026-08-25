@@ -11,8 +11,8 @@ from datetime import date, timedelta
 import pandas as pd
 
 from scraper import (
+    apply_classification,
     build_description,
-    classify_category,
     compute_cutoff,
     expand_facility,
     map_job_type,
@@ -140,72 +140,49 @@ class TestExperienceParser(unittest.TestCase):
             "minimum 99 years of experience"), "")
 
 
-class TestClassifier(unittest.TestCase):
-    """Oracle's category facet is authoritative; it is present on only ~40% of
-    requisitions, so the title carries the rest."""
+class TestClassificationWiring(unittest.TestCase):
+    """The engine itself is tested in _shared/test_classification.py; these
+    only prove this scraper wires its fields into it correctly."""
 
-    def test_oracle_facet_wins(self):
-        self.assertEqual(classify_category("Sonographer", "Allied Health"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Staff Midwife", "Nursing"),
-                         ("nurses", False))
-        self.assertEqual(
-            classify_category("Specialist Physician - Cardiology", "Medical"),
-            ("doctors", False))
-        self.assertEqual(
-            classify_category("Manager - Performance & Business Excellence",
-                              "Administration"),
-            ("non_clinical", False))
+    def _row(self, title, category_original="", job_function="",
+             description=""):
+        return {"title": title, "category_original": category_original,
+                "job_function": job_function, "description": description}
 
-    def test_unmistakable_title_overrides_a_coarse_facet(self):
-        self.assertEqual(classify_category("Clinical Pharmacist", "Allied Health"),
-                         ("pharmacists", False))
-        self.assertEqual(classify_category("Practical Nurse", "Allied Health"),
-                         ("nurses", False))
+    def test_in_scope_role_gets_category_and_sub_category(self):
+        row = self._row("Clinical Research Coordinator", "Administration")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Clinical Research")
+        self.assertEqual(row["role_family"], "Clinical Research")
+        self.assertTrue(row["matched_in"])
 
-    def test_title_fallback_when_facet_missing(self):
-        for title in ("Consultant Pediatric Gastroenterologist",
-                      "Consultant Paediatric Orthopaedic Surgery",
-                      "Chair of Department - Consultant ENT",
-                      "Specialist Gastroenterology",
-                      "General Practitioner"):
-            self.assertEqual(classify_category(title), ("doctors", False), title)
-        for title in ("Charge Nurse - ICU", "Staff Nurse - Burn Unit",
-                      "Practical Midwife"):
-            self.assertEqual(classify_category(title), ("nurses", False), title)
-        self.assertEqual(classify_category("Pharmacist - Inpatient Pharmacy"),
-                         ("pharmacists", False))
+    def test_public_health_role(self):
+        row = self._row("Infection Control Practitioner", "Nursing")
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Infection Prevention & Control")
 
-    def test_allied_and_corporate_titles_are_non_clinical(self):
-        for title in ("Radiographer - MRI", "Cast Technician",
-                      "Physiotherapist - Rehabilitation", "Clinical Coder",
-                      "Civil Engineer", "Submission Officer",
-                      "Electro Neurodiagnostic Technologist",
-                      "Speech and Language Therapist"):
-            self.assertEqual(classify_category(title),
-                             ("non_clinical", False), title)
+    def test_clinical_titles_are_dropped(self):
+        for title, facet in (("Specialist Physician - Cardiology", "Medical"),
+                             ("Staff Midwife", "Nursing"),
+                             ("Charge Nurse - ICU", "Nursing"),
+                             ("Sonographer", "Allied Health"),
+                             ("Pharmacist - Inpatient Pharmacy", "Pharmacy")):
+            row = self._row(title, facet)
+            self.assertFalse(apply_classification(row), title)
+            self.assertEqual(row["category"], "")
 
-    def test_allied_check_precedes_doctor_keywords(self):
-        # "Consultant"/"Specialist" appear in corporate titles too
-        self.assertEqual(classify_category("Specialist - Talent & Performance"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Specialist - Quality"),
-                         ("non_clinical", False))
-        self.assertEqual(classify_category("Assistant RCM Manager"),
-                         ("non_clinical", False))
+    def test_hospital_corporate_role_without_a_taxonomy_family_is_dropped(self):
+        # generic head-office roles are not in the two-level taxonomy
+        row = self._row("Manager - Performance & Business Excellence",
+                        "Administration")
+        self.assertFalse(apply_classification(row))
 
-    def test_ambiguous_titles_are_kept_and_flagged(self):
-        # no club bucket fits these — kept, never dropped (master spec §2)
-        for title in ("Clinical Psychologist", "Child Psychologist",
-                      "Genetic Counsellor", "Family and Marriage Counsellor",
-                      "Health Care Assistant"):
-            category, needs_review = classify_category(title)
-            self.assertEqual(category, "non_clinical", title)
-            self.assertTrue(needs_review, title)
-
-    def test_unknown_title_is_kept_and_flagged(self):
-        self.assertEqual(classify_category("Applied Behavioral Analyst"),
-                         ("non_clinical", True))
+    def test_oracle_facet_cannot_admit_a_job(self):
+        # the facet is a signal for the shared classifier, never a decider
+        row = self._row("Cast Technician", "Administration", "Administration")
+        self.assertFalse(apply_classification(row))
 
 
 class TestJobTypeAndCity(unittest.TestCase):
@@ -280,23 +257,35 @@ class TestCutoff(unittest.TestCase):
 
 class TestClubRow(unittest.TestCase):
     def test_schema_and_no_invented_salary(self):
-        row = {"title": "Staff Midwife", "city": "Abu Dhabi",
-               "facility": "Corniche Hospital", "category": "nurses",
+        row = {"title": "Clinical Research Coordinator", "city": "Abu Dhabi",
+               "facility": "Corniche Hospital", "category": "Non Clinical",
+               "sub_category": "Clinical Research", "education": "Bachelors",
                "job_type": "full_time", "posted_date": "2026-07-27",
                "experience_min_years": "2", "job_url": "https://example.test/job/1"}
         club = rich_row_to_club_row(row)
         self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
+        self.assertNotIn("is_active", club)
         self.assertEqual(club["company_name"], "Corniche Hospital")
         self.assertEqual(club["min_experience"], "2")
         self.assertEqual(club["max_experience"], "")
+        self.assertEqual(club["category"], "Non Clinical")
+        self.assertEqual(club["sub_category"], "Clinical Research")
+        # structured StudyLevel wins over description extraction
+        self.assertEqual(club["qualification"], "Bachelors")
         for field in ("min_salary", "max_salary", "salary_period", "salary_currency"):
             self.assertEqual(club[field], "")
 
+    def test_qualification_falls_back_to_description(self):
+        club = rich_row_to_club_row(
+            {"title": "Epidemiologist",
+             "description": "Requires an MPH and field experience."})
+        self.assertIn("MPH", club["qualification"])
+
     def test_group_name_used_when_no_facility_parsed(self):
-        club = rich_row_to_club_row({"title": "Consultant Physician"})
+        club = rich_row_to_club_row({"title": "Clinical Data Manager"})
         self.assertEqual(club["company_name"], COMPANY_NAME)
         self.assertEqual(club["city_name"], DEFAULT_CITY)
-        self.assertEqual(club["category"], "non_clinical")
+        self.assertEqual(club["category"], "")
 
     def test_nan_values_from_csv_reload_become_blank(self):
         club = rich_row_to_club_row(

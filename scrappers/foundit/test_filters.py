@@ -9,15 +9,16 @@ import unittest
 from datetime import date
 
 from foundit_scraper import (
-    classify_category,
+    card_signals,
     classify_company_type,
     compute_cutoff,
     decode_job_type,
     epoch_ms_to_ist_date,
     experience_years,
-    is_healthcare,
+    job_to_rich_row,
     parse_salary,
     rich_row_to_club_row,
+    scope_card,
     strip_html,
     truncate_description,
 )
@@ -77,71 +78,77 @@ class TestSalary(unittest.TestCase):
         self.assertEqual((raw, lo, hi), ("Not Disclosed", "", ""))
 
 
-class TestHealthcareGate(unittest.TestCase):
-    def test_deny_wins_even_with_healthcare_tags(self):
-        keep, signal = is_healthcare(
-            "Telecaller - Hospital Front Desk", ["Health Care"], [])
-        self.assertFalse(keep)
-        self.assertEqual(signal, "deny")
+class TestScopeGate(unittest.TestCase):
+    """Wiring of the shared classify_job (2026-08-25 taxonomy migration).
 
-    def test_allow_title(self):
-        keep, signal = is_healthcare("Staff Nurse - ICU", ["Other"], [])
-        self.assertTrue(keep)
-        self.assertEqual(signal, "title")
+    Classifier behaviour is tested in _shared/test_classification.py; here
+    we check that foundit wires it correctly — `category` is the top-level
+    taxonomy value, the family lands in `role_family`, and out-of-scope /
+    vetoed cards come back in_scope=False (dropped by the main loop).
+    """
 
-    def test_taxonomy_keeps_non_committal_title(self):
-        # real card: industries ["Nursing and Residential Care"]
-        keep, signal = is_healthcare(
-            "Center Manager", ["Nursing and Residential Care"], [])
-        self.assertTrue(keep)
-        self.assertEqual(signal, "taxonomy")
+    def _row(self, **card):
+        title, skills_str, description = card_signals(card)
+        verdict = scope_card(title, skills_str, description)
+        self.assertTrue(verdict["in_scope"], "expected in scope: %r" % card)
+        return job_to_rich_row({"jobId": 1, "postedAt": 1786124151000,
+                                **card}, verdict)
 
-    def test_function_tag_counts_as_taxonomy(self):
-        keep, signal = is_healthcare("Team Lead", ["Other"], ["Medical Billing"])
-        self.assertTrue(keep)
-        self.assertEqual(signal, "taxonomy")
+    def test_in_scope_nonclinical_family(self):
+        row = self._row(title="Pharmacovigilance Associate")
+        self.assertEqual(row["category"], "Non Clinical")
+        self.assertEqual(row["sub_category"], "Pharmacovigilance")
+        self.assertEqual(row["role_family"], "Pharmacovigilance")
+        self.assertIn("title", row["matched_in"])
 
-    def test_neutral_tags_flag_needs_review_never_dropped(self):
-        keep, signal = is_healthcare("Operations Executive", ["Other"], [])
-        self.assertTrue(keep)
-        self.assertEqual(signal, "needs_review")
+    def test_public_health_in_scope(self):
+        row = self._row(title="Epidemiologist")
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Epidemiology")
+        self.assertEqual(row["role_family"], "Public Health")
 
-    def test_named_other_industry_excluded(self):
-        keep, signal = is_healthcare(
-            "Process Associate", ["BPO", "Call Center"], [])
-        self.assertFalse(keep)
-        self.assertEqual(signal, "industry")
+    def test_skills_rescue_when_title_is_generic(self):
+        verdict = scope_card(
+            "Senior Executive", "Argus, MedDRA, ICSR, case processing", "")
+        self.assertTrue(verdict["in_scope"])
+        self.assertEqual(verdict["category"], "Non Clinical")
+        self.assertEqual(verdict["role_family"], "Pharmacovigilance")
+        self.assertEqual(verdict["sub_category"], "Pharmacovigilance")
 
+    def test_taxonomy_veto_drops_billing_lookalike(self):
+        # "Medical Billing" scores on 'coding'/'clinical' vocabulary but the
+        # negative-keyword veto must exclude it.
+        verdict = scope_card("Medical Billing - Team Lead", "", "")
+        self.assertFalse(verdict["in_scope"])
+        self.assertTrue(verdict["vetoed_by"])
 
-class TestCategory(unittest.TestCase):
-    def test_nurse(self):
-        self.assertEqual(classify_category("Staff Nurse")[0], "nurses")
+    def test_out_of_scope_clinical_role(self):
+        self.assertFalse(scope_card("Consultant Cardiologist", "", "")["in_scope"])
 
-    def test_pharmacist(self):
-        self.assertEqual(classify_category("Clinical Pharmacist")[0],
-                         "pharmacists")
-
-    def test_doctor(self):
-        self.assertEqual(classify_category("Consultant Cardiologist")[0],
-                         "doctors")
-
-    def test_psychologist_is_non_clinical_not_doctor(self):
-        category, ambiguous = classify_category("Clinical Psychologist")
-        self.assertEqual(category, "non_clinical")
-        self.assertFalse(ambiguous)
-
-    def test_allied_health_non_clinical(self):
-        self.assertEqual(classify_category("Lab Technician")[0],
-                         "non_clinical")
-
-    def test_ambiguous_flagged(self):
-        category, ambiguous = classify_category("Godati Vaidyudu")
-        self.assertEqual(category, "non_clinical")
-        self.assertTrue(ambiguous)
+    def test_out_of_scope_staff_nurse(self):
+        self.assertFalse(scope_card("Staff Nurse - ICU", "", "")["in_scope"])
 
     def test_company_type(self):
-        self.assertEqual(classify_company_type("Sun Pharma Ltd"), "pharma")
-        self.assertEqual(classify_company_type("Spandana Hospital"), "hospital")
+        self.assertEqual(classify_company_type("Syneos Health CRO"), "pharma")
+        self.assertEqual(classify_company_type("Apollo Hospitals"), "hospital")
+
+
+class TestClubRow(unittest.TestCase):
+    def test_club_row_carries_family_and_sub_category(self):
+        club = rich_row_to_club_row({
+            "title": "Regulatory Affairs Manager", "location": "Pune",
+            "category": "Regulatory Affairs",
+            "sub_category": "Regulatory Affairs",
+            "description": "MBBS preferred; eCTD submissions."})
+        self.assertEqual(club["category"], "Regulatory Affairs")
+        self.assertEqual(club["sub_category"], "Regulatory Affairs")
+        self.assertEqual(club["qualification"], "MBBS")
+
+    def test_club_row_has_no_legacy_columns(self):
+        club = rich_row_to_club_row({"title": "x", "location": "Pune",
+                                     "category": "HEOR"})
+        self.assertNotIn("is_active", club)
+        self.assertNotIn("expires_at", club)
 
 
 class TestDatesAndCutoff(unittest.TestCase):
@@ -205,8 +212,8 @@ class TestMisc(unittest.TestCase):
                "salary_period_original": "Yr",
                "salary_currency_original": "INR",
                "company": "Vee Healthtek", "company_type": "hospital",
-               "title": "Medical Billing - Team Lead", "description": "d",
-               "category": "non_clinical",
+               "title": "Medical Coder", "description": "d",
+               "category": "Medical Coding", "sub_category": "Medical Coding",
                "job_url": "https://www.foundit.in/job/x-1",
                "posted_date": "2026-08-05", "experience_min_years": "1",
                "experience_max_years": "5"}
@@ -219,8 +226,9 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(club["job_type"], "full_time")
 
     def test_club_row_no_salary(self):
-        club = rich_row_to_club_row({"title": "Nurse", "location": "Pune",
-                                     "category": "nurses"})
+        club = rich_row_to_club_row({"title": "Clinical Research Associate",
+                                     "location": "Pune",
+                                     "category": "Clinical Research"})
         self.assertEqual((club["min_salary"], club["salary_period"],
                           club["salary_currency"]), ("", "", ""))
 

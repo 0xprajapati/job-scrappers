@@ -1,0 +1,226 @@
+job_id,title,company,industries,functions,match_signal
+61043128,IBR Reviwer,Zelis,Other,Healthcare,healthcare:taxonomy
+61536422,NOC Senior Engineer,Availity,Other,Healthcare Technology,healthcare:taxonomy
+61536774,NOC Engineer - Network,Availity,Other,Healthcare Technology,healthcare:taxonomy
+61546618,Dean | School of Healthcare Management,fyndbridge consultants & advisors,Other,Healthcare Management,healthcare:title
+61662271,Chief of Staff,xpress health,Other,Healthcare Technology,healthcare:taxonomy
+61226783,SMA II,ICON plc,Chemicals/Petrochemicals,Healthcare,healthcare:taxonomy
+61284093,Quality Assurance Engineer,Availity,Other,Healthcare Technology,healthcare:taxonomy
+61318382,Clinical Data Management,Iqvia,Other,Healthcare,medical:title
+61321005,US HR - Healthcare Onboarding,infireex,Other,Healthcare,medical:title
+61488225,Vertical Head (President) – Strategic Business & Marketing,Cadila Pharmaceuticals Limited,,Others,medical:needs_review
+61610910,Senior Manager,Resource Management Group Plus Private Limited,,Others,medical:needs_review
+61688672,CRA II (Mumbai location),"inVentiv Health Clinical SRE, LLC",Hospitals/Healthcare/Diagnostics,Clinical Research,medical:taxonomy
+61787528,"Senior Engineer, Systems Engineering",cencora,Other,Healthcare,medical:taxonomy
+61788029,Product Owner (AI-enabled Medical Imaging Solutions ),Siemens,Other,Healthcare It,medical:title
+61790711,Contracts & Pricing Execution Mgr,Amgen,Other,Healthcare,medical:taxonomy
+61793975,"Research Assoc II, R&D - CPD",baxter international inc.,Other,Pharmaceutical,medical:taxonomy
+61807071,Quality Control Inspector,United Placement Solutions,Recruitment/Staffing/RPO,Pharmaceutical,medical:taxonomy
+61843198,AVP - Private Equity - HC - Healthcare Fund - Mumbai - Lower Parel - MM,Tata Mutual Fund,Banking/Accounting/Financial Services,Investment,medical:title
+61843545,"Mgr, Quality & Regulatory Affairs",Baxter Medical Devices,Hospitals/Healthcare/Diagnostics,Healthcare,medical:title
+61843547,"Sr. Eng, Test",Baxter Medical Devices,Hospitals/Healthcare/Diagnostics,Healthcare,medical:taxonomy
+61935780,AI Harness Engineer,tilda research,Other,Healthcare Technology,medical:taxonomy
+61938438,Management Trainee - Sales,HaystackAnalytics,Other,Healthcare Sales,medical:taxonomy
+61939715,"Technology SME - Compliance, Legal & People Systems",Jobgether,Other,Healthcare It,medical:taxonomy
+61943400,Business Process Architect,Accenture,Other,Pharmaceutical Regulatory Compliance,medical:taxonomy
+62047222,AI Solution Engineer,virtual labs,Other,Pharmaceutical,medical:taxonomy
+62048072,IT Applications Engineer - Technology IT,Signant Health,Other,Healthcare Technology,medical:taxonomy
+62048270,Payment Posting,shoreline healthcare technologies,Other,Medical Billing,healthcare:taxonomy
+62048720,Newpage - Creative Builder AI Innovation,NewPage Solutions,Other,Healthcare Technology,medical:taxonomy
+62049046,Apprentice Production,Polypeptide Group,Other,Pharmaceutical Manufacturing,medical:taxonomy
+62050235,Healthcare Co-founder | FemLyra,apna family,Other,Healthcare,medical:title
+62050290,Business Finance,ima india,Other,Healthcare,medical:taxonomy
+62050333,Senior Staff Solution Architect - AI & Cloud,Ge Healthcare,Other,Healthcare Technology,medical:taxonomy
+62050483,Platform Developer,Siemens,Other,Healthcare,medical:taxonomy
+62052478,SAP ME/MII developer,Siemens,Other,Healthcare,medical:taxonomy
+62052715,Quality Engineer,RxLogix Corporation,Other,Bio Pharmaceutical,medical:taxonomy
+62054087,AI Builders,Brillio,Other,Healthcare,medical:taxonomy
+62054117,Middle Python Engineer with GCP experience,N-iX,Other,Healthcare,medical:taxonomy
+62054393,QC Lab Chemist,amster microcell private limited,Other,Pharmaceutical,medical:title
+62054464,Quality Control Inspector,pharmaceutical company,Other,Pharmaceutical,medical:taxonomy
+62055378,CRA II,Icon Strategic Solutions,Other,Healthcare,medical:taxonomy
+62101258,Chat Process,Artech Infosystems Private Limited,,Others,medical:needs_review
+62133063,Urologist,Sanat Kumar Mishra (Proprietor of HireXpert),,Others,medical:needs_review
+61216527,labour room and nicu staff,Ajay Kumar Singh Proprietor of (ARC Manpower),"Nutraceutical, Fertility, Psychology, Wellness, Hospital, Veterinary, Biopharma",Others,nurse:taxonomy
+61217311,Labour room staff,Ajay Kumar Singh Proprietor of (ARC Manpower),,Others,nurse:needs_review
+61232057,Nurses,Mother's Speciality Hospital,,Others,nurse:needs_review
+61298086,Optometrist,abate as,Other,Healthcare,doctor:title
+61465939,SH Anesthesiology,Aditya Birla Group,,Healthcare,doctor:title
+61556728,Optometrist,k k eye institute,Other,Healthcare,doctor:title
+61688920,Optometrist,medplus health services limited,Other,Healthcare,doctor:title
+61795886,Optometrist,lenskart.com,Other,Optometry,doctor:title
+62055214,Veterinary Doctors,animal rights fund,Other,Veterinary,doctor:taxonomy
+61932841,Community Health Worker (Perinatal Home Visiting Program),Georgia Department of Public Health,Other,Public Health,clinical-data-management:title
+61938265,Biostatistics Sr Mgr,Amgen,Other,Biotechnology,"clinical-research,clinical-trials:taxonomy"
+61941825,Hiring for Pharma Forecasting,WNS Assistance,Other,Pharmaceutical And Biotechnology,public-health:title
+61943653,lab,Jaypee Institute of Information Technology,Other,Biotechnology,lab-technician:title
+62179108,Rotational Radiographer,NHSScotland,Other,Healthcare,radiographer:title
+62179783,Clinical Automation Workflow Developer,Cytel,Other,Pharmaceutical,"clinical-research,clinical-trials,drug-safety:title"
+62203003,Senior CDA/ Clin Data Assoc II,Thermo Fisher Scientific,Other,Clinical Data Management,clinical-data-management:taxonomy
+62203576,Clinician,YRG CARE,Other,Ngo Social Services,public-health:title
+62204451,"Mgr, Quality & Regulatory Affairs",baxter international inc.,Other,Healthcare,"drug-safety,regulatory-affairs:title"
+62206066,Back Office Employee,speedbirdservices - medical billing company,Other,Healthcare Billing,healthcare:taxonomy
+62248830,PRE-AUTHORIZATION SPECIALIS,Agile Rays LLP,,Others,"healthcare,medical-coding:needs_review"
+62400449,TSI - Tanjore,Reckitt Benckiser India Pvt Ltd,Customer Service,Pharmaceutical Sales,medical-representative:taxonomy
+62458046,Sales Specialist_Fitness,InBody India Private Limited,,Others,medical-representative:needs_review
+62478264,Senior Programmer,ICON plc,Chemicals/Petrochemicals,Healthcare,clinical-data-management:taxonomy
+62523559,Content Strategist,harmony united psychiatric care,Other,Healthcare,"healthcare,medical-writing:taxonomy"
+62524585,Salesperson,carenx innovations,Other,Healthcare,"healthcare,public-health:taxonomy"
+62525009,Biostatistician,HCL TechBee,Other,Clinical Medical Devices,public-health:taxonomy
+62528082,Immediate Hiring Apply NOW - AR Denial Management - Voice,Getix Health,Other,Medical Billing,"healthcare,medical-coding:title"
+62541360,TSI - Tanjore,Reckitt,Other,Pharmaceutical Sales,medical-representative:taxonomy
+62541572,Assoc Medical Data Review Mgr.,iqvia india,Other,Medical Data Review,clinical-data-management:title
+62548241,"Team Leader, Intake",Cohere Health,Other,Healthcare,"healthcare,medical-coding:taxonomy"
+62587470,CLAIM PROCESS EXECUTIVE US SHIFT WALK IN 22,BR Raysoft Global Private Limited,,Others,healthcare:needs_review
+62620637,Staff Nurses,Sanat Kumar Mishra (Proprietor of HireXpert),,Others,"nurse,nursing:needs_review"
+62692169,Senior Clinical Data Co-ordinator - India,Worldwide Clinical Trials,Other,Clinical Research Organization (Cro),"clinical-data-management,medical-writing:title"
+62692173,Senior Clinical Data Co-Ordinator - India,Worldwide Clinical Trials,Other,Clinical Research Organization (Cro),"clinical-data-management,medical-writing:title"
+62692175,Senior Clinical Data Co-ordinator - India,Worldwide Clinical Trials,Other,Clinical Research Organization (Cro),"clinical-data-management,medical-writing:title"
+62696880,Clinical Programmer,sdc (statistics & data corporation),Other,Clinical Research,medical-writing:title
+62822969,Senior CRA,Icon Strategic Solutions,Other,Healthcare,"clinical-research,clinical-trials,clinical-data-management,drug-safety:taxonomy"
+62824234,Clinical Research - Infection control,thermaissance,Other,Clinical Research,"medical,clinical-research,medical-writing:title"
+62827512,Principal Programmer,PHASTAR,Other,Clinical Research,medical-writing:taxonomy
+62827851,Skill Lab Technical Expert,public health career,Other,Public Health,"nurse,nursing:title"
+62830936,Dean School of Public Health | A reputed University in Chennai,fyndbridge consultants & advisors,Other,Public Health,"public-health,epidemiology:title"
+62831090,DSM-Biomeds,Eli Lilly and Company,Other,Pharmaceuticals,market-access:taxonomy
+62831106,Senior Network Architect - India,Worldwide Clinical Trials,Other,Cro (Clinical Research Organization),medical-writing:taxonomy
+62831400,Senior Biostatistician,Worldwide Clinical Trials,Other,Clinical Research,medical-writing:taxonomy
+62831401,Senior Clinical Programmer - India,Worldwide Clinical Trials,Other,Clinical Research,"clinical-data-management,medical-writing:title"
+62840143,Senior Corporate Sales,uniscans & labs,Other,Healthcare,"healthcare,public-health:taxonomy"
+62843934,Principal Statistician - Ophthalmology - Fully remote in Europe,Syneos Health,Other,Life Sciences,clinical-research:title
+62956429,Endodontist,realtooth,Other,Dental,dentist:taxonomy
+62961762,Aspiring Entrepreneur And Sales Leader,caresoft systems private limited,Other,Healthcare It,healthcare:taxonomy
+62962031,Clinical Programmer - India,Worldwide Clinical Trials,Other,Clinical Research Organization (Cro),"clinical-data-management,medical-writing:title"
+62962041,Clinical Programmer - India,Worldwide Clinical Trials,Other,Clinical Research Organization (Cro),"clinical-data-management,medical-writing:title"
+63017344,Dialysis Technician,Ellappan Aananthan (Proprietor of Quench Techno Valley),,Others,nurse:needs_review
+63017345,Liaisoning Executive,Jsg Consulting Private Limited,,Others,"drug-safety,regulatory-affairs:needs_review"
+63065397,Forward Deployed Engineer - Healthcare AI,value health inc,Other,Healthcare Technology,medical-coding:title
+63123724,Principal Oracle Health Systems Engineer HIE,Oracle,Other,Healthcare Technology,medical:title
+63123827,Study Data Delivery Mgr,Amgen,Other,Biotechnology,"clinical-research,clinical-trials,clinical-data-management,drug-safety:taxonomy"
+63124452,Exe (Regulatory Affairs),Sun Pharma,Other,Regulatory Affairs,"drug-safety,regulatory-affairs:title"
+63136784,Mission Swabhiman: Part Time Earning opportunities for Veteran or Retired Persons and for Housewives,Freelancer Chayan Bhattacharjee,"Insurance, Commercial Insurance, Life Insurance, Property Insurance, Health Insurance, InsurTech, Auto Insurance",Sales/Business Development,medical-representative:taxonomy
+63141069,Senior Medical Planner,Jacobs,Other,Healthcare Planning,medical:title
+63144256,Engineer - Public Health,EGIS,Other,Engineering,public-health:title
+63144702,"Dir, Medical Safety",Iqvia,Other,Life Sciences,"clinical-research,pharmacovigilance,drug-safety,medical-writing:title"
+63144866,Principal Oracle Health Systems Engineer HIE,Oracle,Other,Healthcare Technology,medical:title
+63153496,Staff AI Engineer,docent (now get well),Other,Healthcare Ai,medical-coding:taxonomy
+63154220,Senior Stat Programmer,Iqvia,Other,Healthcare,medical-writing:taxonomy
+63155466,Principal Oracle Health Systems Engineer HIE,Oracle,Other,Healthcare Technology,medical:title
+63240407,NOC Engineer - Server / EKS,Availity,Other,Healthcare Technology,healthcare:taxonomy
+63240428,Clinical Data Management Programmer III,Quanticate,Other,Clinical Research,"medical,clinical-trials,clinical-data-management,medical-writing:title"
+63242981,MDM Developer (Healthcare/Pharma domain),ProcDNA,Other,Data Management,medical:title
+63243540,Surgery &amp amp Anaesthetics Senior Research,NHSScotland,Other,Healthcare,"nurse,nursing,clinical-research:taxonomy"
+63243879,Centralized Monitoring Asst,iqvia india,Other,Clinical Research,medical-writing:taxonomy
+63244826,Senior Clinical Programmer - India,Worldwide Clinical Trials,Other,Clinical Research Organization (Cro),"clinical-data-management,medical-writing:title"
+63244833,Senior Clinical Data Co-ordinator - India,Worldwide Clinical Trials,Other,Clinical Research,"clinical-data-management,medical-writing:title"
+63244837,Senior Clinical Programmer - India,Worldwide Clinical Trials,Other,Clinical Research Organization (Cro),"clinical-data-management,medical-writing:title"
+63245012,Clin DB Validation,Iqvia,Other,Healthcare,medical-writing:taxonomy
+63245830,Data Monitoring and Ecrf Designer,ms clinical research,Other,Clinical Trials,"clinical-research,medical-writing:taxonomy"
+63269348,Sales Executives,ARCIS e Services Private Limited,"Health Care, Biopharma, Medical",Sales/Business Development,medical-representative:taxonomy
+63278414,We’re Hiring | Clinical SAS Programmer / SAS BI Engineer,Doublu India Private Limited,,Others,"clinical-research,clinical-trials,drug-safety:title"
+63278417,We’re Hiring | Clinical SAS Programmer / SAS BI Engineer,Doublu India Private Limited,,Others,"clinical-research,clinical-trials,drug-safety:title"
+63279947,Scrum Master – Pharma / Healthcare Domain,Agilewaters Consulting Private Limited,,Others,medical:title
+63313222,Pharmacovigilance,VDart Software Services Private Limited,,Others,"clinical-research,pharmacovigilance,drug-safety:title"
+63316021,RCMS Suppervisor,IHCS Technologies India Private Limited,,Others,"healthcare,medical-coding,public-health:needs_review"
+63364379,System Engineer III,Availity,Other,Healthcare Technology,healthcare:taxonomy
+63365152,Key Account Manager – L3TX,Dishi HR Solutions,,Others,medical:needs_review
+63417563,CDC II,ICON plc,Chemicals/Petrochemicals,Healthcare,"clinical-data-management,medical-writing:taxonomy"
+63445860,Accounts Receivable- RCM,Socnet Technologies Private Limited,,Others,"healthcare,medical-coding:title"
+63445861,Senior Statistical Programmer / Principal Statistical Programmer,Manpowergroup Services India Private Limited,"Pharmaceutical, Clinical Trials",Others,"clinical-research,clinical-trials,drug-safety,medical-writing:taxonomy"
+63471662,Surgery & Anaesthetics Senior Research,NHS Ayrshire & Arran,Other,Healthcare,"nurse,nursing,clinical-research:taxonomy"
+63477921,SPE-AR Management HC,Cognizant Consulting,Other,Healthcare,medical:taxonomy
+63478371,Software Development Engineer 2,Iqvia,Other,Healthcare,medical-writing:taxonomy
+63485081,Senior Clinical Data Co-ordinator - India,Worldwide Clinical Trials,Other,Clinical Research,"clinical-data-management,medical-writing:title"
+63485243,Principal Domain Expert,Persistent Systems,Other,Life Sciences,"clinical-research,pharmacovigilance,drug-safety,regulatory-affairs,medical-affairs,market-access:taxonomy"
+63485816,Senior Statistical Programmer,Syneos Health,Other,Clinical Trials,clinical-research:taxonomy
+63555056,Principal Oracle Health Systems Engineer – HIE,Oracle,IT/Computers - Hardware & Networking,Healthcare Technology,medical:title
+63555087,Principal Oracle Health Data Migration Architect,Oracle,IT/Computers - Hardware & Networking,Healthcare,"medical,clinical-data-management:title"
+63580217,Sales Specialist,InBody India Private Limited,,Others,medical-representative:needs_review
+63583750,Team Member - Admin- Designer,Aditya Birla Group,,,regulatory-affairs:needs_review
+63583938,Senior CDC,ICON plc,Chemicals/Petrochemicals,Healthcare,medical-writing:taxonomy
+63589642,Sr.Stat programmer clin pharm,"inVentiv Health Clinical SRE, LLC",Hospitals/Healthcare/Diagnostics,Clinical Research,"medical,medical-writing:taxonomy"
+63600929,TSI Kottayam,Reckitt Benckiser India Pvt Ltd,Customer Service,Pharmaceutical Sales,medical-representative:taxonomy
+63600930,STSI-Bangalore,Reckitt Benckiser India Pvt Ltd,Customer Service,Pharmaceutical Sales,medical-representative:taxonomy
+63607092,Neuroscience CTM,Thermo Fisher Scientific,Bio Technology & Life Sciences,Clinical Trials,"clinical-research,clinical-trials,clinical-data-management,drug-safety:taxonomy"
+63607093,Sr Biostatistician II,Thermo Fisher Scientific,Bio Technology & Life Sciences,Clinical Trials,"clinical-research,drug-safety:taxonomy"
+63607531,Sr Spec - Quality & Regulatory Affairs,Baxter Medical Devices,Hospitals/Healthcare/Diagnostics,Healthcare,"drug-safety,regulatory-affairs:title"
+63613646,Regional Medical Expert,Roche Pharmacutical Holding,Pharmaceutical,Medical Affairs,"medical,clinical-research,medical-writing:title"
+63634834,MSS,himalaya wellness company,Other,Pharmaceutical,"medical,medical-writing:taxonomy"
+63639540,Ab Initio Developer,Infosys Limited,Other,,clinical-data-management:needs_review
+63639852,"Sr. Eng, Interoperability",baxter international inc.,Other,Healthcare,medical:taxonomy
+63640705,Sr. Stat Programmer,Iqvia,Other,Healthcare,"medical,clinical-research,medical-writing:taxonomy"
+63640941,Statistical Programmer,Astek,Other,Clinical Trials,"clinical-research,drug-safety:taxonomy"
+63641071,Senior Programmer,PHASTAR,Other,Pharmaceutical,"clinical-research,public-health:taxonomy"
+63641145,Group Project Manager GCC,Infosys Limited,Other,,clinical-data-management:needs_review
+63641154,Informatica IICS Developer – Snowflake,Infosys Limited,Other,,clinical-data-management:needs_review
+63641352,Data Co-ordinator,Sun Pharma,Other,Pharmaceutical,"clinical-trials,clinical-data-management:taxonomy"
+63642254,Product Expert - Clinical Data Management - India,Veeva Systems,Other,Life Sciences,clinical-data-management:title
+63642435,Accounts Receivable - RCM,Source Inc,Other,Medical Billing,"healthcare,medical-coding:title"
+63643785,Analytics Practitioner,Accenture,Other,Analytics,clinical-data-management:title
+63643826,Data Management Practitioner,Accenture,Other,Data Management,clinical-data-management:title
+63644236,Partner/Principal Pharma Analytics,Mathco Health Corporation,Other,Pharma Analytics,medical:title
+63645168,Oil and Gas Consultant,Infosys Limited,Other,,clinical-data-management:needs_review
+63645208,Design Quality Assurance - Medical,Infosys Limited,Other,Quality Engineering,regulatory-affairs:title
+63645481,Technical Services Engineer,Jobgether,Other,Healthcare It,medical:taxonomy
+63645516,IPDRG- SME,Mopidy,Other,Healthcare,medical-coding:taxonomy
+63646585,"Spclst , Data Governance",MSD,Other,Healthcare,"medical,clinical-data-management:taxonomy"
+63734623,Patient Advocate,Jobgether,Other,Healthcare,"healthcare,medical,medical-coding:title"
+63734769,"Senior Expert, Global Healthcare Strategy",merck healthcare,Other,Healthcare,medical:title
+63734963,Health Visitor - Children&amp 39 s Services,NHSScotland,Other,Healthcare,"nurse,nursing,public-health:title"
+63736490,Patient Advocate,Harris Computer Systems,Other,Healthcare,"healthcare,medical,medical-coding:title"
+63742138,Graduate Engineer Trainee,Ge Healthcare,Other,Medical Technology,regulatory-affairs:taxonomy
+63742276,Patient Advocate,harris global business services (gbs),Other,Healthcare,"healthcare,medical,medical-coding:title"
+63742283,Senior PL/SQL Developer,data unveil,Other,Pharmaceutical,medical:taxonomy
+63742353,Senior Statistical Programmer,oryxion,Other,Clinical Data Management,"clinical-research,clinical-data-management,drug-safety,medical-writing:taxonomy"
+63742373,"Sr Spclst , Data Science",MSD,Other,Pharmaceuticals,public-health:taxonomy
+63743736,Expert Master Data - Quality & Performance,Sanofi India,Other,Pharmaceutical,clinical-data-management:taxonomy
+63743871,Principal/Dean- Allied Health Sciences,iq city knowledge & health campus,Other,Health Sciences,clinical-research:title
+63743904,Regional Medical Expert,Roche,Other,Medical Affairs,"medical,clinical-research,clinical-data-management,medical-writing:title"
+63743905,Regional Medical Expert,Roche,Other,Medical Affairs,"medical,clinical-research,clinical-data-management,medical-writing:title"
+63743976,Project Leader- Healthcare (MedTech),Bain & Company,Other,Healthcare And Life Sciences,medical:title
+63743990,"SME, CDISC & eSubmission Standards",Sun Pharma,Other,Pharmaceutical,medical:taxonomy
+63744358,"Staff Engineer, Software Test",Thermo Fisher Scientific,Other,Biotechnology,regulatory-affairs:taxonomy
+63744378,Statistical Programmer (Data Anonymization),Veramed,Other,Clinical Research,"medical,clinical-research,clinical-trials,clinical-data-management,drug-safety,medical-writing:taxonomy"
+63745621,Regulatory Affairs Professional,Siemens,Other,Medical Device Industry,"drug-safety,regulatory-affairs,medical-affairs:title"
+63745736,SAS Programmer,iqvia india,Other,Clinical Research,"medical,clinical-data-management,medical-writing:taxonomy"
+63747320,Prin Stat Programmer,Iqvia,Other,Clinical Research,"medical,medical-writing:taxonomy"
+63747578,Healthcare Provider,PwC,Other,Healthcare,medical:title
+63747762,"Anaesthetist - KoparKhairane, Navi Mumbai",rg stone urology & laparoscopy hospital,Other,Healthcare,regulatory-affairs:taxonomy
+63755695,Trade & Promotion Sales Assoc Coord,PepsiCo,Other,,clinical-data-management:needs_review
+63756712,"GTM, Healthcare AI Data Partnerships",dr. morepen home,Other,Healthcare Ai,medical:title
+63853964,Solution Architect - Pharma R&D,Roche Pharmacutical Holding,Pharmaceutical,Healthcare,medical:title
+63893541,Optometrist,lenskart.com,Other,Optometry,doctor:title
+63893632,Systems Test Engineer,worldcare clinical (now voiant),Other,Healthcare,"medical,medical-writing:taxonomy"
+63894005,Engineer II - Analytics & Insights,Zelis,Other,Healthcare Technology,medical:taxonomy
+63894051,Optometrist,S.R.Gopal Rao Opticians and Optometrists,Other,Optometry,doctor:title
+63894149,Client Solutions Partner,Quantiphi,Other,Healthcare,medical:taxonomy
+63897928,Professor - Nephrology,Vitality Healthcare,Other,Healthcare,"medical,clinical-research,clinical-data-management,medical-writing:taxonomy"
+63897930,Professor - Endocrinology,Vitality Healthcare,Other,Healthcare,"medical,clinical-research,clinical-data-management,medical-writing:title"
+63897949,Professor - Neurology,Vitality Healthcare,Other,Healthcare,"clinical-research,clinical-trials,clinical-data-management,drug-safety:title"
+63897951,Professor - Gastroenterology,Vitality Healthcare,Other,Healthcare,"clinical-research,clinical-trials,clinical-data-management,drug-safety:taxonomy"
+63898115,"Sr Eng, V&V,",baxter international inc.,Other,Healthcare,medical:taxonomy
+63898286,Work Force Management - Reporting Professional,Gainwell Technologies,Other,Healthcare,medical:taxonomy
+63898496,Assoc Dir Quality Control,Teva Pharmaceuticals,Other,Pharmaceutical,medical:taxonomy
+63898675,Optometrist,karizma konnect,Other,Optometry,doctor:title
+63901095,Principal Engineer - IT,R1 RCM - Revenue Cycle Management,,Healthcare,medical:taxonomy
+63901100,Program Leader - HR,R1 RCM - Revenue Cycle Management,,Healthcare,medical:taxonomy
+63925023,Anaesthetist,Hyflier Corporate Services,Hospital,Others,doctor:taxonomy
+63930416,Solar project manager,Sachin Ramachanra Rane (Proprietor Of Team 24 Beverages),,Others,regulatory-affairs:needs_review
+63934073,QSR TRAINER- Operations,Sachin Ramachanra Rane (Proprietor Of Team 24 Beverages),,Others,regulatory-affairs:needs_review
+63981824,Korber PAS-X Solution Architect,Infosys Limited,Other,Pharmaceutical Biotech Cell Gene Therapy And Life Sciences Manufacturing,medical:taxonomy
+63987876,Computer Vision Engineer- Medical Imaging,Infosys Limited,Other,Healthcare,medical:title
+63987926,DA Lab Engineer - Medical Devices,Infosys Limited,Other,Quality Assurance,regulatory-affairs:title
+63987933,Design Quality Assurance - Medical,Infosys Limited,Other,Medical Device,regulatory-affairs:title
+63988012,Snowflake Admin,Infosys Limited,Other,Healthcare,medical:taxonomy
+63988022,Snowflake Admin,Infosys Limited,Other,Healthcare,medical:taxonomy
+64001124,Product Designer,ADIT,Other,Healthcare,medical:taxonomy
+64001185,Teacher - Hospital Management,Virohan,Other,Higher Education,"healthcare,medical,public-health:title"
+64002532,Data Ingestion Engineer,actualizE,Other,Healthcare Technology,medical:taxonomy
+64002556,Senior Hyperautomation Solution Architect,Medtronic,Other,Healthcare Technology,medical:taxonomy
+64007429,IT Solution Architect - Pharma Medicines TechOps,Roche,Other,Pharmaceutical,medical:title
+64007787,BC SECTOR -Lifescience -Pharma forcasting -Senior,EY,Other,Pharmaceutical,clinical-data-management:title
+64009102,ERP System Owner,Roche,Other,Healthcare,medical:taxonomy
+64009103,IT Software Engineering Expert - Pharma Medicines TechOps,Roche,Other,Healthcare,medical:title
+64010012,CDC II/ Sr CDC,ICON plc,Other,Healthcare,"clinical-data-management,medical-writing:taxonomy"
+64010475,AGM- Advanced Analytical Technology (Biosimilars),enzene biosciences ltd,Other,Biotechnology,clinical-data-management:taxonomy
+64010922,Senior QA Test Engineer,Eurofins,Other,Life Sciences,regulatory-affairs:taxonomy
