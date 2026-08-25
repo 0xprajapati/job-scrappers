@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 import pandas as pd
 
-from scraper import (ago_to_date, build_row, classify_category,
+from scraper import (ago_to_date, build_row, apply_classification,
                      classify_company_type, compute_cutoff, parse_card_salary,
                      parse_experience, parse_job_posting_ld, parse_ld_salary,
                      parse_listing_cards, rich_row_to_club_row, strip_html,
@@ -105,47 +105,54 @@ class TestParseLdSalary(unittest.TestCase):
 
 
 class TestClassify(unittest.TestCase):
-    def test_nurse(self):
-        cat, review = classify_category("Staff Nurse", ["nurse-jobs"])
-        self.assertEqual(cat, "nurses")
-        self.assertFalse(review)
+    """Migrated 2026-08-25 from the legacy profession enum to the shared
+    two-level taxonomy. The scraper no longer decides categories itself."""
 
-    def test_pharmacist(self):
-        cat, _ = classify_category("Pharmacist cum Store Manager",
-                                   ["pharmacist-jobs"])
-        self.assertEqual(cat, "pharmacists")
+    @staticmethod
+    def _c(title, slugs=(), desc=""):
+        row = {"title": title, "site_categories": "; ".join(slugs),
+               "description": desc}
+        return apply_classification(row), row
 
-    def test_doctor(self):
-        for title in ("Resident Doctor", "General Physician",
-                      "Dermatologist", "Medical Officer"):
-            cat, _ = classify_category(title, ["medicine-jobs"])
-            self.assertEqual(cat, "doctors", title)
+    def test_in_scope_roles_get_the_taxonomy(self):
+        for title, sub in (("Clinical Research Associate", "Clinical Research"),
+                           ("Medical Coder", "Medical Coding"),
+                           ("Drug Safety Associate", "Pharmacovigilance"),
+                           ("Regulatory Affairs Executive", "Regulatory Affairs"),
+                           ("Clinical Data Manager", "Clinical Data Management")):
+            ok, row = self._c(title, ["clinical-research-jobs"])
+            self.assertTrue(ok, title)
+            self.assertEqual(row["category"], "Non Clinical", title)
+            self.assertEqual(row["sub_category"], sub, title)
 
-    def test_non_clinical_core_category_not_flagged(self):
-        cat, review = classify_category("Trainee Underwriter",
-                                        ["medicine-jobs"])
-        self.assertEqual(cat, "non_clinical")
-        self.assertFalse(review)  # core healthcare category -> trusted
+    def test_public_health_roles_get_the_taxonomy(self):
+        ok, row = self._c("Public Health Nutritionist", ["dietetics-nutrition-jobs"])
+        self.assertTrue(ok)
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Public Health Nutrition")
 
-    def test_ambiguous_category_without_keyword_flagged(self):
-        cat, review = classify_category("Research Assistant",
-                                        ["psychology-jobs"])
-        self.assertEqual(cat, "non_clinical")
-        self.assertTrue(review)
+    def test_bedside_roles_are_dropped(self):
+        # the retired enum kept these as nurses/doctors/pharmacists
+        for title in ("Staff Nurse", "Resident Doctor", "General Physician",
+                      "Dermatologist", "Pharmacist cum Store Manager"):
+            ok, row = self._c(title, ["nurse-jobs"])
+            self.assertFalse(ok, title)
+            self.assertEqual(row["category"], "")
 
-    def test_ambiguous_category_with_keyword_not_flagged(self):
-        _, review = classify_category("Clinical Psychologist",
-                                      ["psychology-jobs"])
-        self.assertFalse(review)
+    def test_unrelated_categories_are_dropped(self):
+        # fetch-wide/filter-tight: the crawl walks all 173 categories and the
+        # classifier throws away everything that is not in scope.
+        for title, slug in (("Android Developer", "android-app-development-jobs"),
+                            ("PGT Mathematics Teacher", "biostatistics-jobs"),
+                            ("Field Sales Associate", "sales-jobs")):
+            ok, _ = self._c(title, [slug])
+            self.assertFalse(ok, title)
 
-    def test_mixed_categories_not_flagged(self):
-        _, review = classify_category("Research Assistant",
-                                      ["psychology-jobs", "medicine-jobs"])
-        self.assertFalse(review)
-
-    def test_junk_title_flagged(self):
-        _, review = classify_category("Test job do not apply", ["nurse-jobs"])
-        self.assertTrue(review)
+    def test_loose_category_slug_cannot_admit_on_its_own(self):
+        # "pharmacovigilance-jobs" really does return sales analysts
+        ok, _ = self._c("Techno Commercial Sales Specialist",
+                        ["pharmacovigilance-jobs"])
+        self.assertFalse(ok)
 
     def test_company_type(self):
         self.assertEqual(classify_company_type("Apollo Hospitals"), "hospital")
@@ -290,8 +297,10 @@ class TestCardAndRowBuilding(unittest.TestCase):
         self.assertEqual(club["min_salary"], "340000")
         self.assertEqual(club["salary_period"], "per_annum")
         self.assertEqual(club["min_experience"], "0")
-        self.assertEqual(club["expires_at"], "2026-08-13")
-        self.assertEqual(club["is_active"], "true")
+        # is_active / expires_at were retired with the shared club contract
+        self.assertNotIn("expires_at", club)
+        self.assertNotIn("is_active", club)
+        self.assertIn("sub_category", club)
 
 
 class TestStripHtml(unittest.TestCase):

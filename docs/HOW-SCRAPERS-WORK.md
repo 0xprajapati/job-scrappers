@@ -119,7 +119,7 @@ either filter at the source facet or lean on the classifier.
   adjacent ones (psychology, biotech, …) crawled but flagged unless the title
   shows a healthcare keyword.
 
-### workindia
+### workindia *(retired)*
 - **Site:** workindia.in (India, blue/grey-collar).
 - **Fetch:** the daily `latest-jd-pages.xml` **sitemap** (~14k job URLs);
   each detail page has JobPosting JSON-LD. Job id is in the URL, so seen jobs
@@ -141,7 +141,11 @@ either filter at the source facet or lean on the classifier.
 ### pharmarecruiter / pharmarecruiter_roles
 - **Site:** pharmarecruiter.in (India pharma). **Fetch:** open WordPress REST
   API, `jobs` category only (skips `pharma-news` at source). **Scope:** the
-  `_roles` fork adds WP full-text `?search=` walks per role-family term.
+  `_roles` fork adds WP full-text `?search=` walks per role-family term — 54
+  terms since 2026-08-25 (all eleven families + all ten PH sub-categories),
+  one page per term in steady state because the date watermark stops each one.
+  The parent walks the whole `jobs` category with no keyword filter, so it
+  backstops anything the term list misses.
 
 ### docthub / docthub_roles
 - **Site:** jobs.docthub.com (India healthcare). **Fetch:** public JSON API
@@ -192,7 +196,7 @@ either filter at the source facet or lean on the classifier.
   needs browser-TLS impersonation. **Scope:** industries Medical(30)+Pharma(37)
   at source, **one walk per keyword** (healthcare + role terms).
 
-### gulftalent / gulftalent_roles
+### gulftalent *(retired)* / gulftalent_roles
 - **Site:** gulftalent.com (Gulf). **Fetch:** server-rendered listing per
   country+industry (`/jobs/industry/healthcare`) + each detail page's
   JobPosting JSON-LD (the JSON API only returns facet counts). **Quirk:**
@@ -250,21 +254,27 @@ two-level taxonomy most hospital requisitions are bedside/clinical and are
 dropped as out of scope, where the legacy scheme kept them all under a
 profession label. Grouped by the platform they run on.
 
+> **RETIRED 2026-08-25.** The entries marked *(retired)* below yielded 0-3 rows
+> each under the taxonomy and were moved out of the active fleet to
+> `retired-scrappers/`. Their code, tests and stored CSVs are unchanged and
+> they can be revived with one `git mv` — see `retired-scrappers/README.md`.
+> The notes are kept here because they are what makes reviving one cheap.
+
 **Oracle Recruiting Cloud (public token-free CE REST API**,
 `recruitingCEJobRequisitions`, newest-first, detail endpoint for new jobs):
-- **apollohospitals** — Apollo Hospitals, India (site `CX_2`).
-- **fortis** — Fortis Healthcare, India (`CX_1`; corporate host is
+- **apollohospitals** *(retired)* — Apollo Hospitals, India (site `CX_2`).
+- **fortis** *(retired)* — Fortis Healthcare, India (`CX_1`; corporate host is
   Cloudflare-walled, Oracle host is open).
-- **sidra** — Sidra Medicine, Qatar (`Sidra-Career-Site`).
-- **seha** — SEHA / Abu Dhabi Health Services, UAE (`CX_1`).
-- **medcare** — Medcare / Aster DM, UAE (`CX`, isolated by the Medcare
+- **sidra** *(retired)* — Sidra Medicine, Qatar (`Sidra-Career-Site`).
+- **seha** *(retired)* — SEHA / Abu Dhabi Health Services, UAE (`CX_1`).
+- **medcare** *(retired)* — Medcare / Aster DM, UAE (`CX`, isolated by the Medcare
   organization facet within the group tenant).
-- **purehealth** — PureHealth Group, UAE (`CX_6007`, via talentone.ae).
+- **purehealth** *(retired)* — PureHealth Group, UAE (`CX_6007`, via talentone.ae).
 
 **PeopleStrong (Alt Recruit) Angular SPA** (`/api/cp/rest/altone/cp/jobs`
 JSON, `{}` body):
-- **carecareers** — Quality Care India (CARE Hospitals / KIMS).
-- **maxhealthcare** — Max Healthcare group, India.
+- **carecareers** *(retired)* — Quality Care India (CARE Hospitals / KIMS).
+- **maxhealthcare** *(retired)* — Max Healthcare group, India.
 
 **Other platforms:**
 - **manipalhospitals** — Manipal Hospitals, India; **Zwayam** platform,
@@ -276,16 +286,16 @@ JSON, `{}` body):
 - **kfshrc** — King Faisal Specialist Hospital, Saudi Arabia; first-party JSON
   proxy in front of **Sitecore Search** (`GetJobSearchResults`); the listing
   carries the entire posting. (Watch the Riyadh-midnight date boundary.)
-- **hmg** — Dr. Sulaiman Al Habib Medical Group, Saudi Arabia; **Elevatus
+- **hmg** *(retired)* — Dr. Sulaiman Al Habib Medical Group, Saudi Arabia; **Elevatus
   (EVA-REC)** public JSON API (`*.elevatus.io/api/v1/jobs`), full description
   in the listing.
-- **dubaihealth** — Dubai Health, UAE; routed through the **Dubai Careers**
+- **dubaihealth** *(retired)* — Dubai Health, UAE; routed through the **Dubai Careers**
   government portal (Oracle **Taleo**), `searchjobs` JSON filtered to the
   Dubai Health organization id.
 - **dha** — Dubai Health Authority, UAE; the **Sheryan Opportunities** board
   (IBM WebSphere portal) — vacancies from DHA-licensed facilities via one JSON
   resource URL.
-- **moh** — Saudi Ministry of Health; no job API — recruitment **announcement
+- **moh** *(retired)* — Saudi Ministry of Health; no job API — recruitment **announcement
   pages** enumerated from the site sitemap (the real iRecruitment portal is
   behind SSO / not publicly reachable).
 - **nhm** — National Health Mission, India; central portal has no job board —
@@ -299,14 +309,14 @@ JSON, `{}` body):
 - **apna** — apna.co moved to the Next.js App Router; cards are server-rendered
   HTML only (no `__NEXT_DATA__`, no job JSON in the RSC stream, no detail
   JSON-LD). **Needs a parser rewrite.**
-- **phcc** — careers.phcc.gov.qa (Oracle EBS iRecruitment) has
+- **phcc** *(retired)* — careers.phcc.gov.qa (Oracle EBS iRecruitment) has
   `robots.txt: Disallow: /`; the scraper aborts by design and only runs with
   explicit `--ignore-robots` authorization.
 - **jadarat.sa / MNGHA** (Saudi) — not in this fleet as working scrapers;
   jadarat returns 403 everywhere and MNGHA serves its block page as HTTP 200.
-- Small incremental Gulf sources (**moh**, **gulftalent** base,
-  **zulekhahospitals**, **dubaihealth**) legitimately return only 0–3 rows per
-  run.
+- **zulekhahospitals** legitimately returns only 0–3 rows per run. The other
+  chronically thin Gulf sources (**moh**, **gulftalent** base, **dubaihealth**)
+  were retired on 2026-08-25 — see `retired-scrappers/README.md`.
 
 ---
 

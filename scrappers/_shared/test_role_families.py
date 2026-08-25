@@ -259,6 +259,47 @@ class TestConfidence(unittest.TestCase):
         self.assertGreaterEqual(MIN_SCORE_KEEP, 3)
 
 
+class TestUserDecisions20260825(unittest.TestCase):
+    """Four classifier calls the user made on 2026-08-25."""
+
+    def test_fire_and_safety_officer_is_not_pharmacovigilance(self):
+        # manipalhospitals false positive: workplace safety, not drug safety.
+        self.assertEqual(
+            classify(title="Fire and Safety Officer")["family"], "")
+
+    def test_real_drug_safety_titles_still_match(self):
+        for title in ("Drug Safety Officer", "Pharmacovigilance Officer",
+                      "Safety Physician"):
+            self.assertEqual(classify(title=title)["family"],
+                             "Pharmacovigilance", title)
+
+    def test_payer_side_utilization_review_is_out(self):
+        # ~24 himalayas rows; in scope only when the job also reads as MSL.
+        for title in ("Utilization Review Nurse",
+                      "Utilization Management Coordinator",
+                      "Disability Peer Reviewer"):
+            self.assertEqual(classify(title=title)["family"], "", title)
+        self.assertEqual(
+            classify(title="Medical Science Liaison, Utilization Management"
+                     )["family"], "MSL")
+
+    def test_clinical_coding_officer_is_medical_coding(self):
+        # Commonwealth/Gulf title; two genuine PHCC vacancies were dropped.
+        for title in ("Clinical Coding Officer", "Coding Officer",
+                      "Clinical Coding Specialist"):
+            self.assertEqual(classify(title=title)["family"],
+                             "Medical Coding", title)
+
+    def test_dieticians_are_public_health(self):
+        for title in ("Clinical Dietitian", "Hospital Dietician",
+                      "Clinical Nutritionist"):
+            self.assertEqual(classify(title=title)["family"],
+                             "Public Health", title)
+        # the animal/sports guards still hold
+        for title in ("Animal Dietitian", "Sports Dietitian"):
+            self.assertEqual(classify(title=title)["family"], "", title)
+
+
 class TestSkillsInputForms(unittest.TestCase):
     def test_list_and_string_are_equivalent(self):
         a = classify(title="X", skills=["pharmacovigilance", "drug safety"])

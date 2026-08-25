@@ -20,10 +20,21 @@ exposes to crawlers:
    (INR, YEAR/MONTH), employmentType, jobLocation, validThrough, skills.
    Details are fetched for NEW in-window jobs only (`--no-details` skips).
 
-Healthcare filter (at the source): only the category pages listed in
-CORE_CATEGORIES / AMBIGUOUS_CATEGORIES are crawled. Jobs from ambiguous
-categories (psychology, biotech, …) are KEPT and flagged needs_review when
-the title carries no healthcare keyword — never silently dropped.
+Scope — fetch wide, filter tight (2026-08-25)
+---------------------------------------------
+Every live job category is crawled (ALL_CATEGORIES, 173 slugs derived from
+internshala's own category sitemaps and probed live), and the shared
+two-level taxonomy classifier decides what survives. Internshala's category
+facet is far too loose to scope a crawl with — "biostatistics-jobs" returns
+maths teachers and "pharmacovigilance-jobs" returns sales analysts — and the
+old 13-slug healthcare-only list both trusted that facet and capped reach
+(a Medical Coder filed under "bpo-jobs" was unreachable).
+
+Classification is `scrappers/_shared/classification.py` (`classify_job` +
+the 22-column `CLUB_COLUMNS`); the retired profession enum
+(doctors/nurses/pharmacists/non_clinical) is gone. Out-of-scope rows are
+DROPPED and counted as excluded_out_of_scope. On the stored backfill this
+is 50 kept / 478 dropped out of 528.
 
 Quirks
 ------
@@ -53,6 +64,7 @@ import argparse
 import html as html_lib
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -62,6 +74,10 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, "_shared"))
+from classification import classify_job, extract_qualification, CLUB_COLUMNS
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -96,34 +112,112 @@ REVIEW_CSV = "needs_review.csv"
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 # Category slugs under /jobs/<slug>/ that are healthcare at the source.
+# ---------------------------------------------------------------------------
+# Crawl scope — fetch wide, filter tight (2026-08-25)
+# ---------------------------------------------------------------------------
+# Internshala's category facet is LOOSE: "biostatistics-jobs" returns maths
+# teachers, "pharmacovigilance-jobs" returns sales analysts, "nurse-jobs"
+# returns biology teachers. Hand-picking healthcare-looking slugs therefore
+# buys precision the site cannot actually deliver, while silently capping
+# reach — a Medical Coder filed under "bpo-jobs" was unreachable.
+#
+# So the crawl walks EVERY live job category and lets classify_job do all the
+# rejecting. Unrelated categories cost one listing request each and contribute
+# nothing to the output.
+#
+# The 173 slugs below were derived from internshala's own
+# sitemap-categories.xml + sitemap-virtual-categories.xml (207 category names,
+# suffix swapped -internship -> -jobs) and each probed live on 2026-08-25;
+# the 34 that 301 to /jobs/ are omitted. crawl_category() independently
+# detects a redirect and skips, so a slug going stale is safe, not silent
+# corruption. To refresh: re-derive from the two sitemaps and re-probe.
+ALL_CATEGORIES = [
+    "3d-printing-jobs", "accounting-jobs", "accounts-jobs", "acting-jobs",
+    "aerospace-jobs", "agriculture-and-food-engineering-jobs",
+    "ai-agent-development-jobs", "analytics-jobs", "anchoring-jobs",
+    "android-app-development-jobs", "angular-js-development-jobs",
+    "animation-jobs", "architecture-jobs", "artificial-intelligence-ai-jobs",
+    "asp-net-jobs", "audio-making-editing-jobs", "auditing-jobs",
+    "automobile-engineering-jobs", "aws-jobs", "backend-development-jobs",
+    "bank-jobs", "big-data-jobs", "bioinformatics-jobs", "biology-jobs",
+    "biotech-jobs", "blockchain-development-jobs", "blogging-jobs",
+    "brand-management-jobs", "business-development-jobs",
+    "ca-articleship-jobs", "cad-design-jobs", "campus-ambassador-jobs",
+    "chartered-accountancy-ca-jobs", "chemical-jobs", "chemistry-jobs",
+    "cinematography-jobs", "civil-jobs", "client-servicing-jobs",
+    "cloud-computing-jobs", "cma-articleship-jobs", "commerce-jobs",
+    "company-secretary-cs-jobs", "computer-science-jobs",
+    "computer-vision-jobs", "consultant-jobs", "consulting-jobs",
+    "content-writing-jobs", "copywriting-jobs", "creative-writing-jobs",
+    "culinary-arts-jobs", "customer-service-jobs", "cyber-security-jobs",
+    "data-entry-jobs", "data-science-jobs", "database-building-jobs",
+    "design-jobs", "dietetics-nutrition-jobs", "digital-marketing-jobs",
+    "e-commerce-jobs", "editorial-jobs", "electric-vehicle-jobs",
+    "electrical-jobs", "electronics-jobs", "email-marketing-jobs",
+    "embedded-systems-jobs", "energy-science-and-engineering-jobs",
+    "engineering-design-jobs", "engineering-jobs", "engineering-physics-jobs",
+    "environmental-sciences-jobs", "event-management-jobs",
+    "facebook-marketing-jobs", "facility-management-jobs",
+    "fashion-design-jobs", "film-making-jobs", "finance-jobs",
+    "flutter-development-jobs", "front-end-development-jobs",
+    "full-stack-development-jobs", "fundraising-jobs", "game-design-jobs",
+    "game-development-jobs", "general-management-jobs", "government-jobs",
+    "graphic-design-jobs", "hospitality-jobs", "hotel-management-jobs",
+    "hr-jobs", "humanities-jobs", "image-processing-jobs",
+    "industrial-and-production-engineering-jobs", "industrial-design-jobs",
+    "information-technology-jobs",
+    "instrumentation-and-control-engineering-jobs", "interior-design-jobs",
+    "international-jobs", "internet-of-things-iot-jobs",
+    "ios-app-development-jobs", "java-jobs", "javascript-development-jobs",
+    "journalism-jobs", "law-jobs", "legal-research-jobs", "logistics-jobs",
+    "machine-learning-jobs", "manufacturing-engineering-jobs",
+    "market-business-research-jobs", "marketing-jobs",
+    "material-science-jobs", "mathematics-jobs", "mba-jobs",
+    "mechanical-jobs", "mechatronics-jobs", "media-jobs", "medicine-jobs",
+    "merchandise-design-jobs", "merchandising-jobs", "mlops-engineering-jobs",
+    "mobile-app-development-jobs", "motion-graphics-jobs", "music-jobs",
+    "natural-language-processing-nlp-jobs", "net-development-jobs",
+    "network-engineering-jobs", "networking-jobs", "ngo-jobs",
+    "node-js-development-jobs", "operations-jobs", "other-jobs",
+    "pharmaceutical-jobs", "photography-jobs", "php-development-jobs",
+    "physics-jobs", "political-economics-policy-research-jobs", "pr-jobs",
+    "product-jobs", "programming-jobs", "project-management-jobs",
+    "prompt-engineering-jobs", "proofreading-jobs", "psychology-jobs",
+    "python-django-jobs", "quality-analyst-jobs", "recruitment-jobs",
+    "robotics-jobs", "sales-jobs", "sap-jobs", "science-jobs",
+    "search-engine-optimization-seo-jobs", "site-engineering-jobs",
+    "social-media-marketing-jobs", "social-work-jobs",
+    "software-development-jobs", "software-testing-jobs", "sports-jobs",
+    "statistics-jobs", "stock-market-trading-jobs", "strategy-jobs",
+    "subject-matter-expert-sme-jobs", "supply-chain-management-scm-jobs",
+    "talent-acquisition-jobs", "tally-jobs", "teaching-jobs",
+    "telecalling-jobs", "transcription-jobs", "translation-jobs",
+    "travel-and-tourism-jobs", "ui-ux-jobs", "video-making-editing-jobs",
+    "videography-jobs", "volunteering-jobs", "web-development-jobs",
+    "wordpress-development-jobs",
+]
+
+# Kept for the robots probe and for tests that assert healthcare reach.
 CORE_CATEGORIES = [
-    "hospitals-healthcare-jobs",
-    "medical-jobs",
-    "medicine-jobs",
-    "nurse-jobs",
-    "pharmacist-jobs",
-    "pharma-jobs",
-    "pharmaceutical-jobs",
-    "dietetics-nutrition-jobs",
+    "medicine-jobs", "nurse-jobs", "pharmacist-jobs", "pharmaceutical-jobs",
+    "dietetics-nutrition-jobs", "clinical-research-jobs",
+    "clinical-data-management-jobs", "pharmacovigilance-jobs",
+    "regulatory-affairs-jobs", "medical-writing-jobs", "medical-coding-jobs",
 ]
 
-# Adjacent categories: crawled, but titles without a healthcare keyword are
-# flagged needs_review (kept, never dropped — master spec §2).
-AMBIGUOUS_CATEGORIES = [
-    "psychology-jobs",
-    "biotechnology-jobs",
-    "biotech-jobs",
-    "bioinformatics-jobs",
-    "biology-jobs",
+RICH_COLUMNS = [
+    "source", "job_id", "title", "company", "city", "state", "country",
+    "country_code", "country_dial_code", "salary_raw", "salary_min",
+    "salary_max", "salary_period", "salary_currency", "job_type",
+    "employment_type_raw", "experience_min_years", "experience_max_years",
+    "site_categories", "category", "sub_category", "role_family",
+    "all_families", "family_scores", "family_confidence", "matched_in",
+    "qualification", "company_type", "industry", "skills",
+    "needs_review", "posted_date", "posted_date_is_estimate",
+    "valid_through", "description", "job_url", "scraped_at",
 ]
 
-ALLOW_TITLE_RE = re.compile(
-    r"medical|pharma|health|nurs|doctor|clinic|hospital|\blab\b|diagnost|"
-    r"patient|dental|surgi|therap|physio|radiol|patholog|ayurved|wellness|"
-    r"\bmr\b|life ?science|nutrition|dieti|psycholog|counsell?or|biotech|"
-    r"phlebotom|optometr|paramedic|veterinar", re.IGNORECASE)
 
-# ISO country code (from JSON-LD addressCountry) -> (name, dial code).
 COUNTRY_META = {
     "IN": ("India", "+91"),
     "US": ("United States", "+1"),
@@ -133,25 +227,6 @@ COUNTRY_META = {
     "AU": ("Australia", "+61"),
     "CA": ("Canada", "+1"),
 }
-
-RICH_COLUMNS = [
-    "source", "job_id", "title", "company", "city", "state", "country",
-    "country_code", "country_dial_code", "salary_raw", "salary_min",
-    "salary_max", "salary_period", "salary_currency", "job_type",
-    "employment_type_raw", "experience_min_years", "experience_max_years",
-    "site_categories", "category", "company_type", "industry", "skills",
-    "needs_review", "posted_date", "posted_date_is_estimate",
-    "valid_through", "description", "job_url", "scraped_at",
-]
-
-CLUB_COLUMNS = [
-    "country_name", "country_code", "country_dial_code", "city_name",
-    "company_name", "company_type", "company_logo", "company_about",
-    "title", "description", "job_type", "category", "application_url",
-    "posted_at", "min_experience", "max_experience",
-    "min_salary", "max_salary", "salary_period", "salary_currency",
-    "is_active", "expires_at",
-]
 
 log = logging.getLogger("internshala_scraper")
 
@@ -270,14 +345,10 @@ def parse_ld_salary(base_salary):
 _JUNK_TITLE_RE = re.compile(
     r"^\s*test\b|\btest jobs?\b|\bdummy\b|asdf|qwer", re.IGNORECASE)
 
-_NURSE_RE = re.compile(r"nurs|midwif|\bgnm\b|\banm\b", re.IGNORECASE)
-_PHARMACIST_RE = re.compile(r"pharmacist|\bpharmacy\b|\bpharm ?d\b", re.IGNORECASE)
-_DOCTOR_RE = re.compile(
-    r"doctor|physician|surgeon|\bmbbs\b|dentist|medical officer|\brmo\b|"
-    r"[a-z]+ologist|intensivist|hospitalist|anaesthetist|anesthetist|"
-    r"obstetrician|p(a?)ediatrician|psychiatrist|veterinar|"
-    r"medical superintendent|medical director|"
-    r"medical affairs|medical science liaison|\bmsl\b", re.IGNORECASE)
+# The retired profession regexes (_NURSE_RE / _PHARMACIST_RE / _DOCTOR_RE)
+# were deleted with the legacy enum on 2026-08-25 — classify_job owns
+# categorisation now. _JUNK_TITLE_RE stays: it is a data-quality check on
+# obvious test postings, not a category decision.
 
 _NON_CLINICAL_TITLE_RE = re.compile(
     r"business development|\bsales\b|marketing|tele ?call|receptionist|"
@@ -285,27 +356,30 @@ _NON_CLINICAL_TITLE_RE = re.compile(
     r"software|developer|data entry", re.IGNORECASE)
 
 
-def classify_category(title, site_categories):
-    """Map to the club category enum; returns (category, needs_review).
+def apply_classification(row):
+    """Stamp the shared two-level taxonomy onto a rich row.
 
-    Title regexes win; a job whose only source categories are ambiguous
-    (psychology/biotech/...) and whose title shows no healthcare keyword is
-    kept but flagged for review (master spec §2).
+    The internshala category slugs the job was found under are the curated
+    `skills` signal (they are loose, so they are weighted, never decisive).
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
     """
-    title = title or ""
-    slugs = set(site_categories or [])
-    if _NURSE_RE.search(title):
-        category = "nurses"
-    elif _PHARMACIST_RE.search(title):
-        category = "pharmacists"
-    elif _DOCTOR_RE.search(title):
-        category = "doctors"
-    else:
-        category = "non_clinical"
-    all_ambiguous = bool(slugs) and slugs.issubset(set(AMBIGUOUS_CATEGORIES))
-    needs_review = bool(_JUNK_TITLE_RE.search(title)) or (
-        all_ambiguous and not ALLOW_TITLE_RE.search(title))
-    return category, needs_review
+    slugs = row.get("site_categories") or ""
+    if isinstance(slugs, (list, tuple, set)):
+        slugs = ", ".join(slugs)
+    slugs = str(slugs).replace("-jobs", "").replace("-", " ")
+    verdict = classify_job(row.get("title", ""), slugs,
+                           row.get("description", ""))
+    row["category"] = verdict["category"]
+    row["sub_category"] = verdict["sub_category"]
+    row["role_family"] = verdict["role_family"]
+    row["all_families"] = verdict["all_families"]
+    row["family_scores"] = verdict["family_scores"]
+    row["family_confidence"] = verdict["family_confidence"]
+    row["matched_in"] = verdict["matched_in"]
+    row["needs_review"] = verdict["needs_review"]
+    row["qualification"] = extract_qualification(
+        "%s %s" % (row.get("title", ""), row.get("description", "")))
+    return verdict["in_scope"]
 
 
 _PHARMA_RE = re.compile(
@@ -533,7 +607,6 @@ def build_row(card, site_categories, detail=None, today=None):
     """Merge listing-card data with detail JSON-LD into a rich-CSV row."""
     detail = detail or {}
     title = card.get("title") or clean_text(detail.get("title"))
-    category, needs_review = classify_category(title, site_categories)
 
     city = state = ""
     country_code = "IN"
@@ -592,11 +665,13 @@ def build_row(card, site_categories, detail=None, today=None):
         "experience_min_years": exp_min,
         "experience_max_years": exp_max,
         "site_categories": "; ".join(sorted(set(site_categories))),
-        "category": category,
+        # category / sub_category / role_family / qualification and the score
+        # trace are stamped by apply_classification() after the row is built.
+        "category": "",
         "company_type": classify_company_type(company, industry),
         "industry": industry,
         "skills": clean_text(detail.get("skills"))[:300],
-        "needs_review": needs_review,
+        "needs_review": False,
         "posted_date": posted,
         "posted_date_is_estimate": estimate,
         "valid_through": clean_text(detail.get("validThrough"))[:10],
@@ -642,17 +717,17 @@ def rich_row_to_club_row(r):
         "title": _blank(r.get("title")),
         "description": _blank(r.get("description")),
         "job_type": _blank(r.get("job_type")) or "full_time",
-        "category": _blank(r.get("category")) or "non_clinical",
+        "category": _blank(r.get("category")),
+        "sub_category": _blank(r.get("sub_category")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("experience_min_years")),
         "max_experience": _int_str(r.get("experience_max_years")),
+        "qualification": _blank(r.get("qualification")),
         "min_salary": min_sal if has_salary else "",
         "max_salary": _int_str(r.get("salary_max")) if has_salary else "",
         "salary_period": _blank(r.get("salary_period")) if has_salary else "",
         "salary_currency": currency if has_salary else "",
-        "is_active": "true",
-        "expires_at": _blank(r.get("valid_through")),
     }
 
 
@@ -710,9 +785,10 @@ def main(argv=None):
 
     # ---- crawl every healthcare category, merging duplicate cards ----
     cards_by_id, categories_by_id = {}, {}
-    counters = {"scanned": 0, "excluded_old": 0, "needs_review": 0,
+    counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
+                "needs_review": 0,
                 "new": 0, "duplicates": 0, "detail_failed": 0}
-    for slug in CORE_CATEGORIES + AMBIGUOUS_CATEGORIES:
+    for slug in ALL_CATEGORIES:
         for card in crawl_category(session, slug, args.max_pages):
             counters["scanned"] += 1
             jid = card["job_id"]
@@ -720,7 +796,7 @@ def main(argv=None):
             cards_by_id.setdefault(jid, card)
 
     log.info("Crawled %d categories: %d unique jobs seen",
-             len(CORE_CATEGORIES + AMBIGUOUS_CATEGORIES), len(cards_by_id))
+             len(ALL_CATEGORIES), len(cards_by_id))
 
     # ---- filter, enrich, build rows ----
     new_rows, review_log = [], []
@@ -745,6 +821,9 @@ def main(argv=None):
             continue
         if row["posted_date"] and row["posted_date"] < cutoff:
             counters["excluded_old"] += 1
+            continue
+        if not apply_classification(row):
+            counters["excluded_out_of_scope"] += 1
             continue
         if row["needs_review"]:
             counters["needs_review"] += 1
@@ -786,6 +865,7 @@ def main(argv=None):
     print("\n===== Run summary =====")
     print("Cards scanned:         {:>5,}".format(counters["scanned"]))
     print("Unique jobs seen:      {:>5,}".format(len(cards_by_id)))
+    print("Excluded (out of scope): {:>4,}".format(counters["excluded_out_of_scope"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:  {:>5,}".format(counters["needs_review"]))
     print("New jobs added:        {:>5,}".format(counters["new"]))

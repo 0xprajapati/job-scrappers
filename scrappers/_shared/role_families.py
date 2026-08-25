@@ -89,8 +89,7 @@ ROLE_FAMILIES = [
 
     ("Medical Reviewer",
      r"medical review\w*|medical monitor\w*|physician reviewer|"
-     r"clinical reviewer|peer reviewer|utilization (?:review|management)|"
-     r"\bmro\b"),
+     r"clinical reviewer|\bmro\b"),
 
     ("MSL",
      r"medical science liaison|\bmsl\b|medical affairs|scientific affairs|"
@@ -98,12 +97,13 @@ ROLE_FAMILIES = [
 
     ("Pharmacovigilance",
      r"pharmacovigilance|\bpv\b|drug safety|\bgvp\b|adverse event|"
-     r"safety (?:physician|scientist|officer|surveillance|domain|database)|"
+     r"safety (?:physician|scientist|surveillance|domain|database)|"
      r"aggregate report\w*|signal detection|case processing|"
      r"\bpsur\b|\bpbrer\b|\bicsr\b|argus|\bmeddra\b"),
 
     ("Medical Coding",
-     r"medical cod\w*|\bcoder\b|coding (?:specialist|auditor|analyst|manager|"
+     r"medical cod\w*|clinical coding|\bcoder\b|"
+     r"coding (?:specialist|auditor|analyst|manager|officer|"
      r"quality|compliance|validation|audit)|\bcpc\b|\bccs\b|icd-?10|"
      r"risk adjustment|\bhcc\b|profee|\bdrg\b|charge capture|whodrug"),
 
@@ -152,6 +152,7 @@ ROLE_FAMILIES = [
      r"tuberculosis|\bntep\b|\brntcp\b|hiv/aids|\bhiv\b|malaria|leprosy|"
      r"immuni[sz]ation|vaccinat\w*|"
      r"(?<!animal )(?<!poultry )(?<!cattle )(?<!sports )nutritionist|"
+     r"(?<!animal )(?<!poultry )(?<!cattle )(?<!sports )dieti[ct]ian|"
      r"(?:public health|community) nutrition|"
      r"(?<!animal )(?<!poultry )(?<!cattle )(?<!feed )"
      r"nutrition (?:officer|specialist|program\w*|assistant|educator)|"

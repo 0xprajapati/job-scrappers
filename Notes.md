@@ -9,7 +9,7 @@ Shine, Indeed, Naukrigulf, SimplyHired, Foundit, Internshala (Using 20 role clas
 
 ## Sites where a whole section is taken and filtering happens afterwards:
 Naukri, Reed, Himalayas
-
+f
 ## Sites taken whole (everything they post):
 Apollo, Fortis, Max, Manipal, Narayana, DHA, and the Gulf hospital group, PharmaBharat, PharmaRecruiter, Vaidyog, CareCareers, Nextenti, PublicHealthCareer.
 

@@ -16,19 +16,20 @@ API is fully open, so the scraper never parses listing pages:
 
 WordPress's `search` parameter is full text over the title AND the body, so
 a listing that names the domain only in its requirements still comes back.
-SEARCH_TERMS holds one query per role family ("pharmacovigilance", "drug
-safety", "regulatory affairs", "medical writing", ...) and the crawl works
-one term at a time. The `jobs` category id is resolved from its slug at
+SEARCH_TERMS holds queries for all eleven role families and all ten Public
+Health sub-categories ("pharmacovigilance", "drug safety", "regulatory
+affairs", "medical writing", ...) and the crawl works one term at a time. The `jobs` category id is resolved from its slug at
 startup via /wp-json/wp/v2/categories, so `pharma-news` articles are
 skipped at source.
 
-KNOWN LIMITATION (pre-existing, untouched by the taxonomy migration): the
-main loop's stop condition (`page_all_old or len(posts) < PAGE_SIZE`) ends
-the WHOLE crawl rather than advancing to the next search term, so in
-practice only the first term is fully walked unless a term's result count
-happens to be an exact multiple of PAGE_SIZE. The term cursor only
-advances when the API returns an empty page. Fixing that is a crawl-breadth
-change, deliberately left out of the classifier migration.
+FIXED 2026-08-25: the main loop's stop condition
+(`page_all_old or len(posts) < PAGE_SIZE`) used to end the WHOLE crawl
+rather than advancing to the next search term, so in practice only the
+first term was ever walked. It now advances the term cursor, and the term
+list was widened from 17 to 56 queries in the same change (see
+SEARCH_TERMS). Per-run cost is bounded by the date watermark, not by the
+term count: each term stops at its first all-older-than-cutoff page, so a
+steady-state run is roughly one request per term.
 
 Every post embeds a labelled bullet list under a "Job Details" heading:
 
@@ -101,13 +102,66 @@ POSTS_URL = SITE_BASE + "/wp-json/wp/v2/posts"
 
 # WordPress REST exposes full-text ?search=, so we ask the site for these
 # roles instead of walking the whole jobs category (master spec §1).
+# Widened 2026-08-25 from 17 terms to 56, to the same standard as
+# shine_roles: every one of the eleven role families and all ten Public
+# Health sub-categories now has at least one query. The old list had no
+# Medical Reviewer term and only 2 of the 10 PH sub-categories.
+#
+# WordPress core search is a substring LIKE, ANDed across the words of the
+# query, over title + body — so "clinical data" is a superset of "clinical
+# data management", and "medical review" already covers "medical reviewer".
+# Counts below were probed live on 2026-08-25 against
+# ?categories=1&per_page=1 (X-WP-Total), out of 7,335 job posts.
+#
+# Short queries were each spot-checked against their top results, because
+# LIKE matches inside unrelated words. Kept: cdisc (23), sdtm (19),
+# icd-10 (47) — all return real programming/coding roles. Rejected:
+# "heor" (38, matches "theory"/"theoretical"), "hmis" (6, no real hits),
+# bare "hiv" (192 — it is a substring of "archive"; "hiv/aids" returns 9
+# honest hits), and the bare acronyms cra, msl, tmf, cpc, edc, argus.
+# Also absent: "drug regulatory" (1,193 — the AND of two common words,
+# already covered by the two regulatory terms below) and
+# "nutritionist"/"asha worker" (0 hits; this is a pharma portal).
+# "dietitian"/"dietician" return 1 post each and are left out for the same
+# reason — the Public Health nutrition decision of 2026-08-25 still applies
+# to anything the other terms surface.
 SEARCH_TERMS = [
-    "clinical research", "clinical trials", "clinical data management",
-    "pharmacovigilance", "drug safety", "regulatory affairs",
-    "medical writing", "medical writer", "medical coding",
-    "medical science liaison", "medical affairs", "medical monitor",
-    "health economics", "market access", "trial master file",
-    "public health", "epidemiology",
+    # Clinical Research
+    "clinical research", "clinical trials", "clinical operations",
+    "clinical research associate",
+    # Clinical Data Management
+    "clinical data management", "clinical data", "cdisc", "sdtm",
+    # Pharmacovigilance
+    "pharmacovigilance", "drug safety", "signal detection", "icsr",
+    "aggregate reports",
+    # Regulatory Affairs
+    "regulatory affairs", "regulatory submissions", "regulatory intelligence",
+    "dossier",
+    # Medical Writer
+    "medical writing", "medical writer", "scientific writing",
+    "clinical study report",
+    # Medical Coding
+    "medical coding", "medical coder", "clinical coding", "icd-10",
+    # MSL
+    "medical science liaison", "medical affairs", "medical advisor",
+    "medical information",
+    # Medical Reviewer  (was entirely unrepresented before 2026-08-25)
+    "medical review", "medical monitor", "safety physician",
+    # HEOR
+    "health economics", "market access", "real world evidence",
+    # TMF
+    "trial master file",
+    # Public Health — one query per sub-category (was: "public health" and
+    # "epidemiology" only). Thin counts are kept anyway: the date watermark
+    # bounds each term to ~1 page per run, so an extra term costs one
+    # request, not a crawl.
+    "public health", "epidemiology", "epidemiologist",
+    "disease surveillance", "monitoring and evaluation",
+    "community health", "health promotion", "health educator",
+    "tuberculosis", "hiv/aids", "malaria", "immunization", "vaccination",
+    "nutrition", "infection control",
+    "health informatics",
+    "implementation research", "maternal health",
 ]
 CATEGORIES_URL = SITE_BASE + "/wp-json/wp/v2/categories"
 
@@ -704,9 +758,15 @@ def main(argv=None):
             new_rows.append(row)
             counters["new"] += 1
 
-        # newest-first: once a whole page is older than the cutoff, stop.
+        # Newest-first WITHIN a term: once a whole page is older than the
+        # cutoff, or the term returns a short page, that TERM is exhausted —
+        # advance the cursor. Until 2026-08-25 this was a bare `break`, which
+        # ended the whole crawl and left every later term unsearched, so only
+        # the first term was ever walked.
         if page_all_old or len(posts) < PAGE_SIZE:
-            break
+            log.debug("Term %r exhausted after %d page(s)", term, page - 1)
+            term_idx, page, empty_pages = term_idx + 1, 1, 0
+            continue
 
     # ---- rich cumulative CSV ----
     if new_rows:

@@ -1,13 +1,16 @@
 # Taxonomy migration — COMPLETE (2026-08-25)
 
-**All 32 in-scope scrapers are migrated, tested and reclassified.** The 17
+**All 32 in-scope scrapers were migrated, tested and reclassified.** 13 of
+them were retired on 2026-08-25 (decision 5 below), leaving 19 migrated
+scrapers in the active fleet. The 17
 scrapers in the EXCLUDED list below were deliberately left on the legacy
 scheme by the user's instruction.
 
 Verified fleet-wide on completion:
 
 - every `.py` under `scrappers/` compiles;
-- **1,467 tests pass, zero failures** (note: `apna`, `docthub`, `docthub_roles`,
+- **1,431 tests pass, zero failures** after the 2026-08-25 classifier decisions
+  (1,467 at migration completion, before the 13 retirements) (note: `apna`, `docthub`, `docthub_roles`,
   `dubailivejobs`, `nextenti`, `publichealthcareer` use bare `test_*` functions
   with a custom runner, so they need `python test_filters.py`, not
   `unittest discover`, which silently reports 0 tests for them);
@@ -22,34 +25,116 @@ Top sub-categories in the kept set: Clinical Research 969, Medical Coding 890,
 Clinical Data Management 681, Pharmacovigilance 497, Regulatory Affairs 305,
 Medical Writer 155, MSL 141.
 
-## Open decisions (not actioned — need the user's call)
+## Decisions — RESOLVED 2026-08-25
 
-1. **Reverted work.** `simplyhired`, `internshala` and `workindia` had
-   uncommitted "fetch-wide" widening from before the migration; it was
-   discarded by the `git checkout` used to revert them when they became
-   excluded. Not recoverable from git — but reconstructable from the
-   descriptions in SCRAPER_GUIDE.md.
-2. **False positive:** "Fire and Safety Officer" scores Pharmacovigilance
-   (title-only, high confidence) on the word "safety" — manipalhospitals.
-3. **False positive:** US payer-side "Utilization Review / Utilization
-   Management / disability peer reviewer" admit as Medical Reviewer/MSL
-   (~24 rows on himalayas) — the old local list excluded them deliberately.
-4. **False negative:** `role_families.py` Medical Coding does not match
-   "Clinical Coding Officer" (standard Commonwealth/Gulf title); two genuine
-   PHCC coding vacancies were dropped. Suggested: add `clinical coding`,
-   `coding officer`.
-5. **Behavior note:** "Clinical Nutritionist / Dietician" is now in scope as
-   Public Health → Public Health Nutrition (5 indeed rows). Old indeed list
-   excluded it. Confirm this is wanted.
-6. **Pre-existing crawl bug (documented, unfixed):** `pharmarecruiter_roles`
-   ends the whole crawl instead of advancing its search-term cursor, so only
-   the first term is walked. Fixing widens crawl ~17x.
-7. **Yield observation:** hospital-operator ATS boards (apollohospitals,
-   carecareers, dubaihealth, fortis, hmg, maxhealthcare, medcare, moh, phcc,
-   purehealth, seha, sidra, gulftalent) now keep 0–3 rows each — they post
-   bedside clinical jobs, which are out of scope by definition. Worth deciding
-   which stay scheduled. `gulftalent` is also now a strict crawl-subset of
-   `gulftalent_roles`.
+All seven are resolved. #7 turned out to be partly a false alarm
+(simplyhired's work was never lost); internshala is widened and migrated, and
+workindia has been measured and found structurally out of scope.
+
+### Done
+
+1. **"Fire and Safety Officer" is not Pharmacovigilance.** `officer` removed
+   from the PV `safety (?:...)` alternative in `_shared/role_families.py`.
+   Real PV titles ("Drug Safety Officer", "Pharmacovigilance Officer") still
+   match via `drug safety` / `pharmacovigilance`.
+
+2. **Payer-side utilization review is out unless the job also reads as MSL.**
+   `utilization (?:review|management)` and `peer reviewer` removed from the
+   Medical Reviewer family pattern, so those phrases no longer admit a job on
+   their own; anything matching MSL vocabulary is unaffected.
+   *Still in scope and NOT changed:* titles literally called "Medical
+   Reviewer" at US payers ("Medical Reviewer III (Medicare/DRG)", ~16 himalayas
+   rows) — they match the family's core `medical review\w*` term. Ask the user
+   before touching that, since removing it would gut the family.
+
+3. **"Clinical Coding Officer" now matches Medical Coding.** Added
+   `clinical coding` and `coding (?:...|officer)` to the family pattern and
+   `clinical cod(?:er|ing)` / `coding (?:...|officer)` to the sub-category
+   titles. Recovers the two dropped PHCC vacancies.
+
+4. **Dieticians are in scope under Public Health → Public Health Nutrition.**
+   `dieti[ct]ian` added to the PH family pattern and to the Public Health
+   Nutrition sub-category, and the `"clinical dietitian"/"hospital dietitian"`
+   vetoes retired from `NEGATIVE_KEYWORDS`. The animal/poultry/cattle/sports
+   guards still hold.
+
+5. **The 13 bedside-only ATS boards are retired.** Moved to
+   `retired-scrappers/` (see its README for the per-scraper yield table and the
+   one-command revival): apollohospitals, carecareers, dubaihealth, fortis,
+   gulftalent, hmg, maxhealthcare, medcare, moh, phcc, purehealth, seha, sidra.
+   The active fleet is now **19 migrated scrapers + 17 excluded legacy ones**.
+   `gulftalent` was additionally a strict crawl-subset of `gulftalent_roles`.
+
+Fleet verification after 1-4: **1,431 tests pass, zero failures.** Two scraper
+tests asserted the old dietician behaviour and were inverted
+(`dubaihealth/test_filters.py`, `himalayas/test_filters.py`); new tests cover
+all four decisions in `_shared/test_role_families.py` and
+`_shared/test_taxonomy_keywords.py`.
+
+### Notes
+
+6. **DONE — `pharmarecruiter_roles` crawl bug fixed and its term list
+   widened.** The newest-first early stop (`if page_all_old or
+   len(posts) < PAGE_SIZE: break`) exited the whole `while True` loop instead
+   of advancing `term_idx`, so only the first term ("clinical research") was
+   ever searched. It now advances the cursor. In the same change SEARCH_TERMS
+   went from 17 queries to 54, to the shine_roles standard: all eleven role
+   families (Medical Reviewer previously had **no** query at all) and all ten
+   Public Health sub-categories (previously 2 of 10). Every candidate was
+   probed live against `X-WP-Total` on 2026-08-25; "heor" (matches "theory"),
+   "hmis", bare "hiv" (matches "archive") and the bare acronyms were rejected
+   as substring noise, and a test now blocks any unvetted query under five
+   characters.
+
+   Measured A/B on the same 2-day window, live:
+
+   | | terms queried | requests | posts scanned | new jobs |
+   |---|---|---|---|---|
+   | before | 1 | 3 | 100 | 8 |
+   | after | 54 | 84 | 3,250 | 14 |
+
+   Run time 3m33s vs 7s. The earlier "~17x crawl" estimate was pessimistic:
+   the date watermark bounds each term to about one page per run, so breadth
+   costs roughly one request per term rather than a full walk of all 7,335
+   job posts.
+
+7. **DONE (internshala) / EVIDENCE FOR A DECISION (workindia).**
+
+   "Fetch-wide / filter-tight" is the house crawl pattern: widen what the
+   scraper *asks the site for*, and let `classify_job` do all the rejecting.
+   It is a crawl-layer change — it never touches `taxonomy_keywords.py` or
+   `role_families.py`.
+
+   * **simplyhired — was never lost.** Its widening is committed in the
+     user's own `3c6b264`: `{"q": "healthcare"}` became a 31-entry
+     `SEARCH_QUERIES` list plus the per-query pagination loop. The earlier
+     claim in this file that a `git checkout` destroyed it was wrong.
+   * **internshala — WIDENED AND MIGRATED 2026-08-25.** Now crawls **all 173
+     live job categories** (derived from internshala's own
+     sitemap-categories.xml + sitemap-virtual-categories.xml, each probed
+     live; the 34 dead slugs omitted) instead of 13 hand-picked healthcare
+     slugs — 4 of which were themselves dead (`hospitals-healthcare-jobs`,
+     `medical-jobs`, `pharma-jobs`, `biotechnology-jobs`). Its category facet
+     is far too loose to scope a crawl with: `biostatistics-jobs` returns
+     maths teachers, `pharmacovigilance-jobs` returns sales analysts,
+     `nurse-jobs` returns biology teachers. It also moved off the legacy enum
+     onto `classify_job` + the shared `CLUB_COLUMNS`. Stored data
+     reclassified: **50 kept / 478 moved** to `out-of-scope.csv` (Public
+     Health Nutrition 14, Medical Coding 12, Clinical Research 9, CDM 4, PV 4,
+     RA 3). 35 tests pass.
+   * **workindia — widening is NOT worth doing; recommend retiring it.**
+     Its daily latest-JD sitemap was pulled live on 2026-08-25: **15,614 job
+     URLs, 3,250 distinct title slugs, and essentially nothing in scope.**
+     The only candidate slugs were `medical_representative` (15 — pharma
+     sales, an explicit negative keyword), `clinical_nurse_specialist` (3)
+     and `clinical_pharmacist` (3), both bedside, and ~4 dietician /
+     nutritionist posts. Scoring its 924 stored rows through `classify_job`
+     gives **9 in scope (1.0%)**. WorkIndia is a blue-collar board — shop
+     helper, machine operator, delivery — and structurally does not carry
+     clinical-research or public-health professional roles. **Retired
+     2026-08-25** at the user's instruction — moved to `retired-scrappers/`,
+     where its 27 tests still pass. It stays on the legacy profession enum;
+     migrating it was never worth doing.
 
 ---
 
@@ -57,17 +142,20 @@ Medical Writer 155, MSL 141.
 
 ## EXCLUDED from the migration — THE authoritative list
 
-By the user's instruction (2026-08-25) these **17 scrapers are out of scope for
+By the user's instruction (2026-08-25) these **15 scrapers are out of scope for
 this migration**. They keep their **old per-scraper classification** (the
 legacy profession enum `doctors | nurses | pharmacists | non_clinical`) and
 their **old club schema**:
 
 ```
-apna          dubailivejobs   dubizzle       hziegler      internshala
+apna          dubailivejobs   dubizzle       hziegler
 jobberman     kfshrc          michaelpage    narayanahealth
 nhm           pharmabharat    profco         publichealthcareer
-simplyhired   swaasa          workindia      zulekhahospitals
+simplyhired   swaasa          zulekhahospitals
 ```
+
+(15 now: `internshala` was widened and migrated on 2026-08-25, and
+`workindia` was retired to `retired-scrappers/` the same day.)
 
 Do not migrate them, do not reclassify their stored data, and do not list them
 as outstanding work. `pharmabharat` was additionally reverted to its
@@ -89,7 +177,8 @@ nothing is lost. This file is the worklist for the resumed run.
 
 ## Reference implementation
 
-`git diff -- scrappers/apollohospitals/scraper.py` is the canonical pattern:
+`git diff -- retired-scrappers/apollohospitals/scraper.py` is the canonical
+pattern (the scraper is retired, but the diff is still the reference):
 imports + `apply_classification(row)` helper + RICH_COLUMNS additions +
 CLUB_COLUMNS import + club-row changes (sub_category, qualification, no
 is_active/expires_at) + `excluded_out_of_scope` counter/gate/summary line.

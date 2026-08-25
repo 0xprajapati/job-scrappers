@@ -45,10 +45,19 @@ class TestClassificationWiring(unittest.TestCase):
 
     def test_bedside_role_is_dropped(self):
         for title in ("Staff Nurse - ICU", "Consultant Cardiologist",
-                      "Clinical Dietitian 2 -UAE National"):
+                      "Specialist Anaesthesiologist"):
             row = {"title": title, "department": "", "description": ""}
             self.assertFalse(apply_classification(row), title)
             self.assertEqual(row["category"], "")
+
+    def test_dietitian_is_public_health(self):
+        # User decision 2026-08-25: dieticians are in scope under
+        # Public Health -> Public Health Nutrition.
+        row = {"title": "Clinical Dietitian 2 -UAE National",
+               "department": "", "description": ""}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Public Health Nutrition")
 
     def test_club_row_uses_shared_contract(self):
         row = {"title": "Medical Coder", "department": "HIM",

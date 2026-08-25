@@ -200,7 +200,9 @@ class TestSharedClassifierWiring(unittest.TestCase):
     def test_slugs_alone_cannot_admit(self):
         # feed slugs are auto-tagged and loose: passed only as the weighted
         # skills signal, they must not admit a clinical title on their own
-        v = classify_feed_job("Registered Dietitian", ["Clinical-Research"])
+        # ("Registered Dietitian" is itself in scope since the 2026-08-25
+        # nutrition decision, so this uses a plainly bedside title instead.)
+        v = classify_feed_job("Registered Nurse - ICU", ["Clinical-Research"])
         self.assertFalse(v["in_scope"])
 
     def test_slugs_are_flattened_to_scorer_text(self):

@@ -21,6 +21,7 @@ from scraper import (
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
     SEARCH_TERMS,
+    PAGE_SIZE,
     _NEWSY_TITLE_RE,
 )
 
@@ -194,8 +195,76 @@ class TestSearchTerms(unittest.TestCase):
                        "medical writ", "trial master file", "medical coding",
                        "pharmacovigilance", "regulatory affairs",
                        "medical monitor", "medical science liaison",
-                       "health economics", "public health"):
+                       "health economics", "public health",
+                       # added 2026-08-25 — the family had no query at all
+                       "medical review"):
             self.assertIn(needle, joined)
+
+    def test_every_public_health_subcategory_has_a_query(self):
+        # 2026-08-25 widening: the list used to carry only "public health"
+        # and "epidemiology" for all ten PH sub-categories.
+        joined = " | ".join(SEARCH_TERMS)
+        for needle in ("epidemiolog",                 # Epidemiology
+                       "public health",               # PH Program Management
+                       "monitoring and evaluation",   # M&E
+                       "community health",            # Community Health
+                       "health promotion",            # Health Promotion & Ed
+                       "tuberculosis",                # Disease Programs
+                       "nutrition",                   # PH Nutrition
+                       "infection control",           # IPC
+                       "health informatics",          # Health Informatics
+                       "implementation research"):    # PH Research
+            self.assertIn(needle, joined)
+
+    def test_short_queries_are_all_spot_checked(self):
+        # WordPress search is a substring LIKE, so a short query can match
+        # inside unrelated words. Every query under 5 characters must be one
+        # whose top results were checked live (2026-08-25) and found real.
+        # Rejected there: heor (matches "theory"), hmis, bare hiv (matches
+        # "archive"), and the bare acronyms cra/msl/tmf/cpc/edc/argus.
+        # sdtm -> statistical programmers; icsr -> PV case processing.
+        VERIFIED_SHORT = {"sdtm", "icsr"}
+        for term in SEARCH_TERMS:
+            if len(term) < 5:
+                self.assertIn(
+                    term, VERIFIED_SHORT,
+                    "%r is a short query that has not been spot-checked "
+                    "against its live top results" % term)
+
+
+class TestTermCursor(unittest.TestCase):
+    """The 2026-08-25 crawl fix: an exhausted term must not end the run."""
+
+    def _walk(self, pages_per_term):
+        """Replay the main loop's cursor logic over a fake API."""
+        term_idx, page, walked = 0, 1, []
+        while term_idx < len(SEARCH_TERMS):
+            term = SEARCH_TERMS[term_idx]
+            n = pages_per_term.get(term, 1)
+            posts = list(range(PAGE_SIZE)) if page < n else []
+            page_all_old = page >= n
+            walked.append((term, page))
+            page += 1
+            if not posts:
+                term_idx, page = term_idx + 1, 1
+                continue
+            if page_all_old or len(posts) < PAGE_SIZE:
+                term_idx, page = term_idx + 1, 1
+                continue
+        return walked
+
+    def test_all_terms_are_walked_when_each_stops_early(self):
+        # every term's first page is all-old — the old `break` stopped here
+        walked = self._walk({})
+        self.assertEqual([t for t, _ in walked], list(SEARCH_TERMS))
+
+    def test_deep_term_does_not_starve_the_rest(self):
+        deep = {SEARCH_TERMS[0]: 4}
+        walked = self._walk(deep)
+        self.assertEqual([p for t, p in walked if t == SEARCH_TERMS[0]],
+                         [1, 2, 3, 4])
+        self.assertEqual(sorted(set(t for t, _ in walked)),
+                         sorted(set(SEARCH_TERMS)))
 
 
 class TestClassifiers(unittest.TestCase):

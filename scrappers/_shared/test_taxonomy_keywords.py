@@ -60,10 +60,24 @@ def test_short_token_only_matches_in_title():
     assert r["sub_category"] == "TMF"
 
 
-def test_clinical_dietitian_stays_out_of_nutrition():
-    r = classify_subcategory(title="Clinical Dietitian",
-                             skills="nutrition, diet counselling")
-    assert r["sub_category"] == ""
+def test_dietitian_is_public_health_nutrition():
+    # User decision 2026-08-25: clinical/hospital dieticians are in scope
+    # under Public Health -> Public Health Nutrition. The veto that used to
+    # keep Nutrition strictly programmatic was retired with it.
+    for title in ("Clinical Dietitian", "Hospital Dietician", "Dietitian"):
+        r = classify_subcategory(title=title,
+                                 skills="nutrition, diet counselling")
+        assert r["sub_category"] == "Public Health Nutrition", title
+        assert r["category"] == "Public Health"
+    # A sports dietician is still a fitness role, not public health.
+    assert classify_subcategory(title="Sports Dietitian")["sub_category"] == ""
+
+
+def test_clinical_coding_officer_is_medical_coding():
+    # Commonwealth/Gulf title; two genuine PHCC vacancies were dropped by
+    # the old pattern, which only knew "clinical coder".
+    r = classify_subcategory(title="Clinical Coding Officer")
+    assert r["sub_category"] == "Medical Coding"
 
 
 def test_meddra_tiebreak_prefers_title():

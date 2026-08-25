@@ -98,8 +98,8 @@ SUBCATEGORIES = {
     },
     "Medical Coding": {
         "category": "Non Clinical",
-        "titles": r"medical cod\w*|clinical coder|certified professional coder|"
-                  r"\bcpc\b|coding (?:auditor|quality analyst)|"
+        "titles": r"medical cod\w*|clinical cod(?:er|ing)|certified professional coder|"
+                  r"\bcpc\b|coding (?:auditor|quality analyst|officer)|"
                   r"(?:hcc|ipdrg|ip-drg|ed|e ?& ?m|surgery|radiology) coder",
         "strong": ["ICD-10-CM", "CPT", "HCPCS", "CPC", "CCS", "CIC", "COC",
                    "HCC", "risk adjustment", "DRG", "IP-DRG", "E/M coding",
@@ -243,6 +243,7 @@ SUBCATEGORIES = {
         "category": "Public Health",
         "titles": r"nutrition (?:officer|consultant|coordinator)|"
                   r"(?:public health )?nutritionist|poshan|"
+                  r"(?<!sports )dieti[ct]ian|"
                   r"nutrition program(?:me)? manager|nrc nutrition|"
                   r"sam program officer",
         "strong": ["POSHAN Abhiyaan", "ICDS", "anganwadi", "SAM", "MAM",
@@ -297,7 +298,6 @@ NEGATIVE_KEYWORDS = [
     "sales executive", "sales representative",   # MSL / Clinical Research
     "Indian Penal Code",                         # IPC
     "rheumatoid arthritis",                      # RA
-    "clinical dietitian", "hospital dietitian",  # keeps Nutrition programmatic
     "staff nurse", "lab technician", "phlebotomist",  # clinical roles
 ]
 
