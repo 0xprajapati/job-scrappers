@@ -125,7 +125,9 @@ ROLE_FAMILIES = [
      # "CDM" alone is ambiguous — in revenue-cycle listings it is Charge
      # Description Master.
      r"clinical data|clinical database|clinical programm\w*|data manage\w*|"
-     r"data steward|\bedc\b|\bcdisc\b|\bsdtm\b|\badam\b|medidata|rave|"
+     # "rave" (Medidata Rave) needs boundaries: bare it matches inside
+     # "travel" and "Paravet" (found live on devnetjobsindia 2026-08-26).
+     r"data steward|\bedc\b|\bcdisc\b|\bsdtm\b|\badam\b|medidata|\brave\b|"
      r"\bcdm\b(?=.*(?:clinical|trial|study|edc))"),
 
     ("Public Health",

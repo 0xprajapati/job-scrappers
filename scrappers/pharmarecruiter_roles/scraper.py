@@ -183,7 +183,6 @@ REQUEST_TIMEOUT_SECONDS = 60
 MAX_RETRIES = 4
 BACKOFF_BASE_SECONDS = 3.0
 MAX_EMPTY_PAGES = 3
-DESCRIPTION_MAX_CHARS = 3_000
 
 RICH_CSV = "pharmarecruiter_roles_jobs.csv"
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
@@ -244,6 +243,21 @@ def clean_text(text):
 
 def strip_html(markup):
     return clean_text(_TAG_RE.sub(" ", markup or ""))
+
+
+_FIRST_HEADING_RE = re.compile(r"<h[23][^>]*>", re.I)
+
+
+def strip_seo_intro(content_html):
+    """Drop the site's generated SEO paragraph(s) that open every post.
+
+    Posts start with boilerplate ("Apply for X role in Y at Z. Explore
+    pharma jobs…") before the first heading (always "About the Company"
+    at the source); the real content runs from that heading. Posts with
+    no heading are kept whole.
+    """
+    match = _FIRST_HEADING_RE.search(content_html or "")
+    return content_html[match.start():] if match else content_html
 
 
 _LI_RE = re.compile(r"<li[^>]*>(.*?)</li>", re.S)
@@ -599,7 +613,7 @@ def post_to_rich_row(post, category_map):
         "company_type": classify_company_type(company, title),
         "needs_review": needs_review,
         "posted_date": clean_text(post.get("date", ""))[:10],
-        "description": strip_html(content)[:DESCRIPTION_MAX_CHARS],
+        "description": strip_html(strip_seo_intro(content)),
         "job_url": clean_text(post.get("link", "")),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }

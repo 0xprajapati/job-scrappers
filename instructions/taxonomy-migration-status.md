@@ -3,7 +3,27 @@
 > **2026-08-26 update.** Four of the excluded scrapers were migrated at the
 > user's request: `publichealthcareer`, `jobberman`, `michaelpage`,
 > `simplyhired`. The active fleet is now **24 migrated + 3 legacy**
-> (apna, nhm, swaasa), with 22 scrapers retired. Fleet verification after
+> (apna, nhm, swaasa), with 22 scrapers retired.
+> **2026-08-26 later:** a NEW scraper `devnetjobsindia` (India's NGO/development
+> board — Public Health supply) was built directly on the standard —
+> 25 migrated total. `shine` was retired the same day (crawl subset of
+> `shine_roles`), so the migrated count of *distinct* active scrapers is 24.
+> Its first run also surfaced a **shared-engine word-boundary bug, now
+> fixed**: the CDM family pattern's bare `rave` (Medidata Rave) matched
+> inside "travel"/"Paravet", so any title containing "travel" scored
+> CDM=5/high ("Paravet / Goat Expert" was admitted). Fixed to `\brave\b`
+> with a regression test in `_shared/test_role_families.py`;
+> devnetjobsindia's store was reclassified (1 row demoted). **Other
+> scrapers' stored CSVs have not been re-swept for travel-admitted CDM
+> rows yet.**
+> **2026-08-26 later still:** a NEW scraper `reliefweb` (UN OCHA's humanitarian
+> board — pure Public Health supply: M&E, WASH/community programme management,
+> epidemiology) was built directly on the standard. RSS-feed union across
+> facet feeds, 7 requests/run; first run kept 13 of 109 candidates (~12%),
+> all Public Health. 28 unit tests pass. Note its documented deviation:
+> a rolling 30-day window instead of the stored-max watermark (no pagination
+> to early-stop, and transiently-empty facet feeds would otherwise lose
+> their backlog — see `scrappers/reliefweb/README.md`). Fleet verification after
 > the change: everything compiles, **1,421 scraper tests + 56 `_shared`
 > tests pass, zero failures**.
 >

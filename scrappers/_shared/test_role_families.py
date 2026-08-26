@@ -246,6 +246,19 @@ class TestBoundaries(unittest.TestCase):
     def test_out_of_scope_regex_ignores_plain_titles(self):
         self.assertFalse(OUT_OF_SCOPE_TITLE.search("Clinical Data Manager"))
 
+    def test_travel_and_paravet_are_not_medidata_rave(self):
+        # Bare "rave" matched inside "travel" and "Paravet" (found live on
+        # devnetjobsindia 2026-08-26: "Paravet / Goat Expert" scored CDM=5).
+        for title in ("Willing to travel extensively",
+                      "Paravet / Goat Expert",
+                      "Travel Desk Coordinator"):
+            self.assertEqual(classify(title=title)["family"], "", title)
+        # The real EDC platform still matches.
+        self.assertEqual(
+            classify(title="Rave Programmer",
+                     skills="medidata rave,edc,clinical data")["family"],
+            "Clinical Data Management")
+
 
 class TestConfidence(unittest.TestCase):
     def test_tiers(self):
