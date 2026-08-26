@@ -64,7 +64,7 @@ URLs; `?page=` is fine, the disallowed `item_per_pages` param is not used).
 * `michaelpage_jobs.csv` — rich cumulative store, deduped on the JN ref;
   append-only across runs.
 * `../../jobs_csv/<DD-MM-YYYY>/michaelpage.csv` — HealthCareers.club
-  22-column schema (all cumulative rows), refreshed every run.
+  23-column schema (all cumulative rows), refreshed every run.
 * `seen_old_ids.csv` — out-of-window refs (detail-fetch skip list).
 * `needs_review.csv` — kept but flagged, for manual review.
 * `out-of-scope.csv` — rows the taxonomy dropped; also the detail-fetch skip

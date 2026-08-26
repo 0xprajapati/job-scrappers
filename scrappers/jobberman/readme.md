@@ -76,7 +76,7 @@ python test_filters.py            # offline unit tests
 | File | Purpose |
 | --- | --- |
 | `jobberman_jobs.csv` | Rich cumulative store, dedup key = listing slug |
-| `../../jobs_csv/<DD-MM-YYYY>/jobberman.csv` | HealthCareers.club 22-column export |
+| `../../jobs_csv/<DD-MM-YYYY>/jobberman.csv` | HealthCareers.club 23-column export |
 | `seen_old_ids.csv` | Out-of-window slugs (skip re-fetching their details) |
 | `needs_review.csv` | Kept but flagged, for manual review |
 | `out-of-scope.csv` | Rows the taxonomy dropped; also the skip list for later runs |

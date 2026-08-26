@@ -111,7 +111,7 @@ class TestSharedClassifierWiring(unittest.TestCase):
 
 
 class TestClubMapping(unittest.TestCase):
-    """The 22-column CLUB_COLUMNS contract from _shared/classification."""
+    """The 23-column CLUB_COLUMNS contract from _shared/classification."""
 
     RICH = {"country": "India", "country_code": "IN",
             "country_dial_code": "+91", "city": "Pune", "state": "Maharashtra",
@@ -128,7 +128,7 @@ class TestClubMapping(unittest.TestCase):
     def test_columns_match_shared_contract(self):
         row = rich_row_to_club_row(self.RICH)
         self.assertEqual(sorted(row), sorted(CLUB_COLUMNS))
-        self.assertEqual(len(CLUB_COLUMNS), 22)
+        self.assertEqual(len(CLUB_COLUMNS), 23)
         self.assertNotIn("is_active", row)
         self.assertNotIn("expires_at", row)
 

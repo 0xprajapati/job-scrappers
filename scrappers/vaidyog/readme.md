@@ -72,7 +72,7 @@ cd scrappers/vaidyog
 Outputs:
 
 - `vaidyog_jobs.csv` — rich cumulative store (dedup key: `_id`)
-- `../../jobs_csv/<DD-MM-YYYY>/vaidyog.csv` — HealthCareers.club 22-column
+- `../../jobs_csv/<DD-MM-YYYY>/vaidyog.csv` — HealthCareers.club 23-column
   schema
 
 First run keeps the last 30 days; later runs keep only jobs newer than the

@@ -21,7 +21,7 @@ Outputs
 * docthub_roles_jobs.csv                      -- cumulative rich store
 * needs_review.csv                            -- in-scope but flagged titles
 * ../../jobs_csv/<DD-MM-YYYY>/docthub_roles.csv -- HealthCareers.club
-  22-column export (CLUB_COLUMNS), regenerated from the full rich store
+  23-column export (CLUB_COLUMNS), regenerated from the full rich store
   each run.
 
 Run `python docthub_scraper.py --help` for options.
@@ -397,7 +397,7 @@ def _int_str(value):
 
 
 def rich_row_to_club_row(r):
-    """Map one rich-store row to the 22-column club schema.
+    """Map one rich-store row to the 23-column club schema.
 
     Salaries in the rich store are already normalized to INR/month, so the
     club export always uses per_month. Docthub has no structured
@@ -433,6 +433,7 @@ def rich_row_to_club_row(r):
         "job_type": club_type,
         "category": _blank(r.get("category")),
         "sub_category": _blank(r.get("sub_category")),
+        "role_family": _blank(r.get("role_family")),
         "application_url": _blank(r.get("apply_url")) or _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("experience_min_years")),

@@ -244,7 +244,7 @@ column in the club export.
 - `out-of-scope.csv` — rows dropped by a `--reclassify` scope change, kept so
   a narrowing is reversible and reviewable rather than destructive.
 - `../../jobs_csv/<DD-MM-YYYY>/himalayas.csv` — the same jobs in the shared
-  22-column HealthCareers.club schema.
+  23-column HealthCareers.club schema.
 - `needs_review.csv` — healthcare jobs whose category couldn't be classified.
 
 ## Feed pagination — a single pass is NOT complete

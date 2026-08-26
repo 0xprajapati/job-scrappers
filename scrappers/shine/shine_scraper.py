@@ -77,7 +77,7 @@ Outputs
                                            job_id), watermark source of truth.
 * needs_review.csv                      -- titles the classifier could not
                                            confidently place.
-* ../../jobs_csv/<DD-MM-YYYY>/shine.csv -- HealthCareers.club 22-column
+* ../../jobs_csv/<DD-MM-YYYY>/shine.csv -- HealthCareers.club 23-column
                                            schema, rewritten every run.
 
 Time window (master spec §4): first run keeps INITIAL_WINDOW_DAYS (7) days;
@@ -538,6 +538,7 @@ def rich_row_to_club_row(r):
         "job_type": club_type,
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),

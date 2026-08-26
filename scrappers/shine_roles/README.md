@@ -26,7 +26,7 @@ No detail-page fetches and no headless browser are needed.
   `ind=13` selects the "Medical / Healthcare" industry facet and works as
   a URL param (~21k jobs vs ~26k for the bare keyword search; the param
   is `ind`, **not** the facet field name `jIndID`, which is ignored).
-- **Queries** (`SEARCH_QUERIES`, ~45 slugs): four industry-facet browses
+- **Queries** (`SEARCH_QUERIES`, 55 slugs): four industry-facet browses
   first — `jobs?ind=13` Medical / Healthcare, `ind=63` Pharma / Biotech,
   `ind=31` NGO / Social Work, `ind=61` KPO / Analytics — which catch
   garbage-titled jobs no keyword query can find and let the classifier's
@@ -41,6 +41,14 @@ No detail-page fetches and no headless browser are needed.
   shine's multi-word matching is erratic (`health-program` → 69,829
   OR-noise results, `monitoring-and-evaluation` → 46,585 rows of IT
   monitoring, `community-health` → 5,684 with zero in-scope on page 1).
+  Finally three broad catch-all nets — `healthcare`, `hospital`, `medical`
+  — inherited from the `shine` sibling on 2026-08-26. They cover the one
+  gap the role slugs leave: an in-scope job whose card says only
+  "hospital"/"medical" and matches no family slug. Probed live 2026-08-26
+  over pages 1-2: `medical` 19/40 in scope, `healthcare` 11/40, `hospital`
+  2/40 (weakest — mostly bedside roles the classifier vetoes). The keeps
+  skew heavily to Medical Coding, which the family slugs also reach, so
+  dedup absorbs most of the overlap.
   Dedup by job id makes query overlap free. Override with
   `--queries a,b,c` (a query may carry extra params after `?`).
 
@@ -86,9 +94,11 @@ classify_job(jJT, jKwd, strip_html(jJD))
   score trace so any admission can be audited.
 - `needs_review == True` → kept **and** appended to `needs_review.csv`.
 
-The club CSV's 22 columns come from `CLUB_COLUMNS` in
-`_shared/classification.py` (`is_active`/`expires_at` retired;
-`qualification` is a grounded extraction from the description only).
+The club CSV's 23 columns come from `CLUB_COLUMNS` in
+`_shared/classification.py` — `role_family` sits after `sub_category`
+there since 2026-08-26, so the family survives into the club export as
+well as the rich store (`is_active`/`expires_at` retired; `qualification`
+is a grounded extraction from the description only).
 
 ## Outputs
 
@@ -99,7 +109,7 @@ The club CSV's 22 columns come from `CLUB_COLUMNS` in
 - `out-of-scope.csv` — rows the classifier rejected during the one-off
   migration of the stored data; nothing is silently discarded.
 - `../../jobs_csv/<DD-MM-YYYY>/shine_roles.csv` — HealthCareers.club
-  22-column schema, rewritten every run.
+  schema plus `role_family` (23 columns), rewritten every run.
 
 ## Usage
 

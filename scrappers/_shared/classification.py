@@ -24,8 +24,8 @@ Contract for every scraper:
   * call classify_job(title, skills, description) for every candidate job;
   * a result with in_scope False is DROPPED (count it as
     excluded_out_of_scope; never export it);
-  * an in-scope result fills `category` and `sub_category` in both the rich
-    CSV and the club CSV; `role_family` and the score-trace fields belong in
+  * an in-scope result fills `category`, `sub_category` and `role_family`
+    in both the rich CSV and the club CSV; the score-trace fields belong to
     the rich CSV so any admission stays auditable;
   * no scraper defines its own category regexes or enum values.
 """
@@ -40,16 +40,17 @@ SUBCATEGORY_NAMES = TK.SUBCATEGORY_NAMES
 # so scrapers import everything classification-related from one module.
 extract_qualification = RF.extract_qualification
 
-# The one club CSV contract (jobs_csv/<DD-MM-YYYY>/<site>.csv), 22 columns.
+# The one club CSV contract (jobs_csv/<DD-MM-YYYY>/<site>.csv), 23 columns.
 # `category` holds "Non Clinical" | "Public Health"; `sub_category` holds the
-# finer split.  The old is_active/expires_at columns are retired.
+# finer split; `role_family` carries the winning family (added 2026-08-26,
+# fleet-wide).  The old is_active/expires_at columns are retired.
 CLUB_COLUMNS = [
     "country_name", "country_code", "country_dial_code", "city_name",
     "company_name", "company_type", "company_logo", "company_about",
     "title", "description", "job_type", "category", "sub_category",
-    "application_url", "posted_at", "min_experience", "max_experience",
-    "qualification", "min_salary", "max_salary", "salary_period",
-    "salary_currency",
+    "role_family", "application_url", "posted_at", "min_experience",
+    "max_experience", "qualification", "min_salary", "max_salary",
+    "salary_period", "salary_currency",
 ]
 
 

@@ -92,7 +92,7 @@ Options: `--output PATH` (rich CSV, default `nextenti_jobs.csv`),
 
 - `nextenti_jobs.csv` — rich cumulative store (dedup key `job_id`), the source
   of truth for the incremental watermark. Not committed as a deliverable.
-- `../../jobs_csv/<DD-MM-YYYY>/nextenti.csv` — the same jobs in the 22-column
+- `../../jobs_csv/<DD-MM-YYYY>/nextenti.csv` — the same jobs in the 23-column
   `CLUB_COLUMNS` contract imported from `_shared/classification.py`
   (`is_active`/`expires_at` retired; `qualification` extracted from the
   description, never inferred), the actual HealthCareers.club deliverable.

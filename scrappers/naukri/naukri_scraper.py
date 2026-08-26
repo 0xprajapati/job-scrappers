@@ -65,7 +65,7 @@ Outputs (per the repo README + master-scraper-spec.md)
                                source of truth for the incremental watermark.
 * ../../jobs_csv/<DD-MM-YYYY>/naukri.csv
                              — in-scope jobs mapped to the shared
-                               HealthCareers.club 22-column schema
+                               HealthCareers.club 23-column schema
                                (CLUB_COLUMNS from _shared/classification.py).
 * needs_review.csv           — in-scope rows whose title looks like a
                                different profession (kept AND flagged).
@@ -132,7 +132,7 @@ RICH_COLUMNS = [
 ]
 
 # The club CSV schema is the shared CLUB_COLUMNS imported from
-# _shared/classification.py (22 columns; is_active/expires_at retired).
+# _shared/classification.py (23 columns; is_active/expires_at retired).
 
 # naukri is India-first, but the healthcare listing carries some overseas
 # postings whose location placeholder is a bare country name. Map those; every
@@ -386,7 +386,7 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map a rich row to the 22-column HealthCareers.club schema.
+    """Map a rich row to the 23-column HealthCareers.club schema.
 
     The club salary_currency enum only allows INR/USD, so salary is exported
     only when the source currency matches AND the pay period is known;
@@ -410,6 +410,7 @@ def rich_row_to_club_row(r):
         "job_type": _clean(r.get("job_type")) or "full_time",
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),

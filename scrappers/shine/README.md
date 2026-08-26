@@ -78,7 +78,7 @@ classify_job(jJT, jKwd, strip_html(jJD))
 - Rows that were in the store before the migration and no longer classify
   in scope were moved to `out-of-scope.csv` (same columns, reversible).
 
-The club CSV's 22 columns come from `CLUB_COLUMNS` in
+The club CSV's 23 columns come from `CLUB_COLUMNS` in
 `_shared/classification.py`; `is_active`/`expires_at` are retired
 (shine's expiry still lives in the rich CSV's `expires_date`), and
 `qualification` is a grounded extraction from the description only.
@@ -91,7 +91,7 @@ The club CSV's 22 columns come from `CLUB_COLUMNS` in
   profession (kept, flagged).
 - `out-of-scope.csv` — rows the classifier rejected during the one-off
   migration of the stored data; nothing is silently discarded.
-- `../../jobs_csv/<DD-MM-YYYY>/shine.csv` — HealthCareers.club 22-column
+- `../../jobs_csv/<DD-MM-YYYY>/shine.csv` — HealthCareers.club 23-column
   schema, rewritten every run.
 
 ## Usage

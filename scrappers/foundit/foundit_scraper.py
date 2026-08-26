@@ -79,7 +79,7 @@ Outputs (repo README + instructions/master-scraper-spec.md)
 * foundit_jobs.csv       — rich cumulative store (dedup key: job_id),
                            watermark source for incremental runs.
 * ../../jobs_csv/<DD-MM-YYYY>/foundit.csv
-                         — HealthCareers.club 22-column schema.
+                         — HealthCareers.club 23-column schema.
 * needs_review.csv       — kept rows whose title reads like a different
                            profession (rescued on skills/description).
 
@@ -137,7 +137,7 @@ RICH_COLUMNS = [
     "job_url", "apply_redirect_url", "found_via", "scraped_at",
 ]
 
-# The club CSV contract is the shared 22-column CLUB_COLUMNS imported from
+# The club CSV contract is the shared 23-column CLUB_COLUMNS imported from
 # _shared/classification.py — never hand-copied here.
 
 log = logging.getLogger("foundit_scraper")
@@ -442,10 +442,11 @@ def rich_row_to_club_row(r):
         "description": _clean(r.get("description")),
         "job_type": club_type,
         # `category` is the top-level taxonomy value ("Non Clinical" |
-        # "Public Health"); `sub_category` carries the finer split. The
-        # role family lives in the rich CSV only.
+        # "Public Health"); `sub_category` carries the finer split and
+        # `role_family` the winning family.
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),

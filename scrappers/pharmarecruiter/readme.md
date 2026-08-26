@@ -83,7 +83,7 @@ no category regexes or profession enums of its own.
 ## Outputs
 
 - `pharmarecruiter_jobs.csv` — rich cumulative store, deduped on WP post id.
-- `../../jobs_csv/<DD-MM-YYYY>/pharmarecruiter.csv` — the shared 22-column
+- `../../jobs_csv/<DD-MM-YYYY>/pharmarecruiter.csv` — the shared 23-column
   club schema (`CLUB_COLUMNS`, imported from `_shared/classification.py`).
 - `needs_review.csv` — flagged rows from the latest run.
 - `out-of-scope.csv` — rows the one-off stored-data reclassification moved

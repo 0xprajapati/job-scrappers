@@ -101,7 +101,8 @@ def test_job_to_row_carries_taxonomy():
 def test_club_row_schema():
     rich = {"title": "Clinical Research Associate", "company": "Acme CRO",
             "location": "Pune, Maharashtra", "category": "Non Clinical",
-            "sub_category": "Clinical Research", "job_type": "Full Time",
+            "sub_category": "Clinical Research",
+            "role_family": "Clinical Research", "job_type": "Full Time",
             "salary_min_monthly": "30000", "salary_max_monthly": "50000",
             "experience_min_years": "1", "experience_max_years": "3",
             "posted_date": "2026-08-20",
@@ -109,10 +110,11 @@ def test_club_row_schema():
             "job_url": "https://jobs.docthub.com/clinical-research-associate-J120239"}
     club = rich_row_to_club_row(rich)
     assert sorted(club) == sorted(CLUB_COLUMNS)
-    assert len(CLUB_COLUMNS) == 22
+    assert len(CLUB_COLUMNS) == 23
     assert "is_active" not in club and "expires_at" not in club
     assert club["category"] == "Non Clinical"
     assert club["sub_category"] == "Clinical Research"
+    assert club["role_family"] == "Clinical Research"
     assert club["min_salary"] == "30000"
     assert club["salary_period"] == "per_month"
     assert club["salary_currency"] == "INR"

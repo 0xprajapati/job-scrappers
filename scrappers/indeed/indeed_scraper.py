@@ -86,7 +86,7 @@ Outputs (repo README + instructions/master-scraper-spec.md)
 * indeed_jobs.csv        — rich cumulative store (dedup key: jobkey),
                            watermark source for incremental runs.
 * ../../jobs_csv/<DD-MM-YYYY>/indeed.csv
-                         — HealthCareers.club 22-column schema.
+                         — HealthCareers.club 23-column schema.
 * needs_review.csv       — in-scope rows whose title the classifier flags.
 
 Time window: first run keeps jobs posted in the last INITIAL_WINDOW_DAYS
@@ -422,7 +422,7 @@ def card_to_rich_row(card, verdict):
 
 
 def rich_row_to_club_row(r):
-    """Rich row -> 22-column club schema.
+    """Rich row -> 23-column club schema.
 
     Club salary enums only express INR/USD per_month/per_annum; hourly/daily/
     weekly rates stay in the rich CSV and leave club columns empty.
@@ -450,6 +450,7 @@ def rich_row_to_club_row(r):
         "job_type": "remote",
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",

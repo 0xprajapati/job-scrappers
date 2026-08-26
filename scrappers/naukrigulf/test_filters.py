@@ -225,7 +225,7 @@ class TestRowBuilding(unittest.TestCase):
         rich = job_to_rich_row(self.LISTING_JOB, self.DETAIL_JOB)
         club = rich_row_to_club_row(rich)
         self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
-        self.assertEqual(len(CLUB_COLUMNS), 22)
+        self.assertEqual(len(CLUB_COLUMNS), 23)
         self.assertNotIn("is_active", club)
         self.assertNotIn("expires_at", club)
         # AED cannot be represented by the club enum -> salary left empty

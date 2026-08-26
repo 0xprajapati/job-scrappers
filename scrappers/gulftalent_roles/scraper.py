@@ -69,7 +69,7 @@ Outputs
                                                  (dedup key: numeric job id)
 * ../../jobs_csv/<DD-MM-YYYY>/gulftalent_roles.csv
                                                — HealthCareers.club schema
-                                                 (CLUB_COLUMNS, 22 columns)
+                                                 (CLUB_COLUMNS, 23 columns)
 * needs_review.csv                             — titles flagged for review
 
 Run `python scraper.py --help` for options.
@@ -756,7 +756,7 @@ def _int_str(value):
 
 
 def rich_row_to_club_row(r):
-    """Rich row -> HealthCareers.club 22-column row.
+    """Rich row -> HealthCareers.club 23-column row.
 
     Gulf currencies (AED/KWD/…) cannot be expressed in the club's
     salary_currency enum (INR/USD only), so their amounts stay in the rich
@@ -781,6 +781,7 @@ def rich_row_to_club_row(r):
         "job_type": _blank(r.get("job_type")) or "full_time",
         "category": _blank(r.get("category")),
         "sub_category": _blank(r.get("sub_category")),
+        "role_family": _blank(r.get("role_family")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("experience_min_years")),

@@ -86,7 +86,7 @@ Tests: `python test_filters.py`
 | File | What |
 |---|---|
 | `naukrigulf_jobs.csv` | Rich cumulative store, dedup key `job_id`, watermark source |
-| `../../jobs_csv/<DD-MM-YYYY>/naukrigulf.csv` | HealthCareers.club 22-column schema |
+| `../../jobs_csv/<DD-MM-YYYY>/naukrigulf.csv` | HealthCareers.club 23-column schema |
 | `needs_review.csv` | In-scope rows whose title looks like a different profession (kept AND flagged, append + dedupe on job_id) |
 | `out-of-scope.csv` | Rows moved out by the one-off 2026-08-25 stored-data reclassification (reversible) |
 

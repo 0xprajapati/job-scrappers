@@ -85,7 +85,7 @@ Tunables at the top of the script: `INITIAL_WINDOW_DAYS`,
   role_family, all_families, family_scores, family_confidence, matched_in,
   needs_review, posted_date (YYYY-MM-DD), job_url, scraped_at`
   (+ `description, apply_url` with `--enrich`).
-- `../../jobs_csv/<DD-MM-YYYY>/docthub.csv` — the 22-column
+- `../../jobs_csv/<DD-MM-YYYY>/docthub.csv` — the 23-column
   HealthCareers.club export (`CLUB_COLUMNS` imported from
   `_shared/classification.py`; `is_active`/`expires_at` retired;
   `qualification` extracted from the description, never inferred),

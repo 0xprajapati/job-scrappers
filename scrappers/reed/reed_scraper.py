@@ -490,7 +490,7 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map to the 22-column club schema (CLUB_COLUMNS, shared). GBP cannot
+    """Map to the 23-column club schema (CLUB_COLUMNS, shared). GBP cannot
     be represented by the club salary_currency enum, so salary columns stay
     empty (the rich CSV keeps the verbatim values). is_active/expires_at
     are retired; reed's expiryDate lives on in the rich CSV's
@@ -514,6 +514,7 @@ def rich_row_to_club_row(r):
         "job_type": _clean(r.get("job_type")) or "full_time",
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",

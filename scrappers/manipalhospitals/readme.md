@@ -94,7 +94,7 @@ python test_filters.py            # unit tests (no network)
 * `manipalhospitals_jobs.csv` — rich cumulative store (dedup key: numeric
   Zwayam job id)
 * `../../jobs_csv/<DD-MM-YYYY>/manipalhospitals.csv` — HealthCareers.club
-  22-column schema (`CLUB_COLUMNS` imported from
+  23-column schema (`CLUB_COLUMNS` imported from
   `_shared/classification.py`; `is_active`/`expires_at` are retired)
 * `needs_review.csv` — in-scope rows the classifier flagged (log only)
 * `out-of-scope.csv` — rows the classifier dropped during the one-off

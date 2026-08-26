@@ -493,7 +493,7 @@ class TestRowBuilding(unittest.TestCase):
         self.assertEqual(club["min_experience"], "7")
         # Grounded credential extraction from the description.
         self.assertEqual(club["qualification"], "Bachelor's degree")
-        # The shared 22-column contract — is_active/expires_at are retired.
+        # The shared 23-column contract — is_active/expires_at are retired.
         self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
 
     def test_gulf_currency_stays_out_of_the_club_csv(self):

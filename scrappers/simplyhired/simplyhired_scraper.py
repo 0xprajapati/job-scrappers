@@ -444,6 +444,7 @@ def rich_row_to_club_row(r):
         "job_type": _clean(r.get("job_type")) or "full_time",
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",

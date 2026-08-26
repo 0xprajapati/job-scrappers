@@ -59,7 +59,7 @@ Public Health job whose finer split is undecidable keeps `category` and leaves
 
 ### `CLUB_COLUMNS`
 
-The same module owns the one club-CSV contract — the 22 columns of
+The same module owns the one club-CSV contract — the 23 columns of
 `jobs_csv/<DD-MM-YYYY>/<site>.csv`:
 
 ```

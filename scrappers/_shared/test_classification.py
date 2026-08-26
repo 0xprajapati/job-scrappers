@@ -73,10 +73,11 @@ class TestClassifyJob(unittest.TestCase):
     def test_club_columns_contract(self):
         self.assertIn("category", C.CLUB_COLUMNS)
         self.assertIn("sub_category", C.CLUB_COLUMNS)
+        self.assertIn("role_family", C.CLUB_COLUMNS)
         self.assertIn("qualification", C.CLUB_COLUMNS)
         self.assertNotIn("is_active", C.CLUB_COLUMNS)
         self.assertNotIn("expires_at", C.CLUB_COLUMNS)
-        self.assertEqual(len(C.CLUB_COLUMNS), 22)
+        self.assertEqual(len(C.CLUB_COLUMNS), 23)
 
     def test_category_values_are_top_level_only(self):
         for title in ("Clinical Research Associate", "Medical Coder",

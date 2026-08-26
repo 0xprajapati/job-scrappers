@@ -78,7 +78,7 @@ Outputs
 * freshersworld_jobs.csv — rich cumulative store (dedup key: job_id),
   source of truth for the incremental watermark.
 * ../../jobs_csv/<DD-MM-YYYY>/freshersworld.csv — the same jobs mapped to
-  the HealthCareers.club 22-column schema.
+  the HealthCareers.club 23-column schema.
 
 Time window: first run keeps jobs posted in the last INITIAL_WINDOW_DAYS
 (7); later runs keep only jobs newer than the newest stored posted_date
@@ -626,7 +626,7 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map a rich row to the 22-column club schema.
+    """Map a rich row to the 23-column club schema.
 
     Salary re-derives period from salary_period_original so exported amounts
     are the ORIGINAL figures. Yearly amounts are re-read from salary_raw
@@ -673,6 +673,7 @@ def rich_row_to_club_row(r):
         "job_type": job_type,
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),

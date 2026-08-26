@@ -309,7 +309,7 @@ class TestCutoff(unittest.TestCase):
 
 
 class TestClubMapping(unittest.TestCase):
-    """The 22-column HealthCareers.club contract."""
+    """The 23-column HealthCareers.club contract."""
 
     BASE = {
         "title": "Nurse Practitioner", "company": "Galileo, Inc.",
@@ -379,15 +379,16 @@ class TestClubMapping(unittest.TestCase):
         self.assertIn(row["category"], ("Non Clinical", "Public Health"))
 
     def test_club_columns_match_the_current_contract(self):
-        # The 22-column contract is imported from _shared/classification —
+        # The 23-column contract is imported from _shared/classification —
         # never hand-copied — and carries category + sub_category but no
         # is_active / expires_at.
         from himalayas_scraper import CLUB_COLUMNS
         self.assertIn("qualification", CLUB_COLUMNS)
         self.assertIn("sub_category", CLUB_COLUMNS)
+        self.assertIn("role_family", CLUB_COLUMNS)
         self.assertNotIn("is_active", CLUB_COLUMNS)
         self.assertNotIn("expires_at", CLUB_COLUMNS)
-        self.assertEqual(len(CLUB_COLUMNS), 22)
+        self.assertEqual(len(CLUB_COLUMNS), 23)
         self.assertEqual(sorted(rich_row_to_club_row(self.BASE)),
                          sorted(CLUB_COLUMNS))
 

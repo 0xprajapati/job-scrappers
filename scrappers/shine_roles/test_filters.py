@@ -268,6 +268,7 @@ class TestClubRow(unittest.TestCase):
             "job_type": "Full time", "employment_type": "Regular",
             "category": "Public Health",
             "sub_category": "Epidemiology",
+            "role_family": "Epidemiologist",
             "job_url": "https://www.shine.com/jobs/epidemiologist/x/1",
             "posted_date": "2026-08-07", "experience_min_years": "1",
             "experience_max_years": "5",
@@ -279,6 +280,7 @@ class TestClubRow(unittest.TestCase):
         self.assertEqual(row["job_type"], "full_time")
         self.assertEqual(row["category"], "Public Health")
         self.assertEqual(row["sub_category"], "Epidemiology")
+        self.assertEqual(row["role_family"], "Epidemiologist")
         self.assertNotIn("is_active", row)
         self.assertNotIn("expires_at", row)
         self.assertEqual(row["qualification"], "MPH")

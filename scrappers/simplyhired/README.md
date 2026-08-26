@@ -89,7 +89,7 @@ Tests: `python test_filters.py`
 | File | What |
 |---|---|
 | `simplyhired_jobs.csv` | Rich cumulative store, dedup key `job_id` (= `jobKey`), watermark source |
-| `../../jobs_csv/<DD-MM-YYYY>/simplyhired.csv` | HealthCareers.club 22-column schema |
+| `../../jobs_csv/<DD-MM-YYYY>/simplyhired.csv` | HealthCareers.club 23-column schema |
 | `needs_review.csv` | Kept but flagged (title reads like a different profession) |
 | `out-of-scope.csv` | Rows the taxonomy dropped; append-only, deduped on `job_id`, so a scope change is reversible without a re-crawl |
 

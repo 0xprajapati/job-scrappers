@@ -1,7 +1,7 @@
 # Indeed (India) — remote healthcare jobs
 
 Scrapes **remote, India** healthcare listings from `https://in.indeed.com`,
-mapped to the shared HealthCareers.club 22-column CSV.
+mapped to the shared HealthCareers.club 23-column CSV.
 
 ## Why this scraper cannot fetch the site itself
 

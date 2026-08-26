@@ -85,7 +85,7 @@ Outputs (per the repo README + master-scraper-spec.md)
                               source of truth for the incremental watermark.
 * ../../jobs_csv/<DD-MM-YYYY>/himalayas.csv
                             — the same jobs mapped to the shared
-                              HealthCareers.club 22-column schema.
+                              HealthCareers.club 23-column schema.
 
 Time window: first run keeps jobs posted in the last INITIAL_WINDOW_DAYS (2);
 later runs keep only jobs newer than the newest stored posted_date minus
@@ -523,7 +523,7 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map a rich row to the 22-column CLUB_COLUMNS contract.
+    """Map a rich row to the 23-column CLUB_COLUMNS contract.
 
     `category` / `sub_category` come straight from the shared classifier's
     values stored in the rich row. `qualification` uses the shared
@@ -558,6 +558,7 @@ def rich_row_to_club_row(r):
         "job_type": CLUB_JOB_TYPE,
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": "",

@@ -311,7 +311,7 @@ class RowBuildingTests(unittest.TestCase):
         self.assertEqual(club["salary_currency"], "INR")
         self.assertEqual(club["posted_at"], "2026-07-10")
         self.assertEqual(club["qualification"], "BPT")
-        # The shared 22-column contract — is_active/expires_at are retired.
+        # The shared 23-column contract — is_active/expires_at are retired.
         self.assertEqual(sorted(club), sorted(CLUB_COLUMNS))
 
     def test_club_row_carries_the_stamped_taxonomy(self):

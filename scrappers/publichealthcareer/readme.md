@@ -68,7 +68,7 @@ Options: `--output PATH` (rich CSV, default `publichealthcareer_jobs.csv`),
 
 - `publichealthcareer_jobs.csv` — rich cumulative store (dedup key: WP post
   id), watermark source of truth.
-- `../../jobs_csv/<DD-MM-YYYY>/publichealthcareer.csv` — the club's 22-column
+- `../../jobs_csv/<DD-MM-YYYY>/publichealthcareer.csv` — the club's 23-column
   schema (`CLUB_COLUMNS` from `../_shared/classification.py`; country India /
   IN / +91). `is_active`/`expires_at` are retired; `sub_category` and
   `qualification` are present.

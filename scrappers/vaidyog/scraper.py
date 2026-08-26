@@ -376,7 +376,7 @@ def _int_str(value):
 
 
 def rich_row_to_club_row(r):
-    """Map a rich row to the 22-column CLUB_COLUMNS contract.
+    """Map a rich row to the 23-column CLUB_COLUMNS contract.
 
     `category` / `sub_category` come straight from the shared classifier's
     stored verdict — never defaulted. `qualification` is grounded: this API
@@ -399,6 +399,7 @@ def rich_row_to_club_row(r):
         "job_type": _blank(r.get("job_type")) or "full_time",
         "category": _blank(r.get("category")),
         "sub_category": _blank(r.get("sub_category")),
+        "role_family": _blank(r.get("role_family")),
         "application_url": _blank(r.get("job_url")) or BOARD_URL,
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("min_experience")),

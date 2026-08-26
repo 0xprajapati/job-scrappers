@@ -90,7 +90,7 @@ classify_job(jobTitle, "taxonomyLevel1, taxonomyLevel2, jobSector",
 - Rows already in the store that no longer classify in scope were moved
   to `out-of-scope.csv` during the one-off migration (reversible).
 
-The club CSV's 22 columns come from `CLUB_COLUMNS` in
+The club CSV's 23 columns come from `CLUB_COLUMNS` in
 `_shared/classification.py`; `qualification` is a grounded extraction from
 the description only.
 
@@ -119,7 +119,7 @@ Tests: `python test_filters.py`
 | File | What |
 |---|---|
 | `reed_jobs.csv` | Rich cumulative store, dedup key `job_id`, watermark source |
-| `../../jobs_csv/<DD-MM-YYYY>/reed.csv` | HealthCareers.club 22-column schema (shared `CLUB_COLUMNS`) |
+| `../../jobs_csv/<DD-MM-YYYY>/reed.csv` | HealthCareers.club 23-column schema (shared `CLUB_COLUMNS`) |
 | `needs_review.csv` | In-scope rows whose title looks like a different profession (kept, flagged) |
 | `out-of-scope.csv` | Rows the classifier rejected in the one-off migration of the stored data |
 

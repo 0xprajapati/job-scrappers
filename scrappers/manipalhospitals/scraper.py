@@ -433,6 +433,7 @@ def rich_row_to_club_row(r):
         "job_type": _blank(r.get("job_type")) or "full_time",
         "category": _blank(r.get("category")),
         "sub_category": _blank(r.get("sub_category")),
+        "role_family": _blank(r.get("role_family")),
         "application_url": _blank(r.get("job_url")),
         "posted_at": _blank(r.get("posted_date")),
         "min_experience": _int_str(r.get("min_experience")),

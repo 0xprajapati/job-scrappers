@@ -1,7 +1,7 @@
 # internshala scraper
 
 Scrapes healthcare job listings from [internshala.com/jobs](https://internshala.com/jobs/)
-into a deduplicated cumulative CSV plus the HealthCareers.club 22-column
+into a deduplicated cumulative CSV plus the HealthCareers.club 23-column
 import file.
 
 ## Data source

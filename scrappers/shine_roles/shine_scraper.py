@@ -82,7 +82,7 @@ Outputs
                                            job_id), watermark source of truth.
 * needs_review.csv                      -- titles the classifier could not
                                            confidently place.
-* ../../jobs_csv/<DD-MM-YYYY>/shine.csv -- HealthCareers.club 22-column
+* ../../jobs_csv/<DD-MM-YYYY>/shine.csv -- HealthCareers.club 23-column
                                            schema, rewritten every run.
 
 Time window (master spec §4): first run keeps INITIAL_WINDOW_DAYS (7) days;
@@ -186,6 +186,15 @@ SEARCH_QUERIES = [
     "health-promotion",
     "public-health-research",
     "maternal-child-health", "asha", "anganwadi",    # tiny but exact
+    # Broad catch-all nets inherited from the `shine` sibling (added
+    # 2026-08-26). They search across all industries and close the one gap the
+    # role slugs leave: an in-scope job whose card says only "hospital" or
+    # "medical" and matches no family slug. Probed live 2026-08-26, pages 1-2:
+    # medical 19/40 in scope, healthcare 11/40, hospital 2/40 (the weakest —
+    # mostly bedside roles the classifier vetoes). Heavily Medical Coding,
+    # which the family slugs also reach, so dedup by job id absorbs most of
+    # it — fetch wide, let classify_job reject.
+    "healthcare", "hospital", "medical",
 ]
 
 # First-run window, narrowed from the master spec §4 default of 7 to 2:
@@ -603,6 +612,7 @@ def rich_row_to_club_row(r):
         "job_type": club_type,
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),

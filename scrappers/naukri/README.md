@@ -2,7 +2,7 @@
 
 Scrapes healthcare job listings from [naukri.com](https://www.naukri.com/),
 India's largest job board, and emits both a rich per-source CSV and the shared
-HealthCareers.club 22-column import file.
+HealthCareers.club 23-column import file.
 
 ## Data source
 

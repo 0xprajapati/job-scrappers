@@ -177,7 +177,7 @@ RICH_COLUMNS = [
     "description", "job_url", "scraped_at",
 ]
 
-# The club CSV contract (22 columns) is imported from _shared/classification
+# The club CSV contract (23 columns) is imported from _shared/classification
 # as CLUB_COLUMNS — never hand-copied here.
 
 NEEDS_REVIEW_COLUMNS = ["job_id", "title", "company", "category",
@@ -544,7 +544,7 @@ def _clean(value):
 
 
 def rich_row_to_club_row(r):
-    """Map a rich row to the shared CLUB_COLUMNS schema (22 columns).
+    """Map a rich row to the shared CLUB_COLUMNS schema (23 columns).
 
     The club salary_currency enum only allows INR/USD, so salary is exported
     only when the source currency matches AND the pay period is known;
@@ -570,6 +570,7 @@ def rich_row_to_club_row(r):
         "job_type": _clean(r.get("job_type")) or "full_time",
         "category": _clean(r.get("category")),
         "sub_category": _clean(r.get("sub_category")),
+        "role_family": _clean(r.get("role_family")),
         "application_url": _clean(r.get("job_url")),
         "posted_at": _clean(r.get("posted_date")),
         "min_experience": _clean(r.get("experience_min_years")),

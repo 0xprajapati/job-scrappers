@@ -586,6 +586,7 @@ def rich_row_to_club_row(r):
         "job_type": r.get("job_type") or "full_time",
         "category": r.get("category", ""),
         "sub_category": r.get("sub_category", ""),
+        "role_family": r.get("role_family", ""),
         "application_url": r.get("job_url", LANDING_URL),
         # No posting date is published; the date the board first listed the
         # job for us is the closest honest value.

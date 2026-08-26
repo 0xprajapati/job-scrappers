@@ -106,7 +106,7 @@ RICH_COLUMNS = [
     "company_logo", "posted_date", "description", "job_url", "scraped_at",
 ]
 
-# The club CSV schema is the shared 22-column CLUB_COLUMNS contract imported
+# The club CSV schema is the shared 23-column CLUB_COLUMNS contract imported
 # from _shared/classification.py (is_active/expires_at are retired).
 
 # India-only board; map country name -> (ISO code, dial code).
@@ -392,6 +392,7 @@ def rich_row_to_club_row(r):
         "job_type": r.get("job_type", "full_time"),
         "category": r.get("category", ""),
         "sub_category": r.get("sub_category", ""),
+        "role_family": r.get("role_family", ""),
         "application_url": r.get("job_url", ""),
         "posted_at": r.get("posted_date", ""),
         "min_experience": _int_str(r.get("experience_min_years")),

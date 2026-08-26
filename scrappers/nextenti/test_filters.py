@@ -95,7 +95,7 @@ def test_club_row_matches_shared_contract():
                                      salary_min=15000, salary_max=30000,
                                      salary_period="per_month"))
     assert sorted(club) == sorted(CLUB_COLUMNS)
-    assert len(CLUB_COLUMNS) == 22
+    assert len(CLUB_COLUMNS) == 23
     assert "is_active" not in club and "expires_at" not in club
     assert club["category"] == "Non Clinical"
     assert club["sub_category"] == "Clinical Research"
