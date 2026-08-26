@@ -26,6 +26,30 @@
 > their backlog — see `scrappers/reliefweb/README.md`). Fleet verification after
 > the change: everything compiles, **1,421 scraper tests + 56 `_shared`
 > tests pass, zero failures**.
+> **2026-08-26 evening:** a NEW scraper `ngobox` (India's NGO/CSR board, a
+> CSRBOX property) was built directly on the standard — HTML-only parsing
+> (no JSON-LD on the site; the posted date lives only in the `<title>`
+> tag), two-block listing pagination, devnetjobs skip-list idiom. First
+> seed: 269 postings scanned, 117 out of window, 8 of the 152 in-window
+> kept (all Public Health: M&E, PH research, program management), 144 to
+> `out-of-scope.csv`, 0 parse failures. 16 unit tests pass. Known scope
+> edge: NGO programme-speak often omits the classifier's positive keywords
+> (a Piramal Swasthya "District Program Manager" and a WHO "Health Systems
+> Officer" were dropped) — rows are reversible in `out-of-scope.csv` if
+> the ruling changes.
+> **2026-08-26 evening:** a NEW scraper `pharmatutor` (Indian pharma career
+> portal, Drupal SSR) was built directly on the standard — discovery is
+> RSS ∪ the `vacancies` taxonomy-term walk (`/taxonomy/term/1754`),
+> because the obvious `/pharma-jobs?page=N` listing has no pager at all
+> (the param is a page-cache mirage). Article-not-JobPosting JSON-LD for
+> the exact posted date; job facts from labeled `<strong>` runs; company
+> extracted from the title patterns; month-in-URL pre-dating saves detail
+> fetches. First seed: 418 cards scanned, 155 out of window, **81 of the
+> 233 in-window kept (35%)** — Clinical Research 23, Pharmacovigilance 19,
+> Regulatory Affairs 19, Public Health Research 8 — 152 to
+> `out-of-scope.csv` (manufacturing/QC/dispensing/fellowships), 0 parse
+> failures, 7 needs_review (employer-less fellowship notices). 23 unit
+> tests pass.
 >
 > Per-scraper result of the stored-data reclassification:
 >

@@ -50,6 +50,15 @@ Verified quirks
   MAX_PAGES_PER_QUERY caps each query and the run prints a NOTE whenever a
   query is cut off by the cap rather than by the date window (no silent
   truncation). Dedup by job id absorbs the re-served reposts across runs.
+* Shine truncates `jJD` at ~5000 chars SERVER-SIDE, everywhere: the search
+  payload, the detail page's __NEXT_DATA__, the detail page's JSON-LD, AND
+  the fully hydrated page in a real browser all show the same ~4999-char
+  text ending mid-sentence, with no read-more control (verified 2026-08-26
+  on job 19480916). Human visitors see the truncated text too — no public
+  surface serves more, so it is unrecoverable by any means. Our own
+  DESCRIPTION_MAX_CHARS (20k) never bites; the ~5000-char ceiling in the
+  data is the source's, and the JD-rewrite prompt's truncation rule
+  handles the dangling final sentence.
 * Every record also carries its industry in `jInd` ("Medical /
   Healthcare" for ~70% of bare healthcare-query results). Since the
   2026-08-25 taxonomy migration this is a RAW SOURCE COLUMN only — it is

@@ -152,7 +152,11 @@ REQUEST_TIMEOUT_SECONDS = 60
 MAX_RETRIES = 4
 BACKOFF_BASE_SECONDS = 3.0
 MAX_EMPTY_PAGES = 3            # tolerate transient empty pages
-DESCRIPTION_MAX_CHARS = 3_000
+# Sanity cap only — the detail API serves full descriptions, and rows must
+# not be clipped mid-sentence. (Was 3_000 until 2026-08-26, which silently
+# truncated ~1 in 5 stored descriptions; those old rows are unrecoverable
+# because the jobs expired off the 15-day board.)
+DESCRIPTION_MAX_CHARS = 20_000
 
 RICH_CSV = str(Path(__file__).resolve().parent / "naukrigulf_jobs.csv")
 NEEDS_REVIEW_CSV = str(Path(__file__).resolve().parent / "needs_review.csv")
