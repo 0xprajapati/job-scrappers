@@ -258,20 +258,25 @@ change, get user confirmation or note it prominently.
 README, and stored-data reclassification)
 
 apollohospitals, carecareers (has out-of-scope.csv), dha, fortis, foundit,
-indeed, naukri, naukri_roles
+indeed, naukri, naukri_roles, shine_roles
+
+`shine_roles` completed 2026-08-26: no old-enum hits, `role_family` in both
+RICH_COLUMNS and the club row, CLUB_COLUMNS imported from `_shared`, 38 tests
+pass.
 
 ## PARTIAL (code half-edited — finish these first)
 
-- **shine** — docstring/imports/queries migrated, but the old
-  `classify_category` (old enum) still exists near line 292 and the club row
-  near line 632 still defaults `category` to `non_clinical`; main-loop gate,
-  RICH_COLUMNS, club columns unverified.
+`shine` was in this list until 2026-08-26. It is **not** being finished — it
+was retired to `retired-scrappers/shine/` instead, because its crawl is a
+subset of `shine_roles` (98.5% of its exclusive rows were `ind=13`, which
+`shine_roles` browses wholesale; the 10 outside it were classifier noise bar
+one). `shine`'s three broad slugs — `healthcare`, `hospital`, `medical` —
+moved into `shine_roles.SEARCH_QUERIES` so nothing is lost. Same reasoning as
+`gulftalent` vs `gulftalent_roles`.
+
 - **gulftalent_roles** — imports migrated; 1 old-enum hit; confirm the
   `_PHARMA_RE` NameError fix landed (classify_company_type must not call an
   undefined regex).
-- **shine_roles** — 1 old-enum hit remains; otherwise close (was already
-  role_families-based); needs family→role_family + sub_category + shared
-  CLUB_COLUMNS.
 
 ## TODO (untouched — full migration per spec)
 
