@@ -24,7 +24,7 @@ systemid: 2323
 | Endpoint | Purpose |
 |---|---|
 | `GET /spapi/jobapi/search?ClusterInd=30,37&Freshness=1,3,7,15&Keywords=healthcare&SortPreference=date&Limit=30&Offset=N&pageNo=P` | Listing, 30 jobs/page, newest-first |
-| `GET /spapi/jobs/<JobId>` | Detail (only with `--enrich`) |
+| `GET /spapi/jobs/<JobId>` | Detail (default; skipped with `--no-enrich`) |
 
 Listing fields: `Designation`, `Location` (`"City - Country (UAE)"`),
 `jobInfo` (short summary, often null), `Experience {Min,Max}`,
@@ -57,7 +57,7 @@ The listing has **no salary and no employment type**. The detail API adds:
   is then used as `city_name` too.
 - `SortPreference=date` sorts newest-first, letting incremental runs stop
   paginating once a whole page is older than the watermark.
-- Some `jobInfo` values are null; without `--enrich` those rows have an
+- Some `jobInfo` values are null; under `--no-enrich` those rows have an
   empty description.
 
 ## Usage
@@ -65,18 +65,20 @@ The listing has **no salary and no employment type**. The detail API adds:
 ```bash
 pip install -r requirements.txt
 
-# sample run: 2 pages, with detail enrichment
-python naukrigulf_scraper.py --max-pages 2 --enrich
+# sample run: 2 pages (detail enrichment is on by default)
+python naukrigulf_scraper.py --max-pages 2
 
 # full daily run (recommended)
-python naukrigulf_scraper.py --enrich
-
-# listing-only (fast, no descriptions/salary/employment type)
 python naukrigulf_scraper.py
+
+# listing-only quick probe (no descriptions/salary/employment type,
+# degrades classification — skills signal is empty)
+python naukrigulf_scraper.py --no-enrich
 ```
 
 Flags: `--output` (rich CSV path), `--max-pages N` / `--limit N` (test
-runs), `--enrich` (detail calls, ~1 req/s, off by default), `--run-date
+runs), `--no-enrich` (skip detail calls — fast probe only; `--enrich` is
+the default and kept for backward compatibility), `--run-date
 DD-MM-YYYY`, `--verbose`.
 
 Tests: `python test_filters.py`
@@ -94,7 +96,8 @@ Tests: `python test_filters.py`
 
 - Every candidate goes through the shared two-level classifier —
   `_shared/classification.classify_job(title, skills, description)`. With
-  `--enrich`, the detail API's curated `IndustryType`/`FunctionalArea`
+  enrichment (the default), the detail API's curated
+  `IndustryType`/`FunctionalArea`
   fields are joined into the `skills` signal (they stay raw source columns
   in the rich CSV and never decide the category). `in_scope == False` rows
   are dropped and counted `excluded_out_of_scope`; in-scope rows carry
@@ -110,9 +113,10 @@ Tests: `python test_filters.py`
   role families plus the broad "healthcare" catch-all; the classifier does
   the actual filtering.
 - `company_type`: pharma/labs/diagnostics/CRO keywords in the company name
-  (or a pharma `IndustryType` via `--enrich`) → `pharma`, else `hospital`.
+  (or a pharma `IndustryType` from the detail API) → `pharma`, else
+  `hospital`.
 - `job_type`: from detail `locationType`/`employmentType`; defaults to
-  `full_time` without `--enrich` (the board is overwhelmingly full-time).
+  `full_time` under `--no-enrich` (the board is overwhelmingly full-time).
 
 ## Etiquette
 

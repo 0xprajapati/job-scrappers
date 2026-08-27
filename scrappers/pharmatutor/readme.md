@@ -56,13 +56,27 @@ regulatory, pharmacovigilance and clinical-research roles.
    column, never allowed to decide the category. Govt notices name no
    Location run; their state arrives as a tag and is recovered from the
    Indian-states list.
-5. **Company** has no structured field: extracted from the title
-   ("<role> at <employer>", "<College> invites applications", the
-   "| Freshers may apply" suffix stripped), else blank + `needs_review`.
-6. **Classification** is the shared two-level taxonomy
+5. **Company** has no structured field (the JSON-LD is an Article — no
+   hiringOrganization): the labeled "Company :" run first, then the
+   title ("<role> at <employer>", "<College> invites applications",
+   "<employer> Openings :", the trailing token of an "under …, AIIMS"
+   fellowship clause, "to Join <employer>"), then an institution name
+   pasted into the Location run. A candidate over 60 chars or still
+   containing "candidates"/"under"/"project" is a failed extraction —
+   blank + `needs_review`, never a sentence.
+6. **Titles** are cleaned of marketing phrasing (`clean_title`):
+   leading "<Company> Hiring"/"Wanted"/"Job for"/"Career for" clauses
+   and "Walk in Drive for" phrasing stripped when a plausible role
+   (>= 10 chars) remains, "| Freshers may apply" suffixes cut. The raw
+   headline is kept in the rich CSV as `title_raw` (rightmost column;
+   empty on rows scraped before it existed). The cleaners are
+   idempotent and are re-applied at club-CSV export, so legacy store
+   rows come out clean too; the club city_name is never the literal
+   "India"/"Remote" or an institution string.
+7. **Classification** is the shared two-level taxonomy
    (`_shared/classification.py`): out of scope → dropped, counted, full
    row appended to `out-of-scope.csv`; `needs_review` → kept AND flagged.
-7. **Skip lists.** The exact posted date exists only in detail JSON-LD,
+8. **Skip lists.** The exact posted date exists only in detail JSON-LD,
    so in-month URLs must be fetched before the date gate. Out-of-window
    ids go to `seen_old_ids.csv`, dropped ids live in `out-of-scope.csv` —
    both consulted before fetching, so each URL is fetched at most once,

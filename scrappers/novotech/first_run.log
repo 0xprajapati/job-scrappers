@@ -1,0 +1,21 @@
+23:10:25 INFO No robots.txt on https://fa-euzi-saasfaprod1.fa.ocs.oraclecloud.com (HTTP 404) — crawling allowed
+23:10:25 INFO robots.txt check passed
+23:10:25 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-13
+23:10:28 INFO Oracle CE site CX_1 lists 99 open requisitions (TotalJobsCount=99)
+23:11:30 INFO Oracle CE site CX_4 lists 62 open requisitions (TotalJobsCount=62)
+23:11:43 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/novotech/novotech_jobs.csv (27 total rows)
+23:11:43 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/27-08-2026/novotech.csv (27 rows, HealthCareers.club schema)
+23:11:43 INFO Moved 12 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/novotech/out-of-scope.csv (12 total, kept for review)
+
+===== Run summary =====
+Requisitions scanned:            161
+Excluded (out of scope):          12  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-13): 122
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                   27
+Duplicates skipped:                0
+Detail parse failures:             0
+Vetoes among dropped rows:
+    Business Development            1

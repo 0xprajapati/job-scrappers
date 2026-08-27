@@ -264,18 +264,52 @@ def is_rfp_title(title):
     return bool(_RFP_TITLE_RE.search(title or ""))
 
 
+# The board tags every posting with 0-3 sector labels drawn from a closed
+# 16-item vocabulary.  They are the site's curated role signal and are
+# passed to the classifier as `skills` — with ONE removed first.
+#
+# "Fundraising, Business Development, Grants Writer" describes how the
+# hiring ORGANISATION is funded, not what the role does, and the shared
+# taxonomy treats "Business Development" as a negative keyword, vetoing the
+# row outright.  So a health role that happens to sit in a fundraising
+# unit is thrown out on the strength of an org-chart label.  The tag is on
+# 18 of 442 stored in-window postings here.
+#
+# Dropping the tag only removes a mislabeled signal; it can never add one.
+# The raw, unmodified tag list stays in the rich CSV's `sectors` column, so
+# the decision is visible and reversible.
+#
+# Verified fleet-wide 2026-08-27 before adopting: this is a PER-BOARD
+# judgement, not a candidate for a shared fix.  Other boards put genuinely
+# role-descriptive text in the same argument (himalayas files jobs under
+# "Revenue-Cycle-Management" / "Healthcare-Billing", and the veto is right
+# to read it — suppressing it there would admit 118 billing/sales rows).
+# Only a board that files by ORG SECTOR rather than by role belongs here.
+# See devnetjobs/readme.md.
+_SKILLS_TAG_BLOCKLIST = ("Fundraising, Business Development, Grants Writer",)
+
+
+def sectors_for_classifier(sectors):
+    """The sector tags minus the funding-sector label (see above).
+
+    Raw `sectors` is what gets stored; this is what gets classified.
+    """
+    return "; ".join(t.strip() for t in str(sectors or "").split(";")
+                     if t.strip() and t.strip() not in _SKILLS_TAG_BLOCKLIST)
+
+
 # ---- classification ---------------------------------------------------------
 
 def apply_classification(row):
     """Stamp the shared two-level taxonomy onto a rich row.
 
-    The detail page's Relevant Sectors tags are the curated `skills` signal;
-    they stay in the rich CSV as a raw source column and never decide the
-    category. Returns in_scope — False means DROP the row
-    (excluded_out_of_scope).
+    The detail page's Relevant Sectors tags are the curated `skills` signal,
+    minus the funding-sector label (see sectors_for_classifier). They stay
+    in the rich CSV as a raw source column and never decide the category.
+    Returns in_scope — False means DROP the row (excluded_out_of_scope).
     """
     verdict = classify_job(row.get("title", ""),
-                           row.get("sectors", ""),
+                           sectors_for_classifier(row.get("sectors", "")),
                            row.get("description", ""))
     row["category"] = verdict["category"]
     row["sub_category"] = verdict["sub_category"]

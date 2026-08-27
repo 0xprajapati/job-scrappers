@@ -1,0 +1,26 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+23:06:08 INFO robots.txt check passed (/job/ detail paths + sitemap; /jobs?* search paths are disallowed and never requested)
+23:06:08 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-07-28
+23:06:10 INFO Sitemap lists 879 active postings
+23:06:58 INFO ...25 detail pages fetched, 22 kept so far
+23:07:42 WARNING No JobPosting JSON-LD for jid=53235
+23:07:48 INFO ...50 detail pages fetched, 39 kept so far
+23:08:36 INFO ...75 detail pages fetched, 60 kept so far
+23:08:44 WARNING No JobPosting JSON-LD for jid=53200
+23:09:25 INFO ...100 detail pages fetched, 82 kept so far
+23:10:05 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/iconplc/iconplc_jobs.csv (98 total rows)
+23:10:05 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/27-08-2026/iconplc.csv (98 rows, HealthCareers.club schema)
+23:10:05 INFO Moved 20 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/iconplc/out-of-scope.csv (20 total, kept for review)
+
+===== Run summary =====
+Sitemap postings scanned:        121
+Detail pages fetched:            120
+Excluded (out of scope):          20  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-07-28):  0
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                   98
+Duplicates skipped:                0
+Detail parse failures:             2

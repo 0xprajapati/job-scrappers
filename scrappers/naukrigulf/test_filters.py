@@ -11,6 +11,7 @@ from datetime import date
 import pandas as pd
 
 from naukrigulf_scraper import (
+    build_arg_parser,
     classification_skills_signal,
     classify_company_type,
     compute_cutoff,
@@ -261,6 +262,21 @@ class TestRowBuilding(unittest.TestCase):
         self.assertEqual(row["salary_min"], "")
         self.assertEqual(row["job_type"], "full_time")
         self.assertIn("regulatory dossiers", row["description"])
+
+
+class TestArgParser(unittest.TestCase):
+    """Enrichment is ON by default (NAUKRIGULF-01): a bare run must fetch
+    detail pages — without them descriptions are 150-200-char snippets and
+    classify_job gets an empty skills signal."""
+
+    def test_enrich_defaults_on(self):
+        self.assertTrue(build_arg_parser().parse_args([]).enrich)
+
+    def test_no_enrich_turns_it_off(self):
+        self.assertFalse(build_arg_parser().parse_args(["--no-enrich"]).enrich)
+
+    def test_legacy_enrich_flag_still_accepted(self):
+        self.assertTrue(build_arg_parser().parse_args(["--enrich"]).enrich)
 
 
 class TestStripHtml(unittest.TestCase):

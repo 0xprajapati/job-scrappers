@@ -1,0 +1,123 @@
+13:12:42 INFO robots.txt check passed
+13:12:42 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-13 (card pre-filter 2026-08-10)
+13:12:46 INFO startIndex=1: 25 cards (25 in window, dates 2026-08-26..2026-08-26)
+13:12:49 INFO startIndex=26: 25 cards (25 in window, dates 2026-08-26..2026-08-26)
+13:12:52 INFO startIndex=51: 25 cards (25 in window, dates 2026-08-26..2026-08-26)
+13:12:55 INFO startIndex=76: 25 cards (25 in window, dates 2026-08-26..2026-08-26)
+13:12:58 INFO startIndex=101: 25 cards (25 in window, dates 2026-08-26..2026-08-25)
+13:13:01 INFO startIndex=126: 25 cards (25 in window, dates 2026-08-25..2026-08-25)
+13:13:05 INFO startIndex=151: 25 cards (25 in window, dates 2026-08-25..2026-08-25)
+13:13:08 INFO startIndex=176: 25 cards (25 in window, dates 2026-08-25..2026-08-25)
+13:13:11 INFO startIndex=201: 25 cards (25 in window, dates 2026-08-25..2026-08-25)
+13:13:14 INFO startIndex=226: 25 cards (25 in window, dates 2026-08-25..2026-08-25)
+13:13:17 INFO startIndex=251: 25 cards (25 in window, dates 2026-08-25..2026-08-24)
+13:13:21 INFO startIndex=276: 25 cards (25 in window, dates 2026-08-24..2026-08-24)
+13:13:24 INFO startIndex=301: 25 cards (25 in window, dates 2026-08-24..2026-08-24)
+13:13:28 INFO startIndex=326: 25 cards (25 in window, dates 2026-08-24..2026-08-24)
+13:13:30 INFO startIndex=351: 25 cards (25 in window, dates 2026-08-24..2026-08-24)
+13:13:34 INFO startIndex=376: 25 cards (25 in window, dates 2026-08-24..2026-08-21)
+13:13:37 INFO startIndex=401: 25 cards (25 in window, dates 2026-08-21..2026-08-21)
+13:13:39 INFO startIndex=426: 25 cards (25 in window, dates 2026-08-21..2026-08-21)
+13:13:42 INFO startIndex=451: 25 cards (25 in window, dates 2026-08-21..2026-08-21)
+13:13:46 INFO startIndex=476: 25 cards (25 in window, dates 2026-08-21..2026-08-21)
+13:13:49 INFO startIndex=501: 25 cards (25 in window, dates 2026-08-21..2026-08-21)
+13:13:52 INFO startIndex=526: 25 cards (25 in window, dates 2026-08-21..2026-08-20)
+13:13:55 INFO startIndex=551: 25 cards (25 in window, dates 2026-08-20..2026-08-20)
+13:13:58 INFO startIndex=576: 25 cards (25 in window, dates 2026-08-20..2026-08-20)
+13:14:02 INFO startIndex=601: 25 cards (25 in window, dates 2026-08-20..2026-08-20)
+13:14:06 INFO startIndex=626: 25 cards (25 in window, dates 2026-08-20..2026-08-20)
+13:14:08 INFO startIndex=651: 25 cards (25 in window, dates 2026-08-20..2026-08-19)
+13:14:11 INFO startIndex=676: 25 cards (25 in window, dates 2026-08-19..2026-08-19)
+13:14:14 INFO startIndex=701: 25 cards (25 in window, dates 2026-08-19..2026-08-19)
+13:14:18 INFO startIndex=726: 25 cards (25 in window, dates 2026-08-19..2026-08-19)
+13:14:21 INFO startIndex=751: 25 cards (25 in window, dates 2026-08-19..2026-08-19)
+13:14:24 INFO startIndex=776: 25 cards (25 in window, dates 2026-08-19..2026-08-19)
+13:14:27 INFO startIndex=801: 25 cards (25 in window, dates 2026-08-19..2026-08-18)
+13:14:30 INFO startIndex=826: 25 cards (25 in window, dates 2026-08-18..2026-08-18)
+13:14:33 INFO startIndex=851: 25 cards (25 in window, dates 2026-08-18..2026-08-18)
+13:14:36 INFO startIndex=876: 25 cards (25 in window, dates 2026-08-18..2026-08-18)
+13:14:39 INFO startIndex=901: 25 cards (25 in window, dates 2026-08-18..2026-08-18)
+13:14:42 INFO startIndex=926: 25 cards (25 in window, dates 2026-08-18..2026-08-18)
+13:14:45 INFO startIndex=951: 25 cards (25 in window, dates 2026-08-18..2026-08-17)
+13:14:48 INFO startIndex=976: 25 cards (25 in window, dates 2026-08-17..2026-08-17)
+13:14:51 INFO startIndex=1001: 25 cards (25 in window, dates 2026-08-17..2026-08-17)
+13:14:54 INFO startIndex=1026: 25 cards (25 in window, dates 2026-08-17..2026-08-17)
+13:14:56 INFO startIndex=1051: 25 cards (25 in window, dates 2026-08-17..2026-08-14)
+13:14:59 INFO startIndex=1076: 25 cards (25 in window, dates 2026-08-14..2026-08-14)
+13:15:01 INFO startIndex=1101: 25 cards (25 in window, dates 2026-08-14..2026-08-14)
+13:15:07 INFO startIndex=1126: 25 cards (25 in window, dates 2026-08-14..2026-08-14)
+13:15:09 INFO startIndex=1151: 25 cards (25 in window, dates 2026-08-14..2026-08-14)
+13:15:13 INFO startIndex=1176: 25 cards (25 in window, dates 2026-08-14..2026-08-13)
+13:15:15 INFO startIndex=1201: 25 cards (25 in window, dates 2026-08-13..2026-08-13)
+13:15:18 INFO startIndex=1226: 25 cards (25 in window, dates 2026-08-13..2026-08-13)
+13:15:21 INFO startIndex=1251: 25 cards (25 in window, dates 2026-08-13..2026-08-13)
+13:15:24 INFO startIndex=1276: 25 cards (25 in window, dates 2026-08-13..2026-08-12)
+13:15:27 INFO startIndex=1301: 25 cards (25 in window, dates 2026-08-12..2026-08-12)
+13:15:29 INFO startIndex=1326: 25 cards (25 in window, dates 2026-08-12..2026-08-11)
+13:15:32 INFO startIndex=1351: 25 cards (25 in window, dates 2026-08-11..2026-08-11)
+13:15:34 INFO startIndex=1376: 25 cards (25 in window, dates 2026-08-11..2026-08-11)
+13:15:37 INFO startIndex=1401: 25 cards (25 in window, dates 2026-08-11..2026-08-10)
+13:15:40 INFO startIndex=1426: 25 cards (25 in window, dates 2026-08-10..2026-08-10)
+13:15:42 INFO startIndex=1451: 25 cards (25 in window, dates 2026-08-10..2026-08-10)
+13:15:45 INFO startIndex=1476: 25 cards (25 in window, dates 2026-08-10..2026-08-10)
+13:15:48 INFO startIndex=1501: 25 cards (9 in window, dates 2026-08-10..2026-08-07)
+13:15:51 INFO startIndex=1526: 25 cards (0 in window, dates 2026-08-07..2026-08-07)
+13:15:51 INFO Listing crawl: 62 pages, 1550 cards
+13:16:27 WARNING No JobPosting JSON-LD for job_id=DSS897
+13:16:29 WARNING No JobPosting JSON-LD for job_id=DSS896
+13:19:46 WARNING No JobPosting JSON-LD for job_id=DSS618
+13:20:28 WARNING No JobPosting JSON-LD for job_id=DSS569
+13:20:30 WARNING No JobPosting JSON-LD for job_id=DSS561
+13:24:01 WARNING No JobPosting JSON-LD for job_id=DSS259
+13:24:03 WARNING No JobPosting JSON-LD for job_id=DSS258
+13:24:05 WARNING No JobPosting JSON-LD for job_id=DSS257
+13:24:07 WARNING No JobPosting JSON-LD for job_id=DSS256
+13:24:08 WARNING No JobPosting JSON-LD for job_id=DSS255
+13:24:10 WARNING No JobPosting JSON-LD for job_id=DSS254
+13:24:12 WARNING No JobPosting JSON-LD for job_id=DSS253
+13:24:14 WARNING No JobPosting JSON-LD for job_id=DSS252
+13:29:58 WARNING No JobPosting JSON-LD for job_id=DSR511
+13:30:01 WARNING No JobPosting JSON-LD for job_id=DSR515
+13:30:25 WARNING No JobPosting JSON-LD for job_id=DSR558
+13:31:30 WARNING No JobPosting JSON-LD for job_id=DSR579
+13:31:34 WARNING No JobPosting JSON-LD for job_id=DSR575
+13:54:14 WARNING Retry 1/3 for https://www.jobs.ac.uk/job/DSR277/registered-veterinary-nurse-surgical in 3s (('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer')))
+14:08:50 WARNING Retry 1/3 for https://www.jobs.ac.uk/job/DSR250/research-assistant-or-associate-in-mechanical-design-of-polymer-recycling-processes in 3s (('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer')))
+14:16:16 WARNING Retry 1/3 for https://www.jobs.ac.uk/job/DSR253/category-head-laboratories-medical-and-veterinary-medical in 3s (('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer')))
+14:45:08 WARNING Retry 1/3 for https://www.jobs.ac.uk/job/DSR211/senior-planning-officer in 3s (HTTPSConnectionPool(host='www.jobs.ac.uk', port=443): Read timed out. (read timeout=60))
+14:50:21 WARNING No JobPosting JSON-LD for job_id=DSQ840
+14:50:24 WARNING No JobPosting JSON-LD for job_id=DSQ837
+14:51:41 WARNING No JobPosting JSON-LD for job_id=DSQ578
+14:56:39 WARNING No JobPosting JSON-LD for job_id=DSQ571
+14:56:58 WARNING No JobPosting JSON-LD for job_id=DSQ168
+14:57:02 WARNING No JobPosting JSON-LD for job_id=DSQ148
+15:00:10 WARNING No JobPosting JSON-LD for job_id=DSP192
+15:00:33 WARNING No JobPosting JSON-LD for job_id=DSP532
+15:00:34 WARNING No JobPosting JSON-LD for job_id=DSP533
+15:00:36 WARNING No JobPosting JSON-LD for job_id=DSP537
+15:00:38 WARNING No JobPosting JSON-LD for job_id=DSP541
+15:04:01 WARNING No JobPosting JSON-LD for job_id=DSP545
+15:05:32 WARNING No JobPosting JSON-LD for job_id=DSP243
+15:05:33 WARNING No JobPosting JSON-LD for job_id=DSP288
+15:12:13 WARNING No JobPosting JSON-LD for job_id=DSO410
+15:13:06 WARNING No JobPosting JSON-LD for job_id=DSO235
+15:13:09 WARNING No JobPosting JSON-LD for job_id=DSO231
+15:13:11 WARNING No JobPosting JSON-LD for job_id=DSO228
+15:14:48 WARNING No JobPosting JSON-LD for job_id=DSN941
+15:15:14 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/jobsacuk/jobsacuk_jobs.csv (133 total rows)
+15:15:14 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/27-08-2026/jobsacuk.csv (133 rows, HealthCareers.club schema)
+15:15:14 INFO Moved 1111 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/jobsacuk/out-of-scope.csv (1111 total, kept for review)
+15:15:14 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/jobsacuk/needs_review.csv (2 titles to review)
+
+===== Run summary =====
+Listing pages crawled:            62
+Search cards scanned:          1,550
+Excluded (out of scope):       1,111  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-13): 269
+Skipped (known old):               0
+Flagged needs_review:              2
+New jobs added:                  133
+Duplicates skipped:                0
+Detail parse failures:            37
+In-scope rate (classified):     10.7%  (133/1,244)

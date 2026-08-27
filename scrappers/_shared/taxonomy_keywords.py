@@ -180,11 +180,28 @@ SUBCATEGORIES = {
     },
     "Public Health Program Management": {
         "category": "Public Health",
+        # 2026-08-27: fold-in rules (keywords_for_jobs.md rule 3) were only
+        # ever implemented on the family-gate side; WASH/MCH/policy/HSS
+        # titles passed the gate and shipped with a blank sub_category.
         "titles": r"program(?:me)? (?:officer|manager|coordinator)|"
                   r"project (?:officer|coordinator|manager)|"
                   r"technical (?:officer|advisor|specialist)|"
                   r"(?:state|district|block) program manager|"
-                  r"health program consultant|implementation lead",
+                  r"health program consultant|implementation lead|"
+                  r"wash (?:officer|specialist|coordinator|engineer|advisor|"
+                  r"manager|assistant|associate|consultant)|"
+                  r"water,? sanitation (?:and|&) hygiene|"
+                  r"(?:maternal|child|maternal (?:and |& )?child|newborn) "
+                  r"health (?:officer|specialist|coordinator|manager|advisor|"
+                  r"consultant|associate)|"
+                  r"health polic(?:y|ies) (?:officer|specialist|advisor|"
+                  r"analyst|manager|consultant|associate|fellow)|"
+                  r"health systems? strengthening|"
+                  r"(?:global|migration|population) health (?:officer|"
+                  r"specialist|advisor|manager|coordinator|consultant|"
+                  r"associate|analyst)|"
+                  r"public health (?:officer|specialist|advisor|consultant|"
+                  r"associate|manager|coordinator|analyst)",
         "strong": ["NHM", "NRHM", "donor-funded", "USAID", "Global Fund",
                    "BMGF", "program implementation", "government liaison",
                    "sub-grantee management", "work plan", "health systems"],
@@ -193,7 +210,12 @@ SUBCATEGORIES = {
     },
     "Monitoring & Evaluation": {
         "category": "Public Health",
-        "titles": r"m ?& ?e (?:officer|specialist|manager)|\bmel officer\b|"
+        # MEAL = Monitoring, Evaluation, Accountability & Learning. NOT
+        # "meal coordinator" (food service) — mirror the family-gate rule.
+        "titles": r"m ?& ?e (?:officer|specialist|manager|coordinator|lead|"
+                  r"associate|analyst|advisor|director|assistant)|"
+                  r"\bmel officer\b|\bmeal (?:officer|manager|specialist|"
+                  r"advisor)\b|"
                   r"\bmerl\b|\bmis officer\b|evaluation specialist|"
                   r"impact assessment|monitoring,? (?:and |& )?evaluation",
         "strong": ["logframe", "results framework", "indicators",
@@ -204,7 +226,9 @@ SUBCATEGORIES = {
     },
     "Community Health": {
         "category": "Public Health",
-        "titles": r"community health (?:officer|worker)|\bcho\b|"
+        "titles": r"community health (?:officer|worker|specialist|manager|"
+                  r"advisor|coordinator|associate|assistant|supervisor|"
+                  r"promoter|volunteer)|\bcho\b|community medicine|"
                   r"community mobili[sz]er|outreach (?:worker|coordinator)|"
                   r"asha (?:coordinator|facilitator)|"
                   r"community engagement officer|link worker|peer educator",
@@ -216,7 +240,10 @@ SUBCATEGORIES = {
     "Health Promotion & Education": {
         "category": "Public Health",
         "titles": r"health educator|\biec officer\b|\bbcc officer\b|\bsbcc\b|"
-                  r"health communication specialist|health promotion officer|"
+                  r"health communication specialist|"
+                  r"health promotion (?:officer|specialist|coordinator|"
+                  r"manager|advisor)|risk communication and community "
+                  r"engagement|\brcce\b|"
                   r"awareness program(?:me)? coordinator",
         "strong": ["IEC", "BCC", "SBCC", "behaviour change communication",
                    "health literacy", "campaign design",
@@ -230,8 +257,17 @@ SUBCATEGORIES = {
                   r"senior tb lab supervisor|\bstls\b|\bntep\b|"
                   r"(?:tb|hiv) consultant|(?:ictc|art) counsell?or|"
                   r"\bnaco\b|\bsacs\b|malaria technical supervisor|\bvbd\b|"
-                  r"immuni[sz]ation officer|routine immuni[sz]ation|"
-                  r"cold chain|vaccine logistics",
+                  r"immuni[sz]ation (?:officer|specialist|coordinator|"
+                  r"manager|consultant|advisor)|routine immuni[sz]ation|"
+                  r"cold chain|vaccine logistics|"
+                  r"vaccin\w* (?:officer|specialist|coordinator|manager)|"
+                  r"expanded program(?:me)? on immuni[sz]ation|"
+                  r"(?:tuberculosis|tb|hiv|aids|malaria|polio|measles|"
+                  r"cholera|dengue|leprosy|hepatitis) (?:officer|specialist|"
+                  r"coordinator|advisor|consultant|manager|supervisor|"
+                  r"program(?:me)? (?:officer|manager|coordinator))|"
+                  r"disease (?:control|program(?:me)?) (?:officer|specialist|"
+                  r"coordinator|manager)",
         "strong": ["NTEP", "RNTCP", "Nikshay", "DOTS", "NACO", "SACS", "ICTC",
                    "ART", "PrEP", "NVBDCP", "IRS", "LLIN", "kala-azar",
                    "lymphatic filariasis", "UIP", "EPI", "eVIN", "cold chain",
@@ -241,7 +277,8 @@ SUBCATEGORIES = {
     },
     "Public Health Nutrition": {
         "category": "Public Health",
-        "titles": r"nutrition (?:officer|consultant|coordinator)|"
+        "titles": r"nutrition (?:officer|consultant|coordinator|specialist|"
+                  r"advisor|manager|associate|assistant|analyst)|"
                   r"(?:public health )?nutritionist|poshan|"
                   r"(?<!sports )dieti[ct]ian|"
                   r"nutrition program(?:me)? manager|nrc nutrition|"
@@ -267,7 +304,9 @@ SUBCATEGORIES = {
         "category": "Public Health",
         "titles": r"health data analyst|\bhmis\b|health informatics|"
                   r"digital health|\bmhealth\b|gis analyst|health mis|"
-                  r"\babdm\b",
+                  r"\babdm\b|dhis-?2|"
+                  r"health information (?:management|system\w*)|"
+                  r"health management information system\w*",
         "strong": ["HMIS", "DHIS2", "ABDM", "Ayushman Bharat Digital Mission",
                    "health dashboards", "QGIS", "health data pipeline",
                    "telemedicine program", "facility reporting"],
@@ -275,11 +314,14 @@ SUBCATEGORIES = {
     },
     "Public Health Research": {
         "category": "Public Health",
+        # NOT bare "research associate/assistant/fellow" — every university
+        # department hires those titles (2026-08-27 audit: "Research
+        # Associate in Islamic Art" was admitted here). Generic research
+        # roles must now qualify through the strong-keyword tier below.
         "titles": r"field investigator|field research assistant|"
                   r"survey (?:coordinator|supervisor)|"
                   r"data collection supervisor|qualitative researcher|"
-                  r"research fellow|project research scientist|enumerator|"
-                  r"research (?:associate|assistant)",
+                  r"project research scientist|enumerator",
         "strong": ["NFHS", "household survey", "CAPI", "SurveyCTO", "KoBo",
                    "REDCap", "focus group discussion", "FGD",
                    "in-depth interview", "IDI", "qualitative coding", "ICMR",

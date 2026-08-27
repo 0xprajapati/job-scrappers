@@ -1,0 +1,1136 @@
+{
+ "refineSearch": {
+  "status": 200,
+  "hits": 6,
+  "totalHits": 368,
+  "data": {
+   "jobs": [
+    {
+     "ml_skills": [
+      "clinical monitoring",
+      "ophthalmology",
+      "certified registered nurse aide (cra)",
+      "clinical trial management",
+      "site management",
+      "data review",
+      "case report form (crf) review",
+      "adverse event reporting",
+      "informed consent verification",
+      "study file maintenance",
+      "registry management",
+      "vendor coordination",
+      "training delivery",
+      "clinical research compliance",
+      "data collection tools",
+      "protocol adherence",
+      "patient safety",
+      "team leadership",
+      "project coordination",
+      "clinical research standards",
+      "clinical research documentation"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "We are currently seeking Experienced Ophthalmology (Sr CRAs & CRA 1/2) to lead and support our Full Service Outsourcing team. Open to major hub locations within the United States. 60-70% travel, 8-...",
+     "state": "North Carolina",
+     "siteType": "external",
+     "multi_category": [
+      "Clinical"
+     ],
+     "reqId": "263917",
+     "city": "Durham",
+     "latitude": "35.99403",
+     "multi_location": [
+      "Remote United States",
+      "Remote Arizona",
+      "Remote California",
+      "Remote Colorado",
+      "Remote Florida",
+      "Remote Idaho",
+      "Remote Illinois",
+      "Remote Kansas",
+      "Remote Maine",
+      "Remote Massachusetts",
+      "Remote Missouri",
+      "Remote Nevada",
+      "Remote New Jersey",
+      "Remote New Mexico",
+      "Remote New York",
+      "Remote North Dakota",
+      "Remote Oregon",
+      "Remote South Dakota",
+      "Remote Tennessee",
+      "Remote Texas",
+      "Remote Virginia",
+      "Remote Washington",
+      "Remote West Virginia"
+     ],
+     "address": "1236 Anywhere Street, Durham, NC 27709, United States of America",
+     "applyUrl": "https://fortrea.wd1.myworkdayjobs.com/Fortrea/job/Remote-United-States/Ophthalmology---Gen-Meds---CRA-II_263917/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Join us as a Clinical Research Associate II or Senior Clinical Research Associate in Ophthalmology & General Medicine, leading a Full Service Outsourcing team. Provide high standards of care for clinical trials, respond to emergencies, and manage study sites. Ideal for experienced professionals with strong clinical judgement and a background in clinical monitoring.",
+      "descriptionTeaser_first200": "We are currently seeking Experienced Ophthalmology (Sr CRAs & CRA 1/2) to lead and support our Full Service Outsourcing team. Open to major hub locations within the United States. 60-70% travel, 8-...",
+      "descriptionTeaser_keyword": "We are currently seeking Experienced Ophthalmology (Sr CRAs & CRA 1/2) to lead and support our Full Service Outsourcing team. Open to major hub locations within the United States. 60-70% travel, 8-10...",
+      "descriptionTeaser_ats": "We are currently seeking Experienced Ophthalmology (Sr CRAs & CRA 1/2) to lead and support our Full Service Outsourcing team. Open to major hub locations within the United States. 60-70% travel, 8-10 "
+     },
+     "externalApply": true,
+     "cityState": "Durham, North Carolina",
+     "country": "United States of America",
+     "visibilityType": "External",
+     "longitude": "-78.89862",
+     "jobId": "263917",
+     "locale": "en_US",
+     "title": "CRA II & Sr. CRA - Ophthalmology & General Medicine",
+     "jobSeqNo": "FOMFORUS263917EXTERNALENUS",
+     "postedDate": "2026-08-26T00:00:00.000+0000",
+     "dateCreated": "2026-07-13T15:00:28.197+0000",
+     "cityStateCountry": "Durham, North Carolina, United States of America",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Remote United States",
+     "category": "Clinical",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "country": "United States of America",
+       "cityState": "Durham, North Carolina",
+       "address": "1236 Anywhere Street, Durham, NC 27709, United States of America",
+       "locationName": "Remote United States",
+       "city": "Durham",
+       "postalCode": "27709",
+       "latlong": {
+        "lon": -78.89862,
+        "lat": 35.99403
+       },
+       "latitude": "35.99403",
+       "cityStateZipCode": "Durham, North Carolina, 27709",
+       "stateCountry": "North Carolina, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote United States",
+       "location": "Remote United States",
+       "state": "North Carolina",
+       "cityCountry": "Durham, United States of America",
+       "cityStateCountry": "Durham, North Carolina, United States of America",
+       "mapQueryLocation": "Durham, North Carolina, United States of America",
+       "longitude": "-78.89862"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Phoenix, Arizona",
+       "address": "1236 Anywhere Street, Phoenix, AZ 85001, United States of America",
+       "locationName": "Remote Arizona",
+       "city": "Phoenix",
+       "postalCode": "85001",
+       "latlong": {
+        "lon": -112.07404,
+        "lat": 33.44838
+       },
+       "latitude": "33.44838",
+       "cityStateZipCode": "Phoenix, Arizona, 85001",
+       "stateCountry": "Arizona, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Arizona",
+       "location": "Remote Arizona",
+       "state": "Arizona",
+       "cityCountry": "Phoenix, United States of America",
+       "cityStateCountry": "Phoenix, Arizona, United States of America",
+       "mapQueryLocation": "Phoenix, Arizona, United States of America",
+       "longitude": "-112.07404"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "San Diego, California",
+       "address": "1237 Anywhere Street, San Diego, CA 92128, United States of America",
+       "locationName": "Remote California",
+       "city": "San Diego",
+       "postalCode": "92128",
+       "latlong": {
+        "lon": -117.16472,
+        "lat": 32.71571
+       },
+       "latitude": "32.71571",
+       "cityStateZipCode": "San Diego, California, 92128",
+       "stateCountry": "California, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote California",
+       "location": "Remote California",
+       "state": "California",
+       "cityCountry": "San Diego, United States of America",
+       "cityStateCountry": "San Diego, California, United States of America",
+       "mapQueryLocation": "San Diego, California, United States of America",
+       "longitude": "-117.16472"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Denver, Colorado",
+       "address": "1238 Anywhere Street, Denver, CO 80001, United States of America",
+       "locationName": "Remote Colorado",
+       "city": "Denver",
+       "postalCode": "80001",
+       "latlong": {
+        "lon": -104.9847,
+        "lat": 39.73915
+       },
+       "latitude": "39.73915",
+       "cityStateZipCode": "Denver, Colorado, 80001",
+       "stateCountry": "Colorado, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Colorado",
+       "location": "Remote Colorado",
+       "state": "Colorado",
+       "cityCountry": "Denver, United States of America",
+       "cityStateCountry": "Denver, Colorado, United States of America",
+       "mapQueryLocation": "Denver, Colorado, United States of America",
+       "longitude": "-104.9847"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Daytona Beach, Florida",
+       "address": "1241 Anywhere Street, Daytona Beach, FL 32117, United States of America",
+       "locationName": "Remote Florida",
+       "city": "Daytona Beach",
+       "postalCode": "32117",
+       "latlong": {
+        "lon": -81.02283,
+        "lat": 29.21081
+       },
+       "latitude": "29.21081",
+       "cityStateZipCode": "Daytona Beach, Florida, 32117",
+       "stateCountry": "Florida, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Florida",
+       "location": "Remote Florida",
+       "state": "Florida",
+       "cityCountry": "Daytona Beach, United States of America",
+       "cityStateCountry": "Daytona Beach, Florida, United States of America",
+       "mapQueryLocation": "Daytona Beach, Florida, United States of America",
+       "longitude": "-81.02283"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Boise, Idaho",
+       "address": "1244 Anywhere Street, Boise, ID 83201, United States of America",
+       "locationName": "Remote Idaho",
+       "city": "Boise",
+       "postalCode": "83201",
+       "latlong": {
+        "lon": -116.20345,
+        "lat": 43.6135
+       },
+       "latitude": "43.6135",
+       "cityStateZipCode": "Boise, Idaho, 83201",
+       "stateCountry": "Idaho, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Idaho",
+       "location": "Remote Idaho",
+       "state": "Idaho",
+       "cityCountry": "Boise, United States of America",
+       "cityStateCountry": "Boise, Idaho, United States of America",
+       "mapQueryLocation": "Boise, Idaho, United States of America",
+       "longitude": "-116.20345"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Bannockburn, Illinois",
+       "address": "1245 Anywhere Street, Bannockburn, IL 60015, United States of America",
+       "locationName": "Remote Illinois",
+       "city": "Bannockburn",
+       "postalCode": "60015",
+       "latlong": {
+        "lon": -87.86646,
+        "lat": 42.19336
+       },
+       "latitude": "42.19336",
+       "cityStateZipCode": "Bannockburn, Illinois, 60015",
+       "stateCountry": "Illinois, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Illinois",
+       "location": "Remote Illinois",
+       "state": "Illinois",
+       "cityCountry": "Bannockburn, United States of America",
+       "cityStateCountry": "Bannockburn, Illinois, United States of America",
+       "mapQueryLocation": "Bannockburn, Illinois, United States of America",
+       "longitude": "-87.86646"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Topeka, Kansas",
+       "address": "1248 Anywhere Street, Topeka, KS 66002, United States of America",
+       "locationName": "Remote Kansas",
+       "city": "Topeka",
+       "postalCode": "66002",
+       "latlong": {
+        "lon": -95.67804,
+        "lat": 39.04833
+       },
+       "latitude": "39.04833",
+       "cityStateZipCode": "Topeka, Kansas, 66002",
+       "stateCountry": "Kansas, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Kansas",
+       "location": "Remote Kansas",
+       "state": "Kansas",
+       "cityCountry": "Topeka, United States of America",
+       "cityStateCountry": "Topeka, Kansas, United States of America",
+       "mapQueryLocation": "Topeka, Kansas, United States of America",
+       "longitude": "-95.67804"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Augusta, Maine",
+       "address": "1251 Anywhere Street, Augusta, ME 03901, United States of America",
+       "locationName": "Remote Maine",
+       "city": "Augusta",
+       "postalCode": "03901",
+       "latlong": {
+        "lon": -69.77949,
+        "lat": 44.31062
+       },
+       "latitude": "44.31062",
+       "cityStateZipCode": "Augusta, Maine, 03901",
+       "stateCountry": "Maine, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Maine",
+       "location": "Remote Maine",
+       "state": "Maine",
+       "cityCountry": "Augusta, United States of America",
+       "cityStateCountry": "Augusta, Maine, United States of America",
+       "mapQueryLocation": "Augusta, Maine, United States of America",
+       "longitude": "-69.77949"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Boston, Massachusetts",
+       "address": "1253 Anywhere Street, Boston, MA 01001, United States of America",
+       "locationName": "Remote Massachusetts",
+       "city": "Boston",
+       "postalCode": "01001",
+       "latlong": {
+        "lon": -71.05977,
+        "lat": 42.35843
+       },
+       "latitude": "42.35843",
+       "cityStateZipCode": "Boston, Massachusetts, 01001",
+       "stateCountry": "Massachusetts, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Massachusetts",
+       "location": "Remote Massachusetts",
+       "state": "Massachusetts",
+       "cityCountry": "Boston, United States of America",
+       "cityStateCountry": "Boston, Massachusetts, United States of America",
+       "mapQueryLocation": "Boston, Massachusetts, United States of America",
+       "longitude": "-71.05977"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Jefferson City, Missouri",
+       "address": "1257 Anywhere Street, Jefferson City, MO 65043, United States of America",
+       "locationName": "Remote Missouri",
+       "city": "Jefferson City",
+       "postalCode": "65043",
+       "latlong": {
+        "lon": -92.17352,
+        "lat": 38.5767
+       },
+       "latitude": "38.5767",
+       "cityStateZipCode": "Jefferson City, Missouri, 65043",
+       "stateCountry": "Missouri, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Missouri",
+       "location": "Remote Missouri",
+       "state": "Missouri",
+       "cityCountry": "Jefferson City, United States of America",
+       "cityStateCountry": "Jefferson City, Missouri, United States of America",
+       "mapQueryLocation": "Jefferson City, Missouri, United States of America",
+       "longitude": "-92.17352"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Las Vegas, Nevada",
+       "address": "1260 Anywhere Street, Las Vegas, NV 88901, United States of America",
+       "locationName": "Remote Nevada",
+       "city": "Las Vegas",
+       "postalCode": "88901",
+       "latlong": {
+        "lon": -115.13722,
+        "lat": 36.17497
+       },
+       "latitude": "36.17497",
+       "cityStateZipCode": "Las Vegas, Nevada, 88901",
+       "stateCountry": "Nevada, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Nevada",
+       "location": "Remote Nevada",
+       "state": "Nevada",
+       "cityCountry": "Las Vegas, United States of America",
+       "cityStateCountry": "Las Vegas, Nevada, United States of America",
+       "mapQueryLocation": "Las Vegas, Nevada, United States of America",
+       "longitude": "-115.13722"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Trenton, New Jersey",
+       "address": "1262 Anywhere Street, Trenton, NJ 07001, United States of America",
+       "locationName": "Remote New Jersey",
+       "city": "Trenton",
+       "postalCode": "07001",
+       "latlong": {
+        "lon": -74.74294,
+        "lat": 40.21705
+       },
+       "latitude": "40.21705",
+       "cityStateZipCode": "Trenton, New Jersey, 07001",
+       "stateCountry": "New Jersey, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote New Jersey",
+       "location": "Remote New Jersey",
+       "state": "New Jersey",
+       "cityCountry": "Trenton, United States of America",
+       "cityStateCountry": "Trenton, New Jersey, United States of America",
+       "mapQueryLocation": "Trenton, New Jersey, United States of America",
+       "longitude": "-74.74294"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Sante Fe, New Mexico",
+       "address": "1263 Anywhere Street, Sante Fe, NM 87001, United States of America",
+       "locationName": "Remote New Mexico",
+       "city": "Sante Fe",
+       "postalCode": "87001",
+       "latlong": {
+        "lon": -106.47919,
+        "lat": 35.38059
+       },
+       "latitude": "35.38059",
+       "cityStateZipCode": "Sante Fe, New Mexico, 87001",
+       "stateCountry": "New Mexico, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote New Mexico",
+       "location": "Remote New Mexico",
+       "state": "New Mexico",
+       "cityCountry": "Sante Fe, United States of America",
+       "cityStateCountry": "Sante Fe, New Mexico, United States of America",
+       "mapQueryLocation": "Sante Fe, New Mexico, United States of America",
+       "longitude": "-106.47919"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Albany, New York",
+       "address": "1264 Anywhere Street, Albany, NY 00501, United States of America",
+       "locationName": "Remote New York",
+       "city": "Albany",
+       "postalCode": "00501",
+       "latlong": {
+        "lon": -73.75623,
+        "lat": 42.65258
+       },
+       "latitude": "42.65258",
+       "cityStateZipCode": "Albany, New York, 00501",
+       "stateCountry": "New York, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote New York",
+       "location": "Remote New York",
+       "state": "New York",
+       "cityCountry": "Albany, United States of America",
+       "cityStateCountry": "Albany, New York, United States of America",
+       "mapQueryLocation": "Albany, New York, United States of America",
+       "longitude": "-73.75623"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Bismark, North Dakota",
+       "address": "1266 Anywhere Street, Bismark, ND 58001, United States of America",
+       "locationName": "Remote North Dakota",
+       "city": "Bismark",
+       "postalCode": "58001",
+       "latlong": {
+        "lon": -100.78374,
+        "lat": 46.80833
+       },
+       "latitude": "46.80833",
+       "cityStateZipCode": "Bismark, North Dakota, 58001",
+       "stateCountry": "North Dakota, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote North Dakota",
+       "location": "Remote North Dakota",
+       "state": "North Dakota",
+       "cityCountry": "Bismark, United States of America",
+       "cityStateCountry": "Bismark, North Dakota, United States of America",
+       "mapQueryLocation": "Bismark, North Dakota, United States of America",
+       "longitude": "-100.78374"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Portland, Oregon",
+       "address": "1269 Anywhere Street, Portland, OR 97035, United States of America",
+       "locationName": "Remote Oregon",
+       "city": "Portland",
+       "postalCode": "97035",
+       "latlong": {
+        "lon": -122.67621,
+        "lat": 45.52345
+       },
+       "latitude": "45.52345",
+       "cityStateZipCode": "Portland, Oregon, 97035",
+       "stateCountry": "Oregon, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Oregon",
+       "location": "Remote Oregon",
+       "state": "Oregon",
+       "cityCountry": "Portland, United States of America",
+       "cityStateCountry": "Portland, Oregon, United States of America",
+       "mapQueryLocation": "Portland, Oregon, United States of America",
+       "longitude": "-122.67621"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Pierre, South Dakota",
+       "address": "1273 Anywhere Street, Pierre, SD 57001, United States of America",
+       "locationName": "Remote South Dakota",
+       "city": "Pierre",
+       "postalCode": "57001",
+       "latlong": {
+        "lon": -100.35097,
+        "lat": 44.36832
+       },
+       "latitude": "44.36832",
+       "cityStateZipCode": "Pierre, South Dakota, 57001",
+       "stateCountry": "South Dakota, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote South Dakota",
+       "location": "Remote South Dakota",
+       "state": "South Dakota",
+       "cityCountry": "Pierre, United States of America",
+       "cityStateCountry": "Pierre, South Dakota, United States of America",
+       "mapQueryLocation": "Pierre, South Dakota, United States of America",
+       "longitude": "-100.35097"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Nashville, Tennessee",
+       "address": "1274 Anywhere Street, Nashville, TN 37010, United States of America",
+       "locationName": "Remote Tennessee",
+       "city": "Nashville",
+       "postalCode": "37010",
+       "latlong": {
+        "lon": -86.78444,
+        "lat": 36.16589
+       },
+       "latitude": "36.16589",
+       "cityStateZipCode": "Nashville, Tennessee, 37010",
+       "stateCountry": "Tennessee, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Tennessee",
+       "location": "Remote Tennessee",
+       "state": "Tennessee",
+       "cityCountry": "Nashville, United States of America",
+       "cityStateCountry": "Nashville, Tennessee, United States of America",
+       "mapQueryLocation": "Nashville, Tennessee, United States of America",
+       "longitude": "-86.78444"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Dallas, Texas",
+       "address": "1275 Anywhere Street, Dallas, TX 75247, United States of America",
+       "locationName": "Remote Texas",
+       "city": "Dallas",
+       "postalCode": "75247",
+       "latlong": {
+        "lon": -96.80667,
+        "lat": 32.78306
+       },
+       "latitude": "32.78306",
+       "cityStateZipCode": "Dallas, Texas, 75247",
+       "stateCountry": "Texas, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Texas",
+       "location": "Remote Texas",
+       "state": "Texas",
+       "cityCountry": "Dallas, United States of America",
+       "cityStateCountry": "Dallas, Texas, United States of America",
+       "mapQueryLocation": "Dallas, Texas, United States of America",
+       "longitude": "-96.80667"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Richmond, Virginia",
+       "address": "1278 Anywhere Street, Richmond, VA 20101, United States of America",
+       "locationName": "Remote Virginia",
+       "city": "Richmond",
+       "postalCode": "20101",
+       "latlong": {
+        "lon": -77.46026,
+        "lat": 37.55376
+       },
+       "latitude": "37.55376",
+       "cityStateZipCode": "Richmond, Virginia, 20101",
+       "stateCountry": "Virginia, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Virginia",
+       "location": "Remote Virginia",
+       "state": "Virginia",
+       "cityCountry": "Richmond, United States of America",
+       "cityStateCountry": "Richmond, Virginia, United States of America",
+       "mapQueryLocation": "Richmond, Virginia, United States of America",
+       "longitude": "-77.46026"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Olympia, Washington",
+       "address": "1279 Anywhere Street, Olympia, WA 98001, United States of America",
+       "locationName": "Remote Washington",
+       "city": "Olympia",
+       "postalCode": "98001",
+       "latlong": {
+        "lon": -122.9007,
+        "lat": 47.03787
+       },
+       "latitude": "47.03787",
+       "cityStateZipCode": "Olympia, Washington, 98001",
+       "stateCountry": "Washington, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Washington",
+       "location": "Remote Washington",
+       "state": "Washington",
+       "cityCountry": "Olympia, United States of America",
+       "cityStateCountry": "Olympia, Washington, United States of America",
+       "mapQueryLocation": "Olympia, Washington, United States of America",
+       "longitude": "-122.9007"
+      },
+      {
+       "country": "United States of America",
+       "cityState": "Charleston, West Virginia",
+       "address": "1280 Anywhere Street, Charleston, WV 24701, United States of America",
+       "locationName": "Remote West Virginia",
+       "city": "Charleston",
+       "postalCode": "24701",
+       "latlong": {
+        "lon": -81.63262,
+        "lat": 38.34982
+       },
+       "latitude": "38.34982",
+       "cityStateZipCode": "Charleston, West Virginia, 24701",
+       "stateCountry": "West Virginia, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote West Virginia",
+       "location": "Remote West Virginia",
+       "state": "West Virginia",
+       "cityCountry": "Charleston, United States of America",
+       "cityStateCountry": "Charleston, West Virginia, United States of America",
+       "mapQueryLocation": "Charleston, West Virginia, United States of America",
+       "longitude": "-81.63262"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Clinical"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "adverse event reporting",
+      "regulatory compliance",
+      "meddra coding",
+      "safety data management",
+      "coshh compliance",
+      "european commission directives",
+      "medical review",
+      "database maintenance",
+      "quality review",
+      "peer review",
+      "audit preparation",
+      "training delivery",
+      "mentoring",
+      "windows applications",
+      "client liaison",
+      "status reporting",
+      "project documentation"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Job Overview. Assist with the overall Clinical Safety and/or PSS operations associated with products including the adverse events process which may include safety data collected from clinical trial...",
+     "state": "Seoul",
+     "siteType": "external",
+     "multi_category": [
+      "Clinical"
+     ],
+     "reqId": "264649",
+     "city": "Seoul",
+     "latitude": "37.566",
+     "multi_location": [
+      "Seoul"
+     ],
+     "address": "13th Floor, The Pinnacle Tower,343, Hakdong-ro, Gangnam-gu,, 06060 Seoul Seoul, Korea, Republic of",
+     "applyUrl": "https://fortrea.wd1.myworkdayjobs.com/Fortrea/job/Seoul/PSS-Associate-I--1-year-contract-_264649/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "We are expanding our team: As a PSS Associate I, you will support clinical safety and adverse event management, ensuring accurate reporting and compliance with regulatory standards. This role involves processing adverse event reports and maintaining documentation. Ideal for candidates with relevant safety experience and strong attention to detail.",
+      "descriptionTeaser_first200": "Job Overview. Assist with the overall Clinical Safety and/or PSS operations associated with products including the adverse events process which may include safety data collected from clinical trial...",
+      "descriptionTeaser_keyword": "Job Overview. Assist with the overall Clinical Safety and/or PSS operations associated with products including the adverse events process which may include safety data collected from clinical trials a...",
+      "descriptionTeaser_ats": "Job Overview . Assist with the overall Clinical Safety and/or PSS operations associated with products including the adverse events process which may include safety data collected from clinical trials an"
+     },
+     "externalApply": true,
+     "cityState": "Seoul, Seoul",
+     "country": "Korea, Republic of",
+     "visibilityType": "External",
+     "longitude": "126.9784",
+     "jobId": "264649",
+     "locale": "en_US",
+     "title": "PSS Associate I (1 year contract)",
+     "jobSeqNo": "FOMFORUS264649EXTERNALENUS",
+     "postedDate": "2026-08-27T00:00:00.000+0000",
+     "dateCreated": "2026-08-11T08:30:21.199+0000",
+     "cityStateCountry": "Seoul, Seoul, Korea, Republic of",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Seoul",
+     "category": "Clinical",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "country": "Korea, Republic of",
+       "cityState": "Seoul, Seoul",
+       "address": "13th Floor, The Pinnacle Tower,343, Hakdong-ro, Gangnam-gu,, 06060 Seoul Seoul, Korea, Republic of",
+       "locationName": "Seoul",
+       "city": "Seoul",
+       "postalCode": "06060",
+       "latlong": {
+        "lon": 126.9784,
+        "lat": 37.566
+       },
+       "latitude": "37.566",
+       "stateCountry": "Seoul, Korea, Republic of",
+       "externalLocation": "",
+       "locationId": "00084",
+       "location": "Seoul",
+       "state": "Seoul",
+       "cityCountry": "Seoul, Korea, Republic of",
+       "cityStateCountry": "Seoul, Seoul, Korea, Republic of",
+       "mapQueryLocation": "Seoul, Seoul, Korea, Republic of",
+       "longitude": "126.9784"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Clinical"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "tmf review",
+      "gcp compliance",
+      "ich guidelines",
+      "clinical trial documentation",
+      "fortrea",
+      "audit readiness",
+      "regulatory compliance",
+      "microsoft office",
+      "adobe acrobat",
+      "quality assurance",
+      "process improvement",
+      "data gathering",
+      "client audit preparation",
+      "corrective action implementation",
+      "stakeholder collaboration",
+      "training delivery",
+      "business process improvement",
+      "electronic trial master file management",
+      "scanning software"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Job Overview. Manages ARC review and is responsible for performing TMF review of electronic Trial Master Files (eTMF), Trial, Country, and Site artifacts for clinical studies in support of sponsors...",
+     "state": "Shanghai",
+     "siteType": "external",
+     "multi_category": [
+      "Clinical"
+     ],
+     "reqId": "264937",
+     "city": "",
+     "latitude": "31.22222",
+     "multi_location": [
+      "Shanghai"
+     ],
+     "address": "3F, No. 50 West Yangsi Road and No. 90 Qirong Road, Pilot Free Trade Zone, 200126 Shanghai, China",
+     "applyUrl": "https://fortrea.wd1.myworkdayjobs.com/Fortrea/job/Shanghai/TMF-Reviewer-III_264937/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Seeking a TMF Reviewer III to manage and review electronic Trial Master Files (eTMF) for clinical studies, ensuring compliance with regulatory requirements. Key responsibilities include process control, audit readiness, and collaboration with study teams. Ideal candidates bring significant clinical research experience and strong knowledge of GCP and ICH guidelines.",
+      "descriptionTeaser_first200": "Job Overview. Manages ARC review and is responsible for performing TMF review of electronic Trial Master Files (eTMF), Trial, Country, and Site artifacts for clinical studies in support of sponsors...",
+      "descriptionTeaser_keyword": "Job Overview. Manages ARC review and is responsible for performing TMF review of electronic Trial Master Files (eTMF), Trial, Country, and Site artifacts for clinical studies in support of sponsors se...",
+      "descriptionTeaser_ats": "Job Overview:Manages ARC review and is responsible for performing TMF review of electronic Trial Master Files (eTMF), Trial, Country, and Site artifacts for clinical studies in support of sponsors ser"
+     },
+     "externalApply": true,
+     "cityState": "Shanghai",
+     "country": "China",
+     "visibilityType": "External",
+     "longitude": "121.45806",
+     "jobId": "264937",
+     "locale": "en_US",
+     "title": "TMF Reviewer III (SH/BJ/DL/GZ)",
+     "jobSeqNo": "FOMFORUS264937EXTERNALENUS",
+     "postedDate": "2026-08-26T00:00:00.000+0000",
+     "dateCreated": "2026-08-26T07:01:30.918+0000",
+     "cityStateCountry": "Shanghai, China",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Shanghai",
+     "category": "Clinical",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "country": "China",
+       "cityState": "Shanghai",
+       "address": "3F, No. 50 West Yangsi Road and No. 90 Qirong Road, Pilot Free Trade Zone, 200126 Shanghai, China",
+       "locationName": "Shanghai",
+       "city": "",
+       "postalCode": "200126",
+       "latlong": {
+        "lon": 121.45806,
+        "lat": 31.22222
+       },
+       "latitude": "31.22222",
+       "cityStateZipCode": "Shanghai, 200126",
+       "stateCountry": "Shanghai, China",
+       "externalLocation": "",
+       "locationId": "00081",
+       "location": "Shanghai",
+       "state": "Shanghai",
+       "cityCountry": "China",
+       "cityStateCountry": "Shanghai, China",
+       "mapQueryLocation": "Shanghai, China",
+       "longitude": "121.45806"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Clinical"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "project management",
+      "oncology",
+      "clinical trial execution",
+      "ich guidelines",
+      "drug development",
+      "regulatory data management",
+      "change control",
+      "risk management",
+      "quality control",
+      "stakeholder management",
+      "team leadership",
+      "business development",
+      "financial tracking systems",
+      "microsoft excel",
+      "microsoft powerpoint",
+      "microsoft project",
+      "microsoft access",
+      "presentation skills",
+      "talent development",
+      "mentoring",
+      "client negotiation",
+      "performance management",
+      "resource planning",
+      "project performance indicators",
+      "pmp certification",
+      "biotech experience"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Our FSO team is seeking an Oncology Sr. Clinical Project Manager or Project Manager II to join our growing team. This role requires 3-5+ years of global project management experience, with mandator...",
+     "state": "North Carolina",
+     "siteType": "external",
+     "multi_category": [
+      "Project Management"
+     ],
+     "reqId": "263454",
+     "city": "Durham",
+     "latitude": "35.99403",
+     "multi_location": [
+      "Remote United States",
+      "Remote Canada"
+     ],
+     "address": "1236 Anywhere Street, Durham, NC 27709, United States of America",
+     "applyUrl": "https://fortrea.wd1.myworkdayjobs.com/Fortrea/job/Remote-United-States/Senior-Clinical-Project-Manager-or-Project-Manager-II---Oncology_263454/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Join our team as a Senior Clinical Project Manager or Project Manager II in Oncology, overseeing global and domestic projects with a focus on clinical research and regulatory compliance. Lead project teams, manage project delivery, and ensure client satisfaction. Ideal for experienced project managers with oncology expertise and a background in clinical research.",
+      "descriptionTeaser_first200": "Our FSO team is seeking an Oncology Sr. Clinical Project Manager or Project Manager II to join our growing team. This role requires 3-5+ years of global project management experience, with mandator...",
+      "descriptionTeaser_keyword": "Our FSO team is seeking an Oncology Sr. Clinical Project Manager or Project Manager II to join our growing team. This role requires 3-5+ years of global project management experience, with mandatory e...",
+      "descriptionTeaser_ats": "Our FSO team is seeking an Oncology Sr. Clinical Project Manager or Project Manager II to join our growing team. This role requires 3-5+ years of global project management experience, with mandatory e"
+     },
+     "externalApply": true,
+     "cityState": "Durham, North Carolina",
+     "country": "United States of America",
+     "visibilityType": "External",
+     "longitude": "-78.89862",
+     "jobId": "263454",
+     "locale": "en_US",
+     "title": "Senior Clinical Project Manager or Project Manager II - Oncology",
+     "jobSeqNo": "FOMFORUS263454EXTERNALENUS",
+     "postedDate": "2026-08-26T00:00:00.000+0000",
+     "dateCreated": "2026-06-23T20:31:47.813+0000",
+     "cityStateCountry": "Durham, North Carolina, United States of America",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Remote United States",
+     "category": "Project Management",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "country": "United States of America",
+       "cityState": "Durham, North Carolina",
+       "address": "1236 Anywhere Street, Durham, NC 27709, United States of America",
+       "locationName": "Remote United States",
+       "city": "Durham",
+       "postalCode": "27709",
+       "latlong": {
+        "lon": -78.89862,
+        "lat": 35.99403
+       },
+       "latitude": "35.99403",
+       "cityStateZipCode": "Durham, North Carolina, 27709",
+       "stateCountry": "North Carolina, United States of America",
+       "externalLocation": "",
+       "locationId": "JPL_Remote United States",
+       "location": "Remote United States",
+       "state": "North Carolina",
+       "cityCountry": "Durham, United States of America",
+       "cityStateCountry": "Durham, North Carolina, United States of America",
+       "mapQueryLocation": "Durham, North Carolina, United States of America",
+       "longitude": "-78.89862"
+      },
+      {
+       "country": "Canada",
+       "cityState": "Toronto, Ontario",
+       "address": "1238 Anywhere Street, Toronto, ON M5K 1E7, Canada",
+       "locationName": "Remote Canada",
+       "city": "Toronto",
+       "postalCode": "M5K 1E7",
+       "latlong": {
+        "lon": -79.4163,
+        "lat": 43.70011
+       },
+       "latitude": "43.70011",
+       "cityStateZipCode": "Toronto, Ontario, M5K 1E7",
+       "stateCountry": "Ontario, Canada",
+       "externalLocation": "",
+       "locationId": "JPL_Remote Canada",
+       "location": "Remote Canada",
+       "state": "Ontario",
+       "cityCountry": "Toronto, Canada",
+       "cityStateCountry": "Toronto, Ontario, Canada",
+       "mapQueryLocation": "Toronto, Ontario, Canada",
+       "longitude": "-79.4163"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Project Management"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "hr business partnering",
+      "organizational effectiveness",
+      "workforce planning",
+      "leadership development",
+      "talent management",
+      "change management",
+      "succession planning",
+      "organizational design",
+      "executive decision support",
+      "governance compliance",
+      "hr program implementation",
+      "stakeholder management",
+      "executive recommendations",
+      "business acumen",
+      "risk assessment",
+      "hris",
+      "executive summary writing",
+      "matrix organization experience",
+      "global hr strategy",
+      "hr program evaluation",
+      "hr policy compliance",
+      "talent assessment",
+      "employee relations",
+      "hr certification",
+      "global team leadership"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Job Overview. Global HR Business Partner and primary HR advisor to senior functional leaders and/or direct reports to C-suite executives supporting complex global functions and organizations. Membe...",
+     "state": "North Carolina",
+     "siteType": "external",
+     "multi_category": [
+      "Human Resources"
+     ],
+     "reqId": "264295",
+     "city": "Durham",
+     "latitude": "35.99403",
+     "multi_location": [
+      "Durham"
+     ],
+     "address": "8 Moore Drive, Durham, NC 27713, United States of America",
+     "applyUrl": "https://fortrea.wd1.myworkdayjobs.com/Fortrea/job/Durham/Global-Human-Resources-Business-Partner-Director--Durham--NC-_264295/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Become part of our team as a Global Human Resources Business Partner Director, providing strategic HR advisory to senior leaders and supporting complex global functions. Drive organisational effectiveness and workforce planning, leveraging your expertise in HR partnership. Ideal for experienced HR professionals with a strong background in business partnering and senior leadership engagement.",
+      "descriptionTeaser_first200": "Job Overview. Global HR Business Partner and primary HR advisor to senior functional leaders and/or direct reports to C-suite executives supporting complex global functions and organizations. Membe...",
+      "descriptionTeaser_keyword": "Job Overview. Global HR Business Partner and primary HR advisor to senior functional leaders and/or direct reports to C-suite executives supporting complex global functions and organizations. Member o...",
+      "descriptionTeaser_ats": "Job Overview:Global HR Business Partner and primary HR advisor to senior functional leaders and/or direct reports to C-suite executives supporting complex global functions and organizations. Member of"
+     },
+     "externalApply": true,
+     "cityState": "Durham, North Carolina",
+     "country": "United States of America",
+     "visibilityType": "External",
+     "longitude": "-78.89862",
+     "jobId": "264295",
+     "locale": "en_US",
+     "title": "Global Human Resources Business Partner Director (Durham, NC)",
+     "jobSeqNo": "FOMFORUS264295EXTERNALENUS",
+     "postedDate": "2026-08-21T00:00:00.000+0000",
+     "dateCreated": "2026-07-29T20:45:56.468+0000",
+     "cityStateCountry": "Durham, North Carolina, United States of America",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Durham",
+     "category": "Human Resources",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "country": "United States of America",
+       "cityState": "Durham, North Carolina",
+       "address": "8 Moore Drive, Durham, NC 27713, United States of America",
+       "locationName": "Durham",
+       "city": "Durham",
+       "postalCode": "27713",
+       "latlong": {
+        "lon": -78.89862,
+        "lat": 35.99403
+       },
+       "latitude": "35.99403",
+       "cityStateZipCode": "Durham, North Carolina, 27713",
+       "stateCountry": "North Carolina, United States of America",
+       "externalLocation": "",
+       "locationId": "00137",
+       "location": "Durham",
+       "state": "North Carolina",
+       "cityCountry": "Durham, United States of America",
+       "cityStateCountry": "Durham, North Carolina, United States of America",
+       "mapQueryLocation": "Durham, North Carolina, United States of America",
+       "longitude": "-78.89862"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Human Resources"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "specimen collection",
+      "laboratory equipment operation",
+      "laboratory safety",
+      "specimen processing",
+      "specimen shipping",
+      "reagent management",
+      "quality improvement",
+      "troubleshooting laboratory equipment",
+      "inventory management",
+      "hazardous materials handling",
+      "electronic data capture",
+      "teamwork",
+      "adaptability",
+      "ppe compliance",
+      "clinical trial support",
+      "computer software usage"
+     ],
+     "type": "Casual",
+     "descriptionTeaser": "Join one of the world’s largest Clinical Research Organizations and play a key role in advancing new medical treatments. Our Early Phase Unit is seeking a Lab Technician to support healthy voluntee...",
+     "state": "Texas",
+     "siteType": "external",
+     "multi_category": [
+      "Other"
+     ],
+     "reqId": "264788",
+     "city": "Dallas",
+     "latitude": "32.78306",
+     "multi_location": [
+      "Dallas"
+     ],
+     "address": "1341 W. Mockingbird Lane Suite 200E, Dallas, TX 75247, United States of America",
+     "applyUrl": "https://fortrea.wd1.myworkdayjobs.com/Fortrea/job/Dallas/PRN-Lab-Technician-I--Early-Phase-Clinical-Research---Dallas--TX_264788-1/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "We are looking for a Lab Technician to support healthy volunteer clinical trials in our Early Phase Unit. You will collect, process, and handle specimens, operate lab equipment, and maintain a safe environment. Ideal candidates have at least one year of laboratory experience and thrive in fast-paced, regulated settings.",
+      "descriptionTeaser_first200": "Join one of the world’s largest Clinical Research Organizations and play a key role in advancing new medical treatments. Our Early Phase Unit is seeking a Lab Technician to support healthy voluntee...",
+      "descriptionTeaser_keyword": "Join one of the world’s largest Clinical Research Organizations and play a key role in advancing new medical treatments. Our Early Phase Unit is seeking a Lab Technician to support healthy volunteer c...",
+      "descriptionTeaser_ats": "Join one of the world’s largest Clinical Research Organizations and play a key role in advancing new medical treatments. Our Early Phase Unit is seeking a Lab Technician to support healthy volunteer c"
+     },
+     "externalApply": true,
+     "cityState": "Dallas, Texas",
+     "country": "United States of America",
+     "visibilityType": "External",
+     "longitude": "-96.80667",
+     "jobId": "264788",
+     "locale": "en_US",
+     "title": "PRN Lab Technician I, Early Phase Clinical Research – Dallas, TX",
+     "jobSeqNo": "FOMFORUS264788EXTERNALENUS",
+     "postedDate": "2026-08-26T00:00:00.000+0000",
+     "dateCreated": "2026-08-19T21:40:03.252+0000",
+     "cityStateCountry": "Dallas, Texas, United States of America",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Dallas",
+     "category": "Other",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "country": "United States of America",
+       "cityState": "Dallas, Texas",
+       "address": "1341 W. Mockingbird Lane Suite 200E, Dallas, TX 75247, United States of America",
+       "locationName": "Dallas",
+       "city": "Dallas",
+       "postalCode": "75247",
+       "latlong": {
+        "lon": -96.80667,
+        "lat": 32.78306
+       },
+       "latitude": "32.78306",
+       "cityStateZipCode": "Dallas, Texas, 75247",
+       "stateCountry": "Texas, United States of America",
+       "externalLocation": "",
+       "locationId": "00100",
+       "location": "Dallas",
+       "state": "Texas",
+       "cityCountry": "Dallas, United States of America",
+       "cityStateCountry": "Dallas, Texas, United States of America",
+       "mapQueryLocation": "Dallas, Texas, United States of America",
+       "longitude": "-96.80667"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Other"
+      }
+     ],
+     "badge": ""
+    }
+   ]
+  }
+ }
+}

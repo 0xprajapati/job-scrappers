@@ -1,0 +1,26 @@
+23:10:44 INFO No robots.txt on https://fa-equm-saasfaprod1.fa.ocs.oraclecloud.com (HTTP 404) — crawling allowed
+23:10:44 INFO robots.txt check passed
+23:10:44 INFO First run: detail fetches capped at 150 (newest first)
+23:10:44 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-13
+23:10:46 INFO Oracle CE site CX_1001 lists 69 open requisitions (69 returned on page 1)
+23:11:43 INFO CX_1001 page at offset 0 ends 2026-04-30 (< cutoff 2026-08-13) — stopping pagination
+23:11:46 INFO Oracle CE site CX_2001 lists 834 open requisitions (200 returned on page 1)
+23:12:26 INFO CX_2001 page at offset 0 ends 2025-10-21 (< cutoff 2026-08-13) — stopping pagination
+23:12:26 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/omega_healthcare/omega_healthcare_jobs.csv (16 total rows)
+23:12:26 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/27-08-2026/omega_healthcare.csv (16 rows, HealthCareers.club schema)
+23:12:26 INFO Moved 38 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/omega_healthcare/out-of-scope.csv (38 total, kept for review)
+
+===== Run summary =====
+Requisitions scanned:            269
+Excluded (out of scope):          38  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-13): 215
+Skipped (known old):               0
+Deferred by detail cap:            0
+Flagged needs_review:              0
+New jobs added:                   16
+Duplicates skipped:                0
+Detail parse failures:             0
+Vetoes among dropped rows:
+    Revenue Cycle                   7
+    rcm                             1

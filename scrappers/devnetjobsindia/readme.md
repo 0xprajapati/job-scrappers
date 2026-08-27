@@ -27,7 +27,8 @@ classifier.
 3. **Relevant Sectors** tags on the detail page (`lblSector1..3`, e.g.
    "Health, Doctors, Nurses, HIV/AIDS, Nutrition") are the site's curated
    role signal — passed to `classify_job` as `skills`, kept in the rich CSV
-   as a raw source column, never allowed to decide the category.
+   as a raw source column, never allowed to decide the category. **One tag
+   is removed before classifying** — see below.
 4. **Classification** is the shared two-level taxonomy
    (`_shared/classification.py`): out of scope → dropped, counted, full row
    appended to `out-of-scope.csv`; `needs_review` → kept AND flagged.
@@ -40,6 +41,29 @@ classifier.
    procurement notices, not jobs: title-detected (`RFP/EOI/tender/
    empanelment/...`), marked `is_rfp`, and force-flagged into
    `needs_review.csv` when the classifier keeps them.
+
+## The funding-sector tag (why one tag is stripped)
+
+The board draws its sector tags from a **closed 16-item vocabulary**. One of
+them — `Fundraising, Business Development, Grants Writer` — describes how the
+hiring *organisation* is funded, not what the role does, and the shared
+taxonomy treats "Business Development" as a negative keyword. So a health
+role sitting in a fundraising-adjacent unit gets vetoed on the strength of an
+org-chart label. The tag is on 18 of 442 stored in-window postings.
+
+`sectors_for_classifier()` drops that one tag before classification; the
+other 15 pass through untouched and the raw list is still stored in the
+`sectors` column, so the decision is visible and reversible. Measured
+2026-08-27 holding the classifier constant: **+2 rows, 0 lost** (57 -> 59) —
+the WJCF District and Block Coordinator, Presbyopia Program postings.
+
+**This is a per-board judgement, not a candidate for a shared fix.** Verified
+across all 30 boards on 2026-08-27: other sources put genuinely
+role-descriptive text in the same argument — himalayas files jobs under
+`Revenue-Cycle-Management` / `Healthcare-Billing`, and the veto is right to
+read it (suppressing it there would admit 118 billing and sales rows). Only a
+board that files by ORG SECTOR rather than by role belongs here. The same
+strip is applied on the global twin, `../devnetjobs/`.
 
 No salary is published anywhere on the board → club salary columns stay
 blank ("Not Disclosed" semantics, never invented). `min_experience` and

@@ -89,12 +89,16 @@ def classify_job(title, skills="", description=""):
         return _out_of_scope()
 
     sub_category, basis = tax["sub_category"], tax["basis"]
+    blank_ph = False
     if sub_category:
         category = tax["category"]
     elif family == "Public Health":
         # Public Health's single family is coarser than its ten
-        # sub-categories, so there is no honest fallback: leave blank.
+        # sub-categories, so there is no honest fallback: leave blank —
+        # but FLAG it (2026-08-27), so the gap lands in needs_review.csv
+        # instead of shipping silently (89 blank rows shipped on 27-08).
         category = "Public Health"
+        blank_ph = True
     else:
         # The ten Non Clinical family names ARE their sub-categories.
         category, sub_category, basis = "Non Clinical", family, "family"
@@ -105,7 +109,7 @@ def classify_job(title, skills="", description=""):
         "sub_category": sub_category,
         "sub_category_basis": basis,
         "role_family": family,
-        "needs_review": bool(verdict.get("needs_review")),
+        "needs_review": bool(verdict.get("needs_review")) or blank_ph,
         "vetoed_by": "",
         "all_families": verdict.get("all_families", ""),
         "family_scores": verdict.get("family_scores", ""),

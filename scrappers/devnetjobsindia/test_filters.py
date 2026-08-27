@@ -18,6 +18,7 @@ from scraper import (
     apply_classification,
     build_row,
     classify_company_type,
+    classify_job,
     compute_cutoff,
     is_rfp_title,
     parse_experience_years,
@@ -25,6 +26,7 @@ from scraper import (
     parse_sectors,
     parse_sitemap_ids,
     rich_row_to_club_row,
+    sectors_for_classifier,
 )
 
 # Trimmed real sitemap.aspx shape — every <lastmod> is the generation date.
@@ -116,6 +118,64 @@ class TestDetailParser(unittest.TestCase):
                       "Call for Proposals — HIV prevention"):
             self.assertTrue(is_rfp_title(title), title)
         self.assertFalse(is_rfp_title("Community Liaison Health/Outreach Worker"))
+
+
+class TestSectorsForClassifier(unittest.TestCase):
+    """The funding-sector tag is dropped before classification, never from
+    the stored row (see sectors_for_classifier)."""
+
+    FUNDRAISING = "Fundraising, Business Development, Grants Writer"
+    HEALTH = "Health, Doctors, Nurses, HIV/AIDS, Nutrition"
+
+    def test_funding_tag_dropped(self):
+        self.assertEqual(
+            sectors_for_classifier(self.FUNDRAISING + "; " + self.HEALTH),
+            self.HEALTH)
+
+    def test_only_that_tag_is_dropped(self):
+        # The other 15 tags in the board's closed vocabulary pass through.
+        keep = self.HEALTH + "; Monitoring, Evaluation, Policy, Research"
+        self.assertEqual(sectors_for_classifier(keep), keep)
+
+    def test_sole_tag_leaves_empty_skills(self):
+        self.assertEqual(sectors_for_classifier(self.FUNDRAISING), "")
+
+    def test_empty_and_missing(self):
+        self.assertEqual(sectors_for_classifier(""), "")
+        self.assertEqual(sectors_for_classifier(None), "")
+
+    def test_funding_tag_no_longer_vetoes(self):
+        """The mechanism: real posting 302343 (District Coordinator,
+        Presbyopia Program — WJCF) was rejected outright because the
+        taxonomy's "Business Development" negative keyword matched the
+        funding tag. After the strip, nothing vetoes it and the row is
+        judged on its merits like any other.
+
+        Asserted at the veto level rather than end-to-end: the live posting
+        only clears the relevance gate on the strength of its full 8.5k
+        description, which does not belong inlined in a unit test.
+        """
+        sectors = self.FUNDRAISING + "; " + self.HEALTH
+        title = "District Coordinator, Presbyopia Program"
+        self.assertEqual(
+            classify_job(title, sectors, "")["vetoed_by"],
+            "Business Development")
+        self.assertEqual(
+            classify_job(title, sectors_for_classifier(sectors), "")["vetoed_by"],
+            "")
+
+    def test_health_role_survives_the_funding_tag(self):
+        """End-to-end, with a title the taxonomy places on its own so the
+        assertion doesn't hinge on description length."""
+        row = {"title": "Monitoring and Evaluation Officer",
+               "sectors": self.FUNDRAISING + "; " + self.HEALTH,
+               "description": "District health programme reporting.",
+               "is_rfp": False}
+        self.assertTrue(apply_classification(row))
+        self.assertEqual(row["category"], "Public Health")
+        self.assertEqual(row["sub_category"], "Monitoring & Evaluation")
+        # ...and the raw tag is still on the row that gets stored.
+        self.assertIn("Business Development", row["sectors"])
 
 
 class TestClassifier(unittest.TestCase):

@@ -218,6 +218,34 @@ WATERMARK_GRACE_DAYS = 2
 # newest slots per run; the run summary warns when a query hits the cap.
 MAX_PAGES_PER_QUERY = 50
 
+# Per-query page-cap overrides (SHINE-04, 2026-08-27 audit). Three queries
+# hit the 50-page cap before their date window closed on the 27-08 run —
+# the industry browse and the two highest-volume keyword slugs — so they
+# get deeper caps while the other ~52 queries keep the cheap default.
+# An explicit --max-pages on the command line overrides this dict too.
+QUERY_MAX_PAGES = {
+    "jobs?ind=13": 120,       # Medical / Healthcare industry browse (~25k jobs)
+    "clinical-coding": 120,
+    "healthcare": 120,
+}
+
+# Bulk re-posters excluded at source (SHINE-01, 2026-08-27 audit). Five
+# accounts mass-repost overseas (US/Canada) listings onto shine.com — city
+# always "All India", titles like "Senior Clinical Data Manager Remote,
+# Canada based", several literally starting "reputed company". Together
+# they accounted for 439 of the 1,111 stored rows (39%): FlexBoard 134,
+# remote zest jobs 98, vacancy global pro 88, vmysmartpros 75, remote
+# click jobs 44. Matching is case-insensitive on the exact company name;
+# skips are counted as "Excluded (bulk poster)", not as out-of-scope.
+# Applies to future crawls only — existing store rows are left alone.
+BULK_POSTER_BLOCKLIST = frozenset({
+    "flexboard",
+    "remote zest jobs",
+    "vacancy global pro",
+    "vmysmartpros",
+    "remote click jobs",
+})
+
 REQUEST_DELAY_SECONDS = 1.2
 REQUEST_TIMEOUT_SECONDS = 45
 MAX_RETRIES = 3
@@ -290,6 +318,20 @@ _PHARMA_COMPANY_RE = re.compile(
 
 def classify_company_type(name):
     return "pharma" if _PHARMA_COMPANY_RE.search(name or "") else "hospital"
+
+
+def is_bulk_poster(company):
+    """True when the company name is on BULK_POSTER_BLOCKLIST (SHINE-01).
+
+    Case-insensitive exact match on the trimmed name — substring matching
+    would be too eager ("Global Pro Services" is not "vacancy global pro").
+    """
+    return clean_value(company).lower() in BULK_POSTER_BLOCKLIST
+
+
+def max_pages_for_query(query, default=MAX_PAGES_PER_QUERY):
+    """Per-query page cap: QUERY_MAX_PAGES override, else the default."""
+    return QUERY_MAX_PAGES.get(query, default)
 
 
 # ----------------------------------------------------------------------------
@@ -604,7 +646,14 @@ def rich_row_to_club_row(r):
     else:
         club_type = "full_time"
 
-    city = _clean(r.get("location")).split(",")[0].strip() or "All India"
+    # SHINE-02 (2026-08-27 audit): "All India" is a country-level answer,
+    # not a city — 610/1,111 stored rows carried it as city_name. Map it
+    # (and bare "India", and an empty location) to an empty city_name; the
+    # country columns below already say India, and the raw location string
+    # stays intact in the rich CSV's `location` column.
+    city = _clean(r.get("location")).split(",")[0].strip()
+    if city.lower() in ("all india", "india"):
+        city = ""
     lo, hi, period, currency = club_salary(r.get("salary_raw"))
 
     return {
@@ -701,6 +750,15 @@ def crawl_query(session, robots, query, cutoff, known_ids, counters,
                     counters["duplicates"] += 1
                     continue
 
+                # SHINE-01: bulk re-posters of overseas listings are excluded
+                # at source — their own counter, NOT excluded_out_of_scope.
+                # The id joins known_ids so re-serves under other queries in
+                # this run don't inflate the count.
+                if is_bulk_poster(record.get("jCName")):
+                    counters["excluded_bulk_poster"] += 1
+                    known_ids.add(job_id)
+                    continue
+
                 row = job_to_rich_row(record, query)
             except Exception as exc:   # never let one card crash the run
                 log.warning("[%s] page %d: skipping malformed record (%s)",
@@ -770,17 +828,22 @@ def main(argv=None):
     log.info("Existing CSV has %d known jobs; keeping jobs posted on/after %s%s",
              len(known_ids), cutoff, " (--since override)" if args.since else "")
 
-    counters = {"scanned": 0, "excluded_out_of_scope": 0, "excluded_old": 0,
+    counters = {"scanned": 0, "excluded_out_of_scope": 0,
+                "excluded_bulk_poster": 0, "excluded_old": 0,
                 "needs_review": 0, "new": 0, "duplicates": 0}
     new_rows, review_log, capped_queries = [], [], []
 
     for query in queries:
+        # An explicit --max-pages wins everywhere; otherwise the per-query
+        # QUERY_MAX_PAGES override applies (SHINE-04).
+        max_pages = (args.max_pages if args.max_pages != MAX_PAGES_PER_QUERY
+                     else max_pages_for_query(query))
         outcome = crawl_query(session, robots, query, cutoff, known_ids,
                               counters, new_rows, review_log,
-                              args.max_pages, args.limit)
+                              max_pages, args.limit)
         log.info("[%s] done (%s); %d new so far", query, outcome, counters["new"])
         if outcome == "cap":
-            capped_queries.append(query)
+            capped_queries.append((query, max_pages))
         if args.limit is not None and counters["new"] >= args.limit:
             break
 
@@ -820,16 +883,19 @@ def main(argv=None):
     print("\n===== Run summary =====")
     print("Jobs scanned:              {:>6,}".format(counters["scanned"]))
     print("Excluded (out of scope)  : {:>6,}".format(counters["excluded_out_of_scope"]))
+    print("Excluded (bulk poster)   : {:>6,}".format(counters["excluded_bulk_poster"]))
     print("Excluded (older than {}): {:>4,}".format(cutoff, counters["excluded_old"]))
     print("Flagged needs_review:      {:>6,}".format(counters["needs_review"]))
     print("New jobs added:            {:>6,}".format(counters["new"]))
     print("Duplicates skipped:        {:>6,}".format(counters["duplicates"]))
     if capped_queries:
-        print("\n  NOTE: page cap ({} pages) hit before the date window closed"
+        listed = ", ".join("{} ({} pages)".format(q, cap)
+                           for q, cap in capped_queries)
+        print("\n  NOTE: page cap hit before the date window closed"
               "\n  for: {}. Coverage of those queries is truncated — shine"
               "\n  re-dates reposts, so deeper pages may still hold in-window"
-              "\n  jobs. Re-run with a higher --max-pages to go deeper."
-              .format(args.max_pages, ", ".join(capped_queries)))
+              "\n  jobs. Raise QUERY_MAX_PAGES or re-run with a higher"
+              "\n  --max-pages to go deeper.".format(listed))
 
 
 if __name__ == "__main__":

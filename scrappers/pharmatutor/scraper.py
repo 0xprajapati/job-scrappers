@@ -64,10 +64,20 @@ Verified quirks
   once, ever. Steady state ≈ 1 RSS request + a handful of listing pages
   (the walk ends after MAX_STALE_PAGES consecutive pages needing zero
   detail fetches) + 1 detail request per genuinely new posting.
-* No structured company field. The site titles posts "<role> at
+* No structured company field (the JSON-LD is an Article, not a
+  JobPosting — no hiringOrganization). The site titles posts "<role> at
   <employer>" almost universally; the employer is extracted from the
-  title (or the "<College> invites applications" pattern), else left
-  blank and flagged needs_review.
+  title (the "at" / verb-prefix / "under …, <institution>" / "to Join"
+  patterns), else from an institution name pasted into the Location
+  run, else left blank and flagged needs_review. A candidate over 60
+  chars or still containing "candidates"/"under"/"project" is a failed
+  extraction, never stored.
+* Headlines carry marketing phrasing ("<Company> Hiring <role>",
+  "Wanted <role>", "Walk in Drive for <role>", "| Freshers may apply"
+  suffixes) — clean_title() strips it when a plausible role remains;
+  the raw headline is kept as title_raw (rightmost rich-CSV column).
+  Both the title and location cleaners are idempotent and re-run at
+  club-CSV export so legacy store rows come out clean too.
 * Salary appears only on govt notices ("Rs 16,500/- pm") and rarely on
   company posts → parsed when present, otherwise "Not Disclosed", never
   invented.
@@ -184,7 +194,7 @@ RICH_COLUMNS = [
     "tags", "category", "sub_category", "role_family", "all_families",
     "family_scores", "family_confidence", "matched_in", "company_type",
     "needs_review", "posted_date", "end_date", "description", "job_url",
-    "scraped_at",
+    "scraped_at", "title_raw",
 ]
 
 log = logging.getLogger("pharmatutor_scraper")
@@ -499,27 +509,118 @@ _TITLE_AT_RE = re.compile(r"\bat\s+(.+?)\s*$", re.IGNORECASE)
 _TITLE_VERB_RE = re.compile(
     r"^(.{2,60}?)\s+(?:is\s+)?(?:hiring|looking\s+for|requires?|"
     r"recruit(?:ing|ment|s)?|walk[\s-]?in|invites?|seeks?|interview|"
-    r"offering|announces?)\b", re.IGNORECASE)
+    r"offering|announces?|openings?)\b", re.IGNORECASE)
+# fellowship/project notices name the host institution as the trailing
+# comma token of an "under ..." clause ("... under DHR-HTAIn, AIIMS")
+_TITLE_UNDER_RE = re.compile(r"\bunder\b\s+.*,\s*([^,]+?)\s*$", re.IGNORECASE)
+# "Opportunity for ... candidates to Join ProPharma"
+_TITLE_JOIN_RE = re.compile(r"\bto\s+join\s+(.+?)\s*$", re.IGNORECASE)
 # generic lead words that mean the verb pattern matched a role phrase,
 # not an employer ("Urgent Hiring ...", "Apply Online ...")
 _NOT_A_COMPANY_RE = re.compile(
     r"^(?:apply|urgent|job|jobs|career|careers|vacancy|vacancies|wanted|"
     r"opening|openings|post|posts|walk|online|immediate|mega|direct|"
     r"latest|multiple|various|work|now|we|required?|\d)", re.IGNORECASE)
+# a "company" that is really a sentence fragment: too long, or still
+# carrying audience/clause words from the headline
+_BAD_COMPANY_RE = re.compile(r"\bcandidates?\b|\bunder\b|\bproject\b",
+                             re.IGNORECASE)
+
+
+def plausible_company(text):
+    """False for failed extractions: empty, > 60 chars, or headline
+    fragments still containing "candidates"/"under"/"project"."""
+    text = clean_text(text)
+    return bool(text) and len(text) <= 60 and not _BAD_COMPANY_RE.search(text)
 
 
 def company_from_title(title):
     # titles carry "| Freshers may apply"-style suffixes after a pipe
     text = clean_text(title).split("|")[0].strip()
+    candidates = []
     m = _TITLE_AT_RE.search(text)
     if m:
-        return clean_text(m.group(1).strip(" .,-"))
+        candidates.append(m.group(1).strip(" .,-"))
     m = _TITLE_VERB_RE.search(text)
     if m:
-        prefix = clean_text(m.group(1).strip(" .,-"))
+        prefix = m.group(1).strip(" .,-")
         if prefix and not _NOT_A_COMPANY_RE.match(prefix):
-            return prefix
+            candidates.append(prefix)
+    m = _TITLE_UNDER_RE.search(text)
+    if m:
+        candidates.append(m.group(1).strip(" .,-"))
+    m = _TITLE_JOIN_RE.search(text)
+    if m:
+        candidates.append(m.group(1).strip(" .,-"))
+    for candidate in candidates:
+        candidate = clean_text(candidate)
+        if plausible_company(candidate):
+            return candidate
     return ""
+
+
+def company_from_article(article):
+    """Organisation name from the detail JSON-LD, when present.
+
+    The node is an Article, not a JobPosting, so hiringOrganization is
+    normally absent and publisher is PharmaTutor itself — checked
+    opportunistically, never invented.
+    """
+    org = article.get("hiringOrganization") or article.get("sourceOrganization")
+    if isinstance(org, dict):
+        org = org.get("name", "")
+    org = clean_text(org)
+    if "pharmatutor" in org.lower():
+        return ""
+    return org
+
+
+# ---- title cleaning ---------------------------------------------------------
+
+# Marketing phrasing the editors put in headlines; the role is what
+# remains. Each strip applies only when it leaves a plausible title.
+_MIN_TITLE_CHARS = 10
+# "Macleods Walk in Drive for Research Associate" / "TCS Bengaluru
+# Walk in | Hiring for ..." -> everything after the drive's "for"
+_WALKIN_FOR_RE = re.compile(
+    r"\bwalk[\s-]*in\b(?:\s+drive)?\b.*?\bfor\b\s+(.+)$", re.IGNORECASE)
+# "AstraZeneca Hiring <role>" / "Hiring <role>" (prefix = the company)
+_HIRING_RE = re.compile(
+    r"^(.{0,60}?)\s*(?:\bis\b\s+)?\bhiring\b\s*(?:for\b|:)?\s+(.+)$",
+    re.IGNORECASE)
+_WANTED_RE = re.compile(r"^wanted\s*(?::|for\b)?\s+(.+)$", re.IGNORECASE)
+_JOB_FOR_RE = re.compile(
+    r"^(?:jobs?|careers?|vacanc(?:y|ies)|openings?)\s+for\s+(.+)$",
+    re.IGNORECASE)
+
+
+def clean_title(title):
+    """Strip headline marketing down to the role.
+
+    "AstraZeneca Hiring International CMC Regulatory Affairs Manager" ->
+    "International CMC Regulatory Affairs Manager"; "Wanted <role> at
+    <co> | Freshers may apply" -> "<role> at <co>"; "Macleods Walk in
+    Drive for Research Associate" -> "Research Associate". A strip only
+    applies when the remainder is a plausible title (>= 10 chars), so
+    "Urgent Hiring for CRA" stays whole. Idempotent — safe to re-run
+    over already-clean titles.
+    """
+    text = clean_text(title)
+    m = _WALKIN_FOR_RE.search(text)
+    if m and len(m.group(1).strip()) >= _MIN_TITLE_CHARS:
+        text = m.group(1).strip()
+    # trailing "| Freshers may apply"-style suffixes
+    text = text.split("|")[0].strip()
+    m = _WANTED_RE.match(text)
+    if m and len(m.group(1).strip()) >= _MIN_TITLE_CHARS:
+        text = m.group(1).strip()
+    m = _JOB_FOR_RE.match(text)
+    if m and len(m.group(1).strip()) >= _MIN_TITLE_CHARS:
+        text = m.group(1).strip()
+    m = _HIRING_RE.match(text)
+    if m and len(m.group(2).strip()) >= _MIN_TITLE_CHARS:
+        text = m.group(2).strip()
+    return clean_text(text.strip(" :-,"))
 
 
 INDIAN_STATES = [
@@ -552,30 +653,57 @@ COUNTRY_META = {
 }
 
 
+# An institution name pasted into the Location run ("National Coordination
+# Center – Pharmacovigilance Programme of India") is not a city.
+_INSTITUTION_RE = re.compile(
+    r"centre|center|programme|institute", re.IGNORECASE)
+
+
+def looks_like_institution(text):
+    text = clean_text(text)
+    return len(text) > 40 or bool(_INSTITUTION_RE.search(text))
+
+
+def _location_parts(raw):
+    text = clean_text(re.sub(r"\([^)]*\)", " ", clean_text(raw)))
+    if not text or re.match(r"not specified|not mentioned|various|pan.india|multiple",
+                            text, re.I):
+        return []
+    return [clean_text(p) for p in re.split(r"[/,|]", text) if clean_text(p)]
+
+
+def institution_from_location(raw):
+    """The institution string when the Location run holds one, else ""."""
+    parts = _location_parts(raw)
+    if (parts and looks_like_institution(parts[0])
+            and parts[0].lower() not in COUNTRY_META):
+        return parts[0]
+    return ""
+
+
 def parse_location(raw, tags=""):
     """Location run -> (city, state, country_name, iso, dial).
 
     "Hyderabad / India" -> Hyderabad / India; "Ahmedabad, Gujarat" ->
     Ahmedabad + Gujarat; govt notices have no Location run — their state
-    arrives as a tag ("Chhattisgarh"), scanned as the fallback.
+    arrives as a tag ("Chhattisgarh"), scanned as the fallback. "Remote"
+    and institution strings (see looks_like_institution) never become
+    the city.
     """
-    text = clean_text(re.sub(r"\([^)]*\)", " ", clean_text(raw)))
     city = state = ""
     country, code, dial = "India", "IN", "+91"
-    if text and not re.match(r"not specified|not mentioned|various|pan.india|multiple",
-                             text, re.I):
-        parts = [clean_text(p) for p in re.split(r"[/,|]", text) if clean_text(p)]
-        if parts:
-            last = parts[-1].lower()
-            if last in COUNTRY_META:
-                code, dial = COUNTRY_META[last]
-                country = "India" if code == "IN" else parts[-1]
-                parts = parts[:-1]
-            if parts and parts[-1].lower() in _STATE_LOOKUP:
-                state = _STATE_LOOKUP[parts[-1].lower()]
-                parts = parts[:-1]
-            if parts:
-                city = parts[0]
+    parts = [p for p in _location_parts(raw) if p.lower() != "remote"]
+    if parts:
+        last = parts[-1].lower()
+        if last in COUNTRY_META:
+            code, dial = COUNTRY_META[last]
+            country = "India" if code == "IN" else parts[-1]
+            parts = parts[:-1]
+        if parts and parts[-1].lower() in _STATE_LOOKUP:
+            state = _STATE_LOOKUP[parts[-1].lower()]
+            parts = parts[:-1]
+        if parts and not looks_like_institution(parts[0]):
+            city = parts[0]
     if not state and code == "IN":
         for tag in (t.strip() for t in (tags or "").split(";")):
             if tag.lower() in _STATE_LOOKUP:
@@ -699,15 +827,29 @@ def fetch_listing_page(session, page):
 def build_row(job_id, card_title, page_html):
     """Rich row from a detail page's Article JSON-LD + body + tags."""
     article = parse_article_ldjson(page_html)
-    title = clean_text(article.get("headline")) or card_title
+    title_raw = clean_text(article.get("headline")) or card_title
+    title = clean_title(title_raw)
 
     body_html = parse_body_html(page_html)
     fields = extract_labeled_fields(body_html)
     tags = parse_tags(page_html)
     description = strip_html(body_html)[:DESCRIPTION_MAX_CHARS]
 
-    company = clean_text(fields.get("company", "")) or company_from_title(title)
-    city, state, country, code, dial = parse_location(fields.get("location", ""), tags)
+    # labeled run -> JSON-LD organisation (rare) -> headline extraction;
+    # a sentence fragment is a failed extraction, never a company
+    company = ""
+    for candidate in (clean_text(fields.get("company", "")),
+                      company_from_article(article),
+                      company_from_title(title_raw)):
+        if plausible_company(candidate):
+            company = candidate
+            break
+    location_raw = fields.get("location", "")
+    city, state, country, code, dial = parse_location(location_raw, tags)
+    # an institution pasted into the Location run names the employer
+    institution = institution_from_location(location_raw)
+    if not company and institution and not _BAD_COMPANY_RE.search(institution):
+        company = institution
     min_exp, max_exp = parse_experience(fields.get("experience", ""))
 
     row = {
@@ -747,6 +889,7 @@ def build_row(job_id, card_title, page_html):
         "description": description,
         "job_url": JOB_URL_TEMPLATE.format(job_id),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "title_raw": title_raw,
     }
     row.update(parse_salary(fields.get("salary", "")))
     return row
@@ -773,16 +916,34 @@ def rich_row_to_club_row(r):
     min_sal = _int_str(r.get("salary_min"))
     currency = _blank(r.get("salary_currency"))
     has_salary = bool(min_sal) and currency in ("INR", "USD")
+
+    # Legacy store rows predate the cleaners (no title_raw, marketing
+    # headlines as titles, institution/"Remote" cities) — the cleaners
+    # are idempotent, so they run over every row at export time.
+    title_raw = _blank(r.get("title_raw")) or _blank(r.get("title"))
+    title = clean_title(_blank(r.get("title")))
+    company = _blank(r.get("company"))
+    if not plausible_company(company):
+        company = company_from_title(title_raw)
+    city = _blank(r.get("city"))
+    if city == "India" or city.lower() == "remote":
+        city = ""
+    if looks_like_institution(city):
+        # the institution names the employer, not the city
+        if not company and not _BAD_COMPANY_RE.search(city):
+            company = city
+        city = ""
+
     return {
         "country_name": _blank(r.get("country")) or "India",
         "country_code": _blank(r.get("country_code")) or "IN",
         "country_dial_code": _blank(r.get("country_dial_code")) or "+91",
-        "city_name": _blank(r.get("city")) or _blank(r.get("state")) or "India",
-        "company_name": _blank(r.get("company")) or _blank(r.get("title")),
+        "city_name": city or _blank(r.get("state")),
+        "company_name": company,
         "company_type": _blank(r.get("company_type")) or "pharma",
         "company_logo": "",
         "company_about": "",
-        "title": _blank(r.get("title")),
+        "title": title,
         "description": _blank(r.get("description")),
         "job_type": "full_time",
         "category": _blank(r.get("category")),

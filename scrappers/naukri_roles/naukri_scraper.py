@@ -110,6 +110,15 @@ WATERMARK_GRACE_DAYS = 2
 
 DESCRIPTION_MAX_CHARS = 12_000
 
+# Descriptions under this length are search-card teasers, not real JDs; the
+# rich CSV flags them (jd_too_short) so downstream JD-rewrite tooling can
+# exclude them until the detail-JSON capture lands (NAUKRI-01 stopgap).
+JD_TOO_SHORT_CHARS = 200
+
+# A capture older than this (days) at run time still ingests, but loudly:
+# the "new" jobs it adds are not fresh (NAUKRI-02).
+STALE_CAPTURE_DAYS = 2
+
 HERE = Path(__file__).resolve().parent
 RICH_CSV = str(HERE / "naukri_roles_jobs.csv")
 NEEDS_REVIEW_CSV = str(HERE / "needs_review.csv")
@@ -128,6 +137,9 @@ RICH_COLUMNS = [
     "needs_review",
     "company_type", "role_category_gid", "tags_and_skills", "vacancies",
     "company_logo", "posted_date", "description", "job_url", "scraped_at",
+    # Rightmost trace column (rich CSV only, never in CLUB_COLUMNS):
+    # "True" when the stored description is a sub-200-char card teaser.
+    "jd_too_short",
 ]
 
 # The club CSV contract is the shared 23-column CLUB_COLUMNS imported from
@@ -176,6 +188,13 @@ def strip_html(text):
     text = _TAG_RE.sub("", text)
     text = html_lib.unescape(text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def flag_jd_too_short(description):
+    """Rich-CSV trace flag: "True" when the stored description is under
+    JD_TOO_SHORT_CHARS characters (a search-card teaser, not a real JD),
+    else "" — string values, matching the needs_review column convention."""
+    return "True" if len(description or "") < JD_TOO_SHORT_CHARS else ""
 
 
 def epoch_ms_to_date(epoch_ms):
@@ -333,6 +352,7 @@ def job_to_rich_row(job):
     jd_url = (job.get("jdURL") or "").strip()
     if jd_url.startswith("/"):
         jd_url = SITE_BASE + jd_url
+    description = strip_html(job.get("jobDescription") or "")[:DESCRIPTION_MAX_CHARS]
 
     return {
         "source": SITE,
@@ -363,7 +383,8 @@ def job_to_rich_row(job):
         "vacancies": str(job.get("vacancy") or ""),
         "company_logo": (job.get("logoPathV3") or job.get("logoPath") or "").strip(),
         "posted_date": epoch_ms_to_date(job.get("createdDate")),
-        "description": strip_html(job.get("jobDescription") or "")[:DESCRIPTION_MAX_CHARS],
+        "description": description,
+        "jd_too_short": flag_jd_too_short(description),
         "job_url": jd_url,
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "needs_review": "true" if verdict["needs_review"] else "false",
@@ -372,6 +393,49 @@ def job_to_rich_row(job):
         "family_confidence": verdict["family_confidence"],
         "matched_in": verdict["matched_in"],
     }
+
+
+def _norm_key(text):
+    """Normalise a dedup-key part: lowercase, collapse whitespace."""
+    return re.sub(r"\s+", " ", (text or "").strip()).lower()
+
+
+def dedupe_same_role(rows):
+    """Collapse same-role near-duplicate cards WITHIN one ingest batch.
+
+    naukri recruiters legitimately post one role per city, so the key is
+    (normalised title, normalised company, normalised city). Among rows
+    sharing a key, keep the one with the LONGER description (tie: newer
+    createdDate, read from the transient "_created_ms" key, which is popped
+    from the surviving rows). This never dedupes across runs — job_id stays
+    the cumulative store's dedup key.
+
+    Returns (kept_rows_in_first_seen_order, n_skipped).
+    """
+    best, order = {}, []
+    for row in rows:
+        key = (_norm_key(row.get("title")), _norm_key(row.get("company")),
+               _norm_key(row.get("city")))
+        held = best.get(key)
+        if held is None:
+            best[key] = row
+            order.append(key)
+        elif _prefer_card(row, held):
+            best[key] = row
+    kept = [best[k] for k in order]
+    for row in kept:
+        row.pop("_created_ms", None)
+    return kept, len(rows) - len(kept)
+
+
+def _prefer_card(challenger, incumbent):
+    """True when challenger should replace incumbent within a dedup group:
+    longer description wins; on a tie, the newer createdDate."""
+    lc = len(challenger.get("description") or "")
+    li = len(incumbent.get("description") or "")
+    if lc != li:
+        return lc > li
+    return (challenger.get("_created_ms") or 0) > (incumbent.get("_created_ms") or 0)
 
 
 def _clean(value):
@@ -464,6 +528,26 @@ def load_capture(path):
     return list(by_id.values())
 
 
+_CAPTURE_NAME_DATE_RE = re.compile(r"(\d{2})-(\d{2})-(\d{4})")
+
+
+def capture_file_date(path):
+    """The capture's date: DD-MM-YYYY parsed from the filename
+    (captures/<DD-MM-YYYY>.json), falling back to the file's mtime.
+    Returns a datetime.date, or None if neither source is usable."""
+    path = Path(path)
+    m = _CAPTURE_NAME_DATE_RE.search(path.name)
+    if m:
+        try:
+            return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            pass  # e.g. 99-99-2026 in the name — fall back to mtime
+    try:
+        return date.fromtimestamp(path.stat().st_mtime)
+    except OSError:
+        return None
+
+
 def latest_capture():
     """Newest captures/<DD-MM-YYYY>.json by embedded date, or None."""
     if not CAPTURES_DIR.exists():
@@ -520,6 +604,18 @@ def main(argv=None):
     cards = load_capture(capture_path)
     log.info("Loaded %d unique cards from %s", len(cards), capture_path)
 
+    # NAUKRI-02: make a stale capture impossible to miss (warn, never refuse).
+    cap_date = capture_file_date(capture_path)
+    cap_age_days = (date.today() - cap_date).days if cap_date else None
+    capture_is_stale = cap_age_days is not None and cap_age_days > STALE_CAPTURE_DAYS
+    if cap_date:
+        log.info("Capture dated %s (%d day(s) old)", cap_date.isoformat(), cap_age_days)
+    if capture_is_stale:
+        log.warning(
+            "STALE CAPTURE: %s is %d days old — jobs added will not be fresh; "
+            "run the browser capture per README", Path(capture_path).name,
+            cap_age_days)
+
     existing_df = load_existing(args.output)
     known_ids = set(existing_df["job_id"].dropna()) if existing_df is not None else set()
     cutoff = compute_cutoff(existing_df)
@@ -528,7 +624,7 @@ def main(argv=None):
 
     counters = {"scanned": 0, "excluded_old": 0, "excluded_out_of_scope": 0,
                 "needs_review": 0,
-                "new": 0, "duplicates": 0}
+                "new": 0, "duplicates": 0, "same_role_duplicates": 0}
     new_rows, review_log = [], []
 
     for job in cards:
@@ -546,19 +642,30 @@ def main(argv=None):
             if row is None:
                 counters["excluded_out_of_scope"] += 1
                 continue
+            # Transient tie-break key for dedupe_same_role (popped there).
+            try:
+                row["_created_ms"] = int(job.get("createdDate") or 0)
+            except (TypeError, ValueError):
+                row["_created_ms"] = 0
         except Exception as exc:  # never let one card crash the run
             log.warning("Skipping malformed card %s: %s", job.get("jobId"), exc)
             continue
 
+        known_ids.add(row["job_id"])
+        new_rows.append(row)
+        if args.limit is not None and len(new_rows) >= args.limit:
+            break
+
+    # NAUKRI-03: within THIS ingest batch only, collapse per-city reposts of
+    # the same role (title+company+city); job_id stays the cross-run key.
+    new_rows, counters["same_role_duplicates"] = dedupe_same_role(new_rows)
+    counters["new"] = len(new_rows)
+
+    for row in new_rows:
         if row["needs_review"] == "true":
             counters["needs_review"] += 1
             review_log.append({"job_id": row["job_id"], "title": row["title"],
                                "company": row["company"]})
-        known_ids.add(row["job_id"])
-        new_rows.append(row)
-        counters["new"] += 1
-        if args.limit is not None and counters["new"] >= args.limit:
-            break
 
     # ---- write rich cumulative CSV (source of truth) ----
     if new_rows:
@@ -569,6 +676,10 @@ def main(argv=None):
         for col in RICH_COLUMNS:
             if col not in combined.columns:
                 combined[col] = ""
+        # Recompute jd_too_short from the stored description for every row —
+        # idempotent, and it backfills pre-schema-change store rows for free.
+        combined["jd_too_short"] = combined["description"].fillna("").map(
+            flag_jd_too_short)
         combined = combined[RICH_COLUMNS]
         combined.to_csv(args.output, index=False)
         log.info("Wrote %s (%d total rows)", args.output, len(combined))
@@ -593,12 +704,23 @@ def main(argv=None):
         log.info("Wrote %s (%d titles to review)", NEEDS_REVIEW_CSV, len(review_df))
 
     print("\n===== Run summary =====")
+    if cap_date:
+        print("Capture ingested:         {} (dated {}, {} day(s) old)".format(
+            Path(capture_path).name, cap_date.isoformat(), cap_age_days))
+    else:
+        print("Capture ingested:         {} (date unknown)".format(
+            Path(capture_path).name))
+    if capture_is_stale:
+        print("*** WARNING: capture is {} days old — jobs added will not be "
+              "fresh; run the browser capture per README ***".format(cap_age_days))
     print("Cards scanned:            {:>5,}".format(counters["scanned"]))
     print("Excluded (older than {}): {:>3,}".format(cutoff, counters["excluded_old"]))
     print("Excluded (out of scope):  {:>5,}".format(counters["excluded_out_of_scope"]))
     print("Flagged needs_review:     {:>5,}".format(counters["needs_review"]))
     print("New jobs added:           {:>5,}".format(counters["new"]))
     print("Duplicates skipped:       {:>5,}".format(counters["duplicates"]))
+    print("Skipped (same-role duplicate): {:>1,}".format(
+        counters["same_role_duplicates"]))
 
 
 if __name__ == "__main__":
