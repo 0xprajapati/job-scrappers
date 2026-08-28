@@ -68,6 +68,79 @@
 > existing `seen_old_ids.csv`, and reversible because the full row is kept.
 > `publichealthcareer` and `simplyhired` need no such list: their listing
 > payloads already carry everything the classifier reads.
+>
+> **2026-08-28: 18 NEW Workday CXS employer scrapers**, all built directly on
+> the standard (no migration owed) — `syneoshealth`, `accenture`, `labcorp`,
+> `novartis`, `thermofisher`, `sanofi`, `astrazeneca`, `clarivate`,
+> `clarioclinical`, `jj`, `medtronic`, `alcon`, `elanco`, `baxter`, `philips`,
+> `cencora`, `msd`, `springernature`, `stryker`. Sourcing rationale and the
+> shared protocol are documented in `docs/HOW-SCRAPERS-WORK.md` (Group E); the
+> per-tenant registry is `instructions/workday-tenant-probe.csv`. Each runs
+> `classify_job` as the sole keep/drop authority, writes the standard rich +
+> `CLUB_COLUMNS` outputs, and carries per-tenant `parse_city` deviations only.
+> First-run keep counts (7-day window, capped first runs): astrazeneca 82,
+> syneoshealth 82, msd 45, thermofisher 26, sanofi 29, jj 19, novartis 18,
+> clarioclinical 17, medtronic 9, alcon 8, philips 7, elanco 6, cencora 5,
+> baxter 4, labcorp 2, stryker 2, springernature 1, clarivate 0.
+>
+> Two duplicate builds (`bristolmyerssquibb`, `premierresearch`) were retired
+> the same day in favor of the concurrently-built `bms` and `premier_research`.
+>
+> **Three classifier observations from these runs, for a future taxonomy pass**
+> (nothing was patched — the classifier's verdict was respected everywhere):
+> 1. **Trial-heavy descriptions pull non-clinical titles in.** "Principal
+>    Financial Analyst" (medtronic) and PPD finance/IT titles (thermofisher)
+>    were kept as Clinical Research off their descriptions; a publishing "Data
+>    Manager" (springernature) was kept as Clinical Data Management off the bare
+>    title; an SAP Utilities *billing* consultant (accenture) was kept as
+>    Medical Coding on the word "Billing".
+> 1b. **Regulatory-ops title variants miss.** Verified against the engine on
+>    ferring: "Regulatory Information Management Coordinator" is dropped while
+>    the same description titled "Regulatory Affairs Coordinator" returns
+>    `in_scope: True, Regulatory Affairs` — the family keys on the literal
+>    "Regulatory Affairs" and misses real regulatory-operations titles (RIM,
+>    labelling, publishing, submissions) that carry no such phrase.
+> 2. **Whole role classes have no family**, so entire boards read as near-zero
+>    yield: clinical-lab bench work (phlebotomist, specimen processor,
+>    histotechnician — labcorp ~1.3%) and journal editorial roles (BMC/Nature
+>    associate and chief editors — springernature dropped all 7 in-window).
+>    **Elsevier refines that second one and it is the sharpest single finding
+>    here:** the engine keys on the literal word *scientific*, not the role.
+>    "Scientific Editor" / "Associate Scientific Editor" / "Senior Scientific
+>    Editor, Cell Reports Medicine" are all KEPT as Medical Writer, while
+>    "Associate **Clinical** Editor", "Journal Manager", "Managing Editor",
+>    "Publisher" and "Peer Review Manager" are dropped — so the more clinically
+>    relevant title is the one that fails. springernature's wholesale drop was
+>    a sampling artifact of which titles happened to be in window.
+>    A third candidate, now measured: **GMP quality / QC / analytical-lab roles
+>    at pharma manufacturing sites**. A `--since 2026-06-01` backfill of endo
+>    fetched every live posting and kept **0 of 86**; re-running `classify_job`
+>    over all 71 archived drops confirmed 0 would be kept on re-check. But
+>    **18 of those 71 are pharma QA/QC and analytical roles** — Sr Analyst
+>    Quality Control, Analyst Microbiology (QC), Analyst Global Stability ×2,
+>    QA Senior Associate, Sr Mgr Quality Assurance, Research Associate
+>    Analytical R&D, Quality Tech II/III, Operations Quality Engineer II ×2 —
+>    concentrated at Pudupakkam (India) and Raleigh. **If the taxonomy ever
+>    admits GMP quality/analytical work, that board goes from zero to roughly a
+>    quarter in scope**, and lonza (0 of 112, same shape) with it. All of these
+>    A fourth, from gehealthcare: **medical-device clinical-applications and
+>    biomedical-service roles** — 25 of 188 drops are "Clinical Applications
+>    Specialist - CT", "MRI Applications Specialist", "Nuclear Medicine Clinical
+>    Application Specialist", "Clinical Education Specialist - MRI",
+>    "Biomedical Technician I/II/III", "Radiation Safety Manager". This family
+>    exists only on device-vendor boards, so the CRO-shaped taxonomy has never
+>    had to rule on it. All of these
+>    are scope decisions, not defects; every row is reversible from
+>    `out-of-scope.csv`, so the remedy after any taxonomy change is a `--since`
+>    re-run, not a re-crawl.
+> 3. **`looks_non_english` is FR/ES/DE only — and this one is already live in
+>    published data, not hypothetical.** `lonza_jobs.csv` currently holds a
+>    Tokyo "Regulatory Affairs Specialist" whose description is wholly Japanese
+>    with `needs_review = False`, so it would reach the club untranslated. The
+>    same gap is confirmed on jj and alcon (JA/ZH), accenture (PT), sandoz (PL,
+>    a kept row), and alvotech (Icelandic). A CJK-codepoint check plus PT/PL
+>    stopwords would close it; until then the "nothing publishes untranslated"
+>    guarantee only holds for French, Spanish and German.
 
 
 **All 32 in-scope scrapers were migrated, tested and reclassified.** 13 of

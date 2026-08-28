@@ -1,0 +1,508 @@
+{
+ "refineSearch": {
+  "status": 200,
+  "totalHits": 6,
+  "data": {
+   "jobs": [
+    {
+     "subCategory": "Medical Science Liaison",
+     "ml_skills": [
+      "의료 전문가 관계 구축",
+      "의료 커뮤니케이션",
+      "의료 지식",
+      "과학적 정보 교환",
+      "팀 협업",
+      "임상 시험 규정 이해",
+      "의료 활동 기획",
+      "임상 연구 이해",
+      "전략적 사고",
+      "의료 생태계 이해",
+      "디지털 도구 활용",
+      "문제 해결 능력",
+      "과학적 협력 구축",
+      "고객 참여 전략",
+      "의료 분야 경험"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "우리는 치료 분야 전문가와의 관계를 구축하고 과학적 정보를 교환할 필드 메디컬 파트너를 찾고 있습니다. 의료 분야에서의 경험과 전략적 사고 능력을 갖춘 분들의 많은 지원 바랍니다. 함께 혁신적인 의료 솔루션을 만들어 나가요!",
+     "state": "Seoul",
+     "siteType": "external",
+     "multi_category": [
+      "Medical Affairs"
+     ],
+     "reqId": "202608-121963",
+     "grade": "SE6",
+     "city": "Seoul",
+     "latitude": "37.566",
+     "multi_location": [
+      "Seoul, Seoul, Korea, Republic of"
+     ],
+     "address": "Seoul, 100-011 Seoul Seoul, Korea, Republic of",
+     "applyUrl": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Seoul/Field-Medical-Partner_202608-121963/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "우리는 치료 분야 전문가와의 관계를 구축하고 과학적 정보를 교환할 필드 메디컬 파트너를 찾고 있습니다. 의료 분야에서의 경험과 전략적 사고 능력을 갖춘 분들의 많은 지원 바랍니다. 함께 혁신적인 의료 솔루션을 만들어 나가요!",
+      "descriptionTeaser_first200": "Affiliate: Roche Pharma Korea . Cluster: Medical Partnership . Work location: Seoul, South Korea. Your key responsibilities. The Field Medical Partner is a field-based medical expert responsible fo...",
+      "descriptionTeaser_keyword": "Affiliate: Roche Pharma Korea. Cluster: Medical Partnership. Work location: Seoul, South Korea. Your key responsibilities. The Field Medical Partner is a field-based medical expert responsible for fos...",
+      "descriptionTeaser_ats": "Affiliate: Roche Pharma Korea Cluster: Medical Partnership Work location: Seoul, South KoreaYour key responsibilitiesThe Field Medical Partner is a field-based medical expert responsible for fostering"
+     },
+     "externalApply": false,
+     "cityState": "Seoul, Seoul",
+     "country": "Korea, Republic of",
+     "visibilityType": "External",
+     "longitude": "126.9784",
+     "jobId": "202608-121963",
+     "locale": "en_GLOBAL",
+     "title": "Field Medical Partner_Ophtha",
+     "jobSeqNo": "ROCHGLOBAL202608121963EXTERNALENGLOBAL",
+     "postedDate": "2026-08-28T00:00:00.000+0000",
+     "dateCreated": "2026-08-27T03:16:51.150+0000",
+     "cityStateCountry": "Seoul, Seoul, Korea, Republic of",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Seoul, Seoul, Korea, Republic of",
+     "category": "Medical Affairs",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": 126.9784,
+        "lat": 37.566
+       },
+       "location": "Seoul, Seoul, Korea, Republic of"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Medical Affairs"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "subCategory": "Research Informatics",
+     "ml_skills": [
+      "nextflow",
+      "ngs data processing pipelines",
+      "cap/clia compliance",
+      "python",
+      "r",
+      "c++",
+      "linux",
+      "statistical analysis",
+      "workflow optimization",
+      "clinical diagnostic development",
+      "assay development",
+      "software engineering",
+      "docker",
+      "singularity",
+      "cloud environments",
+      "statistical qc metrics",
+      "cap/clia audits",
+      "ai coding tools",
+      "workflow managers",
+      "quality management systems",
+      "cross-functional collaboration",
+      "git",
+      "continuous integration",
+      "unit testing",
+      "modular architecture",
+      "stakeholder management",
+      "technical specification drafting"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "We are seeking a Principal Bioinformatics Scientist I to lead the design and optimisation of advanced NGS data processing pipelines and algorithms. Collaborate with cross-functional teams to deliver high-accuracy molecular diagnostics. Ideal for experienced bioinformatics professionals with expertise in computational biology and clinical diagnostic validation.",
+     "state": "Ontario",
+     "siteType": "external",
+     "multi_category": [
+      "Research & Development"
+     ],
+     "reqId": "202608-122021",
+     "grade": "SE6",
+     "city": "Mississauga",
+     "latitude": "43.5789",
+     "multi_location": [
+      "Mississauga, Ontario, Canada"
+     ],
+     "address": "123 Main Street, Mississauga, ON L4T 0A6, Canada",
+     "applyUrl": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Mississauga/Principal-Bioinformatics-Scientist-I_202608-122021-1/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "We are seeking a Principal Bioinformatics Scientist I to lead the design and optimisation of advanced NGS data processing pipelines and algorithms. Collaborate with cross-functional teams to deliver high-accuracy molecular diagnostics. Ideal for experienced bioinformatics professionals with expertise in computational biology and clinical diagnostic validation.",
+      "descriptionTeaser_first200": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted...",
+      "descriptionTeaser_keyword": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted an...",
+      "descriptionTeaser_ats": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted a"
+     },
+     "externalApply": false,
+     "cityState": "Mississauga, Ontario",
+     "country": "Canada",
+     "visibilityType": "External",
+     "longitude": "-79.6583",
+     "jobId": "202608-122021",
+     "locale": "en_GLOBAL",
+     "title": "Principal Bioinformatics Scientist I",
+     "jobSeqNo": "ROCHGLOBAL202608122021EXTERNALENGLOBAL",
+     "postedDate": "2026-08-27T00:00:00.000+0000",
+     "dateCreated": "2026-08-26T17:17:20.778+0000",
+     "cityStateCountry": "Mississauga, Ontario, Canada",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Mississauga, Ontario, Canada",
+     "category": "Research & Development",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": -79.6583,
+        "lat": 43.5789
+       },
+       "location": "Mississauga, Ontario, Canada"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Research & Development"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "subCategory": "General Regulatory Affairs",
+     "ml_skills": [
+      "regulatory affairs",
+      "regulatory submissions",
+      "stakeholder management",
+      "quality standards",
+      "project management",
+      "continuous improvement",
+      "communication skills",
+      "problem solving",
+      "data analysis",
+      "environmental regulations",
+      "team collaboration",
+      "leadership"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "We are looking for a Regulatory Affairs Manager to oversee regulatory document and submission compilation, develop global regulatory submissions, and manage stakeholder relationships. Join Roche to contribute to innovative healthcare solutions and make a significant impact in the field of diagnostics.",
+     "state": "Indiana",
+     "siteType": "external",
+     "multi_category": [
+      "Regulatory Affairs"
+     ],
+     "reqId": "202607-119375",
+     "grade": "SE7",
+     "city": "Indianapolis",
+     "latitude": "39.76838",
+     "multi_location": [
+      "Indianapolis, Indiana, United States of America",
+      "Sant Cugat del Vallès, Barcelona, Spain",
+      "Penzberg, Bavaria, Germany"
+     ],
+     "address": "123 Main St., Indianapolis, IN 46077, United States of America",
+     "applyUrl": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Indianapolis/Regulatory-Affairs-Manager--Companion-Diagnostics_202607-119375-1/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "We are looking for a Regulatory Affairs Manager to oversee regulatory document and submission compilation, develop global regulatory submissions, and manage stakeholder relationships. Join Roche to contribute to innovative healthcare solutions and make a significant impact in the field of diagnostics.",
+      "descriptionTeaser_ats": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections,  where you are valued, accepted a",
+      "descriptionTeaser_keyword": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted an...",
+      "descriptionTeaser_first200": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted..."
+     },
+     "externalApply": false,
+     "cityState": "Indianapolis, Indiana",
+     "country": "United States of America",
+     "visibilityType": "External",
+     "longitude": "-86.15804",
+     "jobId": "202607-119375",
+     "locale": "en_GLOBAL",
+     "title": "Regulatory Affairs Manager, Companion Diagnostics",
+     "jobSeqNo": "ROCHGLOBAL202607119375EXTERNALENGLOBAL",
+     "postedDate": "2026-08-27T00:00:00.000+0000",
+     "dateCreated": "2026-07-24T21:58:43.823+0000",
+     "cityStateCountry": "Indianapolis, Indiana, United States of America",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Indianapolis, Indiana, United States of America",
+     "category": "Regulatory Affairs",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": -86.15804,
+        "lat": 39.76838
+       },
+       "location": "Indianapolis, Indiana, United States of America"
+      },
+      {
+       "latlong": {
+        "lon": 2.08611,
+        "lat": 41.47063
+       },
+       "location": "Sant Cugat del Vallès, Barcelona, Spain"
+      },
+      {
+       "latlong": {
+        "lon": 11.377,
+        "lat": 47.75293
+       },
+       "location": "Penzberg, Bavaria, Germany"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Regulatory Affairs"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "subCategory": "Medical Information/Scientific Affairs",
+     "ml_skills": [
+      "gmc registration",
+      "medical affairs",
+      "cardiac health",
+      "women's health",
+      "evidence generation",
+      "scientific communication",
+      "stakeholder management",
+      "project leadership",
+      "clinical research",
+      "diagnostic regulatory frameworks",
+      "governance frameworks",
+      "kol engagement",
+      "investigator initiated studies",
+      "matrix team leadership",
+      "healthcare partnerships",
+      "medical review",
+      "policy submissions",
+      "evidence-based practice",
+      "scientific evidence interpretation",
+      "stakeholder collaboration",
+      "market access",
+      "health economics",
+      "marketing",
+      "commercial",
+      "business development"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Seeking a Medical Manager for Cardiac and Women’s Health to lead medical strategy and evidence generation within Roche Diagnostics. Drive clinical innovation and build trusted partnerships across healthcare. Ideal for a GMC-registered physician or PhD with experience in Cardiac and Women’s Health.",
+     "state": "West Sussex",
+     "siteType": "external",
+     "multi_category": [
+      "Medical Affairs"
+     ],
+     "reqId": "202608-121378",
+     "grade": "SE6",
+     "city": "Burgess Hill",
+     "latitude": "50.95843",
+     "multi_location": [
+      "Burgess Hill, West Sussex, United Kingdom"
+     ],
+     "address": "Burgess Hill, Burgess Hill, West Sussex, MK40 1SP, United Kingdom",
+     "applyUrl": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Burgess-Hill/Medical-Manager-Cardiac-and-Women-s-Health_202608-121378-1/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Seeking a Medical Manager for Cardiac and Women’s Health to lead medical strategy and evidence generation within Roche Diagnostics. Drive clinical innovation and build trusted partnerships across healthcare. Ideal for a GMC-registered physician or PhD with experience in Cardiac and Women’s Health.",
+      "descriptionTeaser_keyword": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted an...",
+      "descriptionTeaser_ats": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections,  where you are valued, accepted a",
+      "descriptionTeaser_first200": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted..."
+     },
+     "externalApply": false,
+     "cityState": "Burgess Hill, West Sussex",
+     "country": "United Kingdom",
+     "visibilityType": "External",
+     "longitude": "-0.13287",
+     "jobId": "202608-121378",
+     "locale": "en_GLOBAL",
+     "title": "Medical Manager Cardiac and Women’s Health",
+     "jobSeqNo": "ROCHGLOBAL202608121378EXTERNALENGLOBAL",
+     "postedDate": "2026-08-25T00:00:00.000+0000",
+     "dateCreated": "2026-08-18T11:14:45.232+0000",
+     "cityStateCountry": "Burgess Hill, West Sussex, United Kingdom",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Burgess Hill, West Sussex, United Kingdom",
+     "category": "Medical Affairs",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": -0.13287,
+        "lat": 50.95843
+       },
+       "location": "Burgess Hill, West Sussex, United Kingdom"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Medical Affairs"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "subCategory": "Medical Information/Scientific Affairs",
+     "type": "Full time",
+     "descriptionTeaser": "Join our team as a Country Medical Manager (Immunology) to drive strategic medical engagement and support Roche’s pipeline in China. Lead scientific expertise, shape integrated strategies, and build trusted partnerships with key stakeholders. Ideal for candidates with strong medical backgrounds and experience in pharmaceutical or bioscience roles.",
+     "state": "Shanghai",
+     "siteType": "external",
+     "multi_category": [
+      "Medical Affairs"
+     ],
+     "reqId": "202608-121148",
+     "grade": "SE7",
+     "city": "Shanghai",
+     "latitude": "31.22222",
+     "multi_location": [
+      "Shanghai, Shanghai, China's Mainland"
+     ],
+     "address": "123 Main Street, 123456 Shanghai, China",
+     "applyUrl": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Shanghai/Country-Medical-Manager--Immunology-_202608-121148/apply",
+     "externalApply": false,
+     "cityState": "Shanghai, Shanghai",
+     "country": "China's Mainland",
+     "visibilityType": "External",
+     "longitude": "121.45806",
+     "jobId": "202608-121148",
+     "locale": "en_GLOBAL",
+     "title": "Country Medical Manager (Immunology)",
+     "jobSeqNo": "ROCHGLOBAL202608121148EXTERNALENGLOBAL",
+     "postedDate": "2026-08-21T00:00:00.000+0000",
+     "dateCreated": "2026-08-21T10:31:19.392+0000",
+     "cityStateCountry": "Shanghai, Shanghai, China's Mainland",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Shanghai, Shanghai, China's Mainland",
+     "category": "Medical Affairs",
+     "ml_skills": [
+      "clinical medicine",
+      "good clinical practice",
+      "regulatory affairs",
+      "health technology assessment",
+      "evidence generation",
+      "interventional studies",
+      "non-interventional studies",
+      "real-world evidence",
+      "good pharmacovigilance practice",
+      "medical practice adoption",
+      "strategic planning",
+      "stakeholder engagement",
+      "medical education",
+      "customer engagement",
+      "portfolio management",
+      "ai literacy",
+      "data analysis",
+      "scientific advisory",
+      "clinical development",
+      "resource allocation",
+      "evidence gap analysis",
+      "medical practice differentiation",
+      "strategic advocacy",
+      "cross-functional collaboration",
+      "medical practice training"
+     ],
+     "ml_job_parser": {
+      "descriptionTeaser": "Join our team as a Country Medical Manager (Immunology) to drive strategic medical engagement and support Roche’s pipeline in China. Lead scientific expertise, shape integrated strategies, and build trusted partnerships with key stakeholders. Ideal for candidates with strong medical backgrounds and experience in pharmaceutical or bioscience roles.",
+      "descriptionTeaser_first200": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted...",
+      "descriptionTeaser_keyword": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted an...",
+      "descriptionTeaser_ats": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted a"
+     },
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": 121.45806,
+        "lat": 31.22222
+       },
+       "location": "Shanghai, Shanghai, China's Mainland"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Medical Affairs"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "subCategory": "General Regulatory Affairs",
+     "ml_skills": [
+      "薬事申請",
+      "医療機器",
+      "生化学",
+      "免疫学",
+      "微生物学",
+      "論理的思考力",
+      "コミュニケーション力",
+      "プロジェクト管理",
+      "データ解釈",
+      "英語力",
+      "チームワーク",
+      "オーナーシップ"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "私たちは、薬事スペシャリストとして、医療機器や体外診断用医薬品の許認可申請を担当し、患者がアクセスできる環境を確保する役割を担う方を求めています。",
+     "state": "Tokyo",
+     "siteType": "external",
+     "multi_category": [
+      "Regulatory Affairs"
+     ],
+     "reqId": "202604-109459",
+     "grade": "SE5",
+     "city": "Tokyo",
+     "latitude": "35.6895",
+     "multi_location": [
+      "Tokyo, Tokyo, Japan"
+     ],
+     "address": "Shinagawa Season Terrace, 1-2-70, Tokyo, Tokyo, 100-0001, Japan",
+     "applyUrl": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Tokyo/Regulatory-Affairs-Specialist_202604-109459/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "私たちは、薬事スペシャリストとして、医療機器や体外診断用医薬品の許認可申請を担当し、患者がアクセスできる環境を確保する役割を担う方を求めています。",
+      "descriptionTeaser_first200": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted...",
+      "descriptionTeaser_keyword": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted an...",
+      "descriptionTeaser_ats": "At Roche you can show up as yourself, embraced for the unique qualities you bring. Our culture encourages personal expression, open dialogue, and genuine connections, where you are valued, accepted a"
+     },
+     "externalApply": false,
+     "cityState": "Tokyo, Tokyo",
+     "country": "Japan",
+     "visibilityType": "External",
+     "longitude": "139.69171",
+     "jobId": "202604-109459",
+     "locale": "en_GLOBAL",
+     "title": "Regulatory Affairs Specialist",
+     "jobSeqNo": "ROCHGLOBAL202604109459EXTERNALENGLOBAL",
+     "postedDate": "2026-07-23T00:00:00.000+0000",
+     "dateCreated": "2026-04-14T03:14:13.577+0000",
+     "cityStateCountry": "Tokyo, Tokyo, Japan",
+     "jobVisibility": [
+      "external"
+     ],
+     "location": "Tokyo, Tokyo, Japan",
+     "category": "Regulatory Affairs",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": 139.69171,
+        "lat": 35.6895
+       },
+       "location": "Tokyo, Tokyo, Japan"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Regulatory Affairs"
+      }
+     ],
+     "badge": ""
+    }
+   ]
+  }
+ }
+}

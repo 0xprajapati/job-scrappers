@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+16:36:34 INFO robots.txt check passed for https://veristat.wd503.myworkdayjobs.com
+16:36:34 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+16:36:36 INFO [Veristatcareers] board lists 19 open postings
+16:36:42 INFO [Veristatcareers] walked the whole board (19 postings)
+16:36:42 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/veristat/veristat_jobs.csv (2 total rows)
+16:36:42 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/veristat.csv (2 rows, HealthCareers.club schema)
+16:36:42 INFO Moved 1 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/veristat/out-of-scope.csv (1 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                 19
+Detail records fetched:            3
+Excluded (out of scope):           1  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 16
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    2
+Duplicates skipped:                0
+Detail failures:                   0

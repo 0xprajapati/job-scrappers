@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+17:52:53 INFO robots.txt check passed for https://gsknch.wd3.myworkdayjobs.com
+17:52:53 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+17:52:56 INFO [GSKCareers] board lists 373 open postings
+17:58:23 INFO [GSKCareers] 2 consecutive pages outside the window — stopping at offset 200
+17:58:23 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/haleon/haleon_jobs.csv (2 total rows)
+17:58:23 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/haleon.csv (2 rows, HealthCareers.club schema)
+17:58:23 INFO Moved 141 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/haleon/out-of-scope.csv (141 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                200
+Detail records fetched:          143
+Excluded (out of scope):         141  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 57
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    2
+Duplicates skipped:                0
+Detail failures:                   0

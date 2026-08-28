@@ -1,0 +1,23 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+17:35:10 INFO robots.txt check passed for https://philips.wd3.myworkdayjobs.com
+17:35:10 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+17:35:14 INFO [jobs-and-careers] board lists 830 open postings
+17:35:15 WARNING HTTP 406 for https://philips.wd3.myworkdayjobs.com/wday/cxs/philips/jobs-and-careers — skipping
+17:35:15 WARNING [jobs-and-careers] no detail for job_id=587671
+17:42:44 INFO [jobs-and-careers] 2 consecutive pages outside the window — stopping at offset 220
+17:42:44 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/philips/philips_jobs.csv (7 total rows)
+17:42:44 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/philips.csv (7 rows, HealthCareers.club schema)
+17:42:44 INFO Moved 167 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/philips/out-of-scope.csv (167 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                220
+Detail records fetched:          175
+Excluded (out of scope):         167  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 45
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    7
+Duplicates skipped:                0
+Detail failures:                   1

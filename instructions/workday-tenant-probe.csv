@@ -1,0 +1,63 @@
+tenant,brand,host,site,alt_sites,pb_links,board_total,robots,sample_title,sample_posted_on,detail_start_date,detail_job_family,status,notes,built_as,build_status,kept_first_run
+accenture,Accenture,accenture.wd103.myworkdayjobs.com,AccentureCareers,,293,2000,http 406,KYC Investigator,Posted Today,2026-08-28,,OK,"ORDERING UNSOUND: listing is NOT newest-first (probe 2026-08-28: India facet offset0=8d, offset100=3d, offset300=18d); total=2000 exactly is a DISPLAY CAP, real board bigger. Scraper walks capped global view + India facet (locationCountry bc33aa3152ec42d4995f4791a106ed09) with early-stop disabled.",accenture,"built; first run IN PROGRESS (full two-walk crawl, ~70-90 min)",
+syneoshealth,Syneos Health,syneoshealth.wd12.myworkdayjobs.com,Syneos_Health_External_Site,,267,658,http 406,Clinical Operation Specialist (1-year contract) (Fresh gradu,Posted Today,2026-08-28,,OK,,syneoshealth,built,82
+labcorp,Labcorp,labcorp.wd1.myworkdayjobs.com,External,,247,1652,http 406,Quality Engineer - Qualified Person,Posted Today,2026-08-28,,OK,,labcorp,built,2
+bristolmyerssquibb,Bristol Myers Squibb,bristolmyerssquibb.wd5.myworkdayjobs.com,BMS,,192,677,http 406,Senior Specialist - QC Microbiology,Posted Today,2026-08-28,,OK,,bms,owned by concurrent session (job-scrappers-90); my duplicate retired 2026-08-28,
+thermofisher,Thermo Fisher Scientific,thermofisher.wd5.myworkdayjobs.com,ThermoFisherCareers,,170,3204,http 406,Senior Account Director Business Development (Medical Commun,Posted Today,2026-08-28,,OK,,thermofisher,built,26
+novartis,Novartis,novartis.wd3.myworkdayjobs.com,Novartis_Careers,,167,959,http 406,"Principal Scientist I/II, Oligonucleotide Chemistry & Innova",Posted Today,2026-08-28,,OK,,novartis,built,18
+sanofi,Sanofi,sanofi.wd3.myworkdayjobs.com,SanofiCareers,OpellaCareers,135,789,http 406,Launch Lead T1D,Posted Today,2026-08-28,,OK,,sanofi,built,29
+gsk,GSK,gsk.wd5.myworkdayjobs.com,GSKCareers,,108,748,http 406,Beca In Vitro - Biología Molecular,Posted Today,2026-08-28,,OK,,gsk,"owned by concurrent session (job-scrappers-90) — Phenom route, not this CXS build",
+astrazeneca,AstraZeneca,astrazeneca.wd3.myworkdayjobs.com,Careers,,96,1233,http 406,Data Health Population Specialist,Posted Today,2026-08-28,,OK,,astrazeneca,built,82
+pfizer,Pfizer,pfizer.wd1.myworkdayjobs.com,PfizerCareers,,87,561,http 406,"Sr. Director, Cloud and Infrastructure Transformation",Posted 4 Days Ago,2026-08-24,,OK,,pfizer,owned by concurrent session (job-scrappers-90),
+clarivate,Clarivate,clarivate.wd3.myworkdayjobs.com,Clarivate_Careers,,83,160,http 406,Senior Software Engineer (Java),Posted Today,2026-08-28,,OK,,clarivate,built,3
+clarioclinical,Clario,clarioclinical.wd1.myworkdayjobs.com,clarioclinical_careers,,81,77,http 406,Senior Full Stack Software Engineer,Posted Today,2026-08-28,,OK,,clarioclinical,built,17
+amgen,Amgen,amgen.wd1.myworkdayjobs.com,Careers,,75,1830,http 406,Senior Manager Process Development (MSAT),Posted Today,2026-08-28,,OK,,amgen,owned by concurrent session (job-scrappers-90),
+medtronic,Medtronic,medtronic.wd1.myworkdayjobs.com,MedtronicCareers,,65,1137,http 406,,,http 406,,OK,,medtronic,built,9
+jj,Johnson & Johnson,jj.wd5.myworkdayjobs.com,JJ,,63,1727,http 406,Assistant Manager-Customer Training,Posted Today,2026-08-28,,OK,,jj,built,19
+premierresearch,Premier Research,premierresearch.wd12.myworkdayjobs.com,PremierResearch,,59,73,http 406,Site Payment Specialist (Fixed Term 6 Months),Posted 17 Days Ago,2026-08-11,,OK,,premier_research,owned by concurrent session; my duplicate retired 2026-08-28,
+myhrabc,Cencora,myhrabc.wd5.myworkdayjobs.com,Global,,42,968,http 406,Warehouse Associate,Posted Yesterday,2026-08-27,,OK,,cencora,built,5
+elanco,Elanco,elanco.wd5.myworkdayjobs.com,External_Career,,40,371,http 406,Bio Manufacturing Operator - Night shift,Posted 30+ Days Ago,2026-04-30,,OK,,elanco,built,6
+baxter,Baxter,baxter.wd1.myworkdayjobs.com,baxter,,38,565,http 406,Distributor & Channel Sales Specialist DACH (m/w/d),Posted Today,2026-08-28,,OK,,baxter,built,4
+alcon,Alcon,alcon.wd5.myworkdayjobs.com,careers_alcon,,34,393,http 406,Senior Associate R&D Quality,Posted Today,2026-08-28,,OK,,alcon,built,8
+roche,Roche,roche.wd3.myworkdayjobs.com,roche-ext,,28,1208,http 406,Process Technician,Posted Today,2026-08-28,,OK,,roche,owned by concurrent session (job-scrappers-90),
+philips,Philips,philips.wd3.myworkdayjobs.com,jobs-and-careers,,20,829,http 406,"Internship: Content and Engagement (Bachelor, non-thesis)",Posted Today,2026-08-28,,OK,,philips,built,7
+lilly,,lilly.wd115.myworkdayjobs.com,LLY,,19,608,http 406,Principal Study Build Programmer,Posted Today,2026-08-28,,OK,,lilly,owned by concurrent session (job-scrappers-90),
+springernature,Springer Nature,springernature.wd3.myworkdayjobs.com,SpringerNatureCareers,,18,66,http 406,Senior Financial Analyst - Cash Flow,Posted Yesterday,2026-08-27,,OK,,springernature,built,1
+abbott,,abbott.wd5.myworkdayjobs.com,abbottcareers,,16,,http 406,,,,,FAIL ConnectTimeout,,,"not built — probe ConnectTimeout, needs site-slug hunt",
+gsknch,Haleon,gsknch.wd3.myworkdayjobs.com,GSKCareers,,14,370,http 406,Senior Data Scientist,Posted Today,2026-08-28,,OK,,haleon,built,2
+azelis,Azelis,azelis.wd3.myworkdayjobs.com,Azelis_Careers,,13,63,http 406,Business Manager,Posted Today,2026-08-28,,OK,,,not built yet,
+zelis,Zelis,zelis.wd1.myworkdayjobs.com,ZelisCareers,,13,98,http 406,Security Engineer - Email Security,Posted Today,2026-08-28,,OK,,,not built yet,
+kenvue,Kenvue,kenvue.wd5.myworkdayjobs.com,kenvue,,13,190,http 406,Total Rewards Solution Intern,Posted Today,2026-08-28,,OK,,kenvue,built,4
+sandoz,,sandoz.wd103.myworkdayjobs.com,Sandoz_Careers,,12,344,http 406,Technical Services Lead (m/w/d),Posted Today,2026-08-28,,OK,,sandoz,built,3
+alvotech,Alvotech,alvotech.wd103.myworkdayjobs.com,Alvotech_Careers,,12,16,http 406,DPVI Technologist,Posted Today,2026-08-28,,OK,,alvotech,built,1
+stryker,Stryker,stryker.wd1.myworkdayjobs.com,StrykerCareers,,11,1186,http 406,"Senior Manager, Sales Compensation (EMEA & Latin America)",Posted 8 Days Ago,2026-08-20,,OK,,stryker,built,2
+msd,,msd.wd5.myworkdayjobs.com,SearchJobs,,10,887,http 406,"Senior Business Analyst – Automation, Analytics & AI",Posted Today,2026-08-28,,OK,,msd,built,60
+unilever,Unilever,unilever.wd3.myworkdayjobs.com,Unilever_Experienced_Professionals,,9,239,http 406,"OX & Digital Marketing Manager, Malaysia",Posted Today,2026-08-28,,OK,,,not built yet,
+vantive,Vantive,vantive.wd108.myworkdayjobs.com,Vantive,,8,277,http 406,Senior Stat & Tax Accountant,Posted Today,2026-08-28,,OK,,vantive,built,1
+resmed,ResMed,resmed.wd3.myworkdayjobs.com,ResMed_External_Careers,,8,224,http 406,Senior Platform Engineer (m/w/d),Posted Today,2026-08-28,,OK,,resmed,built,3
+worldwide,Worldwide Clinical Trials,worldwide.wd1.myworkdayjobs.com,External,,6,183,http 406,Senior Clinical Research Associate - CNS/Psychiatry - Northe,Posted Yesterday,2026-08-27,,OK,,worldwide_ct,owned by concurrent session (job-scrappers-90),
+piramalpharma,,piramalpharma.wd102.myworkdayjobs.com,PIRAMAL_EXTERNAL_CAREERS,,6,252,http 406,"Strategic Account Manager, Mid-Atlantic Territory",Posted 30+ Days Ago,2026-07-10,,OK,SKIPPED: peer session full-pull scored 0/235 titles in-scope (CDMO ops/QA/engineering).,,SKIPPED by decision — peer full pull scored 0/235 titles in scope (CDMO ops/QA/eng),0
+calyx,Perceptive,calyx.wd1.myworkdayjobs.com,Perceptive,,6,28,http 406,Business Development Director,Posted 30+ Days Ago,2026-06-19,,OK,,calyx,built,4
+trinitylifesciences,Trinity Life Sciences,trinitylifesciences.wd108.myworkdayjobs.com,Trinity,,6,76,http 406,Client Relationship Executive (CRE),Posted Yesterday,2026-08-27,,OK,,,not built yet,
+ferring,Ferring India,ferring.wd3.myworkdayjobs.com,Ferring,,6,79,http 406,高级医务代表,Posted Today,2026-08-28,,OK,,ferring,built,1
+solenis,Solenis,solenis.wd1.myworkdayjobs.com,Solenis,,5,568,http 406,Sales Rep I,Posted Today,2026-08-28,,OK,,,not built yet,
+rrhs,ACM,rrhs.wd5.myworkdayjobs.com,acm,ACM,5,12,http 406,Laboratory Scientist I,Posted 2 Days Ago,2026-08-26,,OK,,,not built yet,
+relx,Elsevier,relx.wd3.myworkdayjobs.com,ElsevierJobs,relx,4,135,http 406,Product Manager II,Posted Today,2026-08-28,,OK,,elsevier,built,1
+evolent,Evolent Health,evolent.wd1.myworkdayjobs.com,External,,4,29,http 406,Rheumatologist-Physician Reviewer-Radiology (Full-Time),Posted 30+ Days Ago,2026-07-27,,OK,,,not built yet,
+endo,Endo Pharma,endo.wd1.myworkdayjobs.com,External,,4,98,http 406,Sr Associate Packing & Visual Inspection,Posted 2 Days Ago,2026-08-26,,OK,,endo,built; 0 kept (verified genuine),0
+harriscomputer,Harris,harriscomputer.wd3.myworkdayjobs.com,1,GBS,3,233,http 406,"Clinical Training & Enablement Lead / Responsable, formation",Posted Yesterday,2026-08-27,,OK,,,not built yet,
+illumina,Illumina,illumina.wd1.myworkdayjobs.com,illumina-careers,,2,152,http 406,"Director, Strategic Finance (San Diego / Foster City)",Posted Yesterday,2026-08-27,,OK,,illumina,built; 0 kept (verified genuine),0
+gehc,GE HealthCare,gehc.wd5.myworkdayjobs.com,GEHC_ExternalSite,,2,958,http 406,HR Operations Associate (UK & IE),Posted 2 Days Ago,2026-08-26,,OK,,gehealthcare,built,2
+freseniusmedicalcare,Fresenius Medical Care,freseniusmedicalcare.wd3.myworkdayjobs.com,fme,,2,2000,http 406,Charge Registered Nurse - RN,Posted Today,2026-08-28,,OK,,freseniusmedicalcare,built,11
+lonza,Lonza,lonza.wd3.myworkdayjobs.com,Lonza_Careers,,2,682,http 406,Production Operator,Posted Today,2026-08-28,,OK,,lonza,built; seeded with --since 2026-06-01 (7-day window kept 0),9
+regeneron,Regeneron,regeneron.wd1.myworkdayjobs.com,Careers,,2,579,http 406,"Sr. Manager - Statistical Programming, Central Services",Posted Today,2026-08-28,,OK,,regeneron,built,25
+zeissgroup,ZEISS,zeissgroup.wd3.myworkdayjobs.com,External,,2,814,http 406,Software Test Automation Developer (f/m/x),Posted Today,2026-08-28,,OK,,,not built yet,
+kimberlyclark,Kimberly-Clark,kimberlyclark.wd1.myworkdayjobs.com,GLOBAL,,2,183,http 406,Continuous Improvement (CI) and Capabilities Manager,Posted Yesterday,2026-08-27,,OK,,,not built yet,
+hcahealthcare,Sarah Cannon Research Institute,wd3.myworkdaysite.com,hcacareers,,2,115,http 406,Senior Pharmacy Assistant - Patient Services,Posted Yesterday,2026-08-27,,OK,,hcahealthcare,built,1
+ntst,Netsmart,ntst.wd1.myworkdayjobs.com,Careers,,2,58,http 406,Solution Architect,Posted Yesterday,2026-08-27,,OK,,,not built yet,
+takeda,,takeda.wd3.myworkdayjobs.com,External,,2,,http 406,,,,,NO_POSTINGS,,,"not built — listing returned no postings, needs site-slug hunt",
+halma,,halma.wd3.myworkdayjobs.com,Halma,,2,155,http 406,M365 Analyst,Posted Today,2026-08-28,,OK,,,not built yet,
+quantiphi,Quantiphi,quantiphi.wd1.myworkdayjobs.com,Careers_at_Quantiphi,,1,119,http 406,Senior Software Developer,Posted Yesterday,2026-08-27,,OK,,,not built yet,
+r1rcm,R1 RCM,r1rcm.wd1.myworkdayjobs.com,R1RCM,,1,505,http 406,Part Time As Needed - Patient Registration Customer Service ,Posted 7 Days Ago,2026-08-21,,OK,,r1rcm,owned by concurrent session (job-scrappers-90),
+novozymes,Novonesis,novozymes.wd103.myworkdayjobs.com,Novozymes_Careers,,1,,http 406,,,,,NO_POSTINGS,,,"not built — listing returned no postings, needs site-slug hunt",
+havas,Havas Life,wd3.myworkdaysite.com,groupexternalcareersite,,1,401,http 406,"VP, Strategy",Posted Today,2026-08-28,,OK,,,"not built — on wd3.myworkdaysite.com, needs the /recruiting/ PUBLIC_JOB_URL override",
