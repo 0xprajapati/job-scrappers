@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+17:33:58 INFO robots.txt check passed for https://springernature.wd3.myworkdayjobs.com
+17:33:58 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+17:34:01 INFO [SpringerNatureCareers] board lists 66 open postings
+17:34:58 INFO [SpringerNatureCareers] walked the whole board (66 postings)
+17:34:58 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/springernature/springernature_jobs.csv (1 total rows)
+17:34:58 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/springernature.csv (1 rows, HealthCareers.club schema)
+17:34:58 INFO Moved 21 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/springernature/out-of-scope.csv (21 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                 66
+Detail records fetched:           22
+Excluded (out of scope):          21  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 44
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    1
+Duplicates skipped:                0
+Detail failures:                   0

@@ -1,0 +1,29 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+16:41:05 INFO robots.txt check passed
+16:41:07 INFO Facet check passed: ['Medical Affairs', 'Regulatory Affairs', 'Research & Development'] (live counts: {'Medical Affairs': 38, 'Regulatory Affairs': 20, 'Research & Development': 104} of 1205 total jobs)
+16:41:07 INFO Existing CSV has 0 known jobs (0 known out-of-scope); keeping jobs posted on/after 2026-08-21
+16:41:57 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/roche/roche_jobs.csv (23 total rows)
+16:41:57 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/roche.csv (23 rows, HealthCareers.club schema)
+16:41:57 INFO Moved 17 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/roche/out-of-scope.csv (17 total, kept for review)
+
+===== Run summary =====
+Crawl scope:                  category facets ['Medical Affairs', 'Regulatory Affairs', 'Research & Development']
+Cards scanned:                   100
+Excluded (out of scope):          17  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 60
+Flagged needs_review:              0
+  of which non-English JDs:        0
+New jobs added:                   23
+Duplicates skipped:                0
+Detail fetch failures:             0
+Top sub-categories (this run):
+     9  Non Clinical / Clinical Research
+     5  Non Clinical / Regulatory Affairs
+     4  Non Clinical / MSL
+     1  Non Clinical / Medical Writer
+     1  Non Clinical / Clinical Data Management
+     1  Public Health / Public Health Program Management
+     1  Non Clinical / Pharmacovigilance
+     1  Non Clinical / HEOR

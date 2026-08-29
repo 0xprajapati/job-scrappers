@@ -1,0 +1,57 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+16:34:21 INFO robots.txt check passed
+16:34:21 INFO Existing store: 3 in-scope + 72 out-of-scope known ids
+16:34:23 INFO Page 1   100 cards,  25 unseen (ids 1233467..1233415)
+16:34:25 INFO Page 2   100 cards, 100 unseen (ids 1233414..1233297)
+16:34:26 INFO Page 3   100 cards, 100 unseen (ids 1233296..1233192)
+16:34:28 INFO Page 4   100 cards, 100 unseen (ids 1233191..1233077)
+16:34:30 INFO Page 5   100 cards, 100 unseen (ids 1233076..1232969)
+16:34:32 INFO Page 6   100 cards, 100 unseen (ids 1232968..1232844)
+16:34:33 INFO Page 7   100 cards, 100 unseen (ids 1232843..1232715)
+16:34:35 INFO Page 8   100 cards, 100 unseen (ids 1232714..1232603)
+16:34:37 INFO Page 9   100 cards, 100 unseen (ids 1232601..1232454)
+16:34:39 INFO Page 10  100 cards, 100 unseen (ids 1232453..1232331)
+16:34:40 INFO Page 11  100 cards, 100 unseen (ids 1232330..1232145)
+16:34:42 INFO Page 12  100 cards, 100 unseen (ids 1232144..1231993)
+16:34:44 INFO Page 13  100 cards, 100 unseen (ids 1231992..1231849)
+16:34:45 INFO Page 14  100 cards, 100 unseen (ids 1231848..1231668)
+16:34:47 INFO Page 15  100 cards, 100 unseen (ids 1231666..1231528)
+16:34:49 INFO Page 16  100 cards, 100 unseen (ids 1231527..1231376)
+16:34:50 INFO Page 17  100 cards, 100 unseen (ids 1231375..1231186)
+16:34:52 INFO Page 18  100 cards, 100 unseen (ids 1231182..1231017)
+16:34:54 INFO Page 19  100 cards, 100 unseen (ids 1231016..1230619)
+16:34:55 INFO Page 20  100 cards, 100 unseen (ids 1230618..1230264)
+16:34:57 INFO Page 21  100 cards, 100 unseen (ids 1230256..1229891)
+16:34:58 INFO Page 22  100 cards, 100 unseen (ids 1229885..1229378)
+16:35:00 INFO Page 23  100 cards, 100 unseen (ids 1229359..1228695)
+16:35:01 INFO Page 24  100 cards, 100 unseen (ids 1228694..1227985)
+16:35:03 INFO Page 25  100 cards, 100 unseen (ids 1227979..1226851)
+16:35:05 INFO Page 26  100 cards, 100 unseen (ids 1226841..1225548)
+16:35:06 INFO Page 27  100 cards, 100 unseen (ids 1225547..1223390)
+16:35:08 INFO Page 28  100 cards, 100 unseen (ids 1223292..1221269)
+16:35:10 INFO Page 29  100 cards, 100 unseen (ids 1221268..1220939)
+16:35:11 INFO Page 30  100 cards, 100 unseen (ids 1220918..1216783)
+16:35:13 INFO Page 31  100 cards, 100 unseen (ids 1216761..1213108)
+16:35:15 INFO Page 32  100 cards, 100 unseen (ids 1212852..1204248)
+16:35:16 INFO Page 33  100 cards, 100 unseen (ids 1204246..1192488)
+16:35:18 INFO Page 34  100 cards, 100 unseen (ids 1192487..1178907)
+16:35:20 INFO Page 35  100 cards, 100 unseen (ids 1177843..694671)
+16:35:21 INFO Page 36  100 cards, 100 unseen (ids 694323..423559)
+16:35:22 INFO Page 37    6 cards,   6 unseen (ids 410529..137761)
+16:35:24 WARNING Page 38 has no job cards — tolerating (1/3)
+16:35:25 WARNING Page 39 has no job cards — tolerating (2/3)
+16:35:27 INFO 3 consecutive empty pages at page 40 — end of the board
+16:35:27 INFO Listing crawl: 40 pages, 3531 unseen candidates, 75 known cards
+18:47:19 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/impactpool/impactpool_jobs.csv (119 total rows)
+18:47:20 INFO Moved 3415 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/impactpool/out-of-scope.csv (3487 total, kept for review)
+18:47:20 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/26-08-2026/impactpool.csv (119 rows, HealthCareers.club schema)
+
+===== Run summary =====
+Unseen candidates found:    3,531
+Detail pages fetched:       3,531
+Excluded (out of scope):    3,415
+Flagged needs_review:           0
+New jobs added:               116
+Duplicate cards skipped:       75
+Detail fetch failures:          0

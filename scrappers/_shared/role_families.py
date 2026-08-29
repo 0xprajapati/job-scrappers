@@ -125,7 +125,9 @@ ROLE_FAMILIES = [
      # "CDM" alone is ambiguous — in revenue-cycle listings it is Charge
      # Description Master.
      r"clinical data|clinical database|clinical programm\w*|data manage\w*|"
-     r"data steward|\bedc\b|\bcdisc\b|\bsdtm\b|\badam\b|medidata|rave|"
+     # "rave" (Medidata Rave) needs boundaries: bare it matches inside
+     # "travel" and "Paravet" (found live on devnetjobsindia 2026-08-26).
+     r"data steward|\bedc\b|\bcdisc\b|\bsdtm\b|\badam\b|medidata|\brave\b|"
      r"\bcdm\b(?=.*(?:clinical|trial|study|edc))"),
 
     ("Public Health",
@@ -186,6 +188,24 @@ ROLE_FAMILIES = [
      r"site (?:management|contracts|activation)|\bcro\b|"
      r"research (?:associate|coordinator|nurse|physician)"),
 ]
+
+# Generic academic research-role phrases. Every university department hires
+# "Research Associates"; on their own these words are not evidence of
+# clinical research (2026-08-27 audit: 192 of 4,889 stored rows were admitted
+# on nothing else, including "Research Associate in Islamic Art"). The
+# Clinical Research family only wins outright when at least one OTHER
+# distinct term from its pattern also matched (clinical *, CRA, GCP,
+# trial/study *, CRO, principal investigator, research nurse/physician...).
+# Refinement: when the title itself still carries a health/disease word
+# (e.g. "Research Coordinator, VN Allergy & Asthma Research Centre" — a real
+# docthub row whose description was empty), the job is KEPT and flagged
+# needs_review instead of dropped, per master-spec §2.
+GENERIC_RESEARCH_RE = re.compile(
+    r"^research\s+(?:associate|coordinator)s?$", re.IGNORECASE)
+HEALTH_CONTEXT_TITLE_RE = re.compile(
+    r"health|medical|clinic|hospital|pharma|patient|disease|vaccin|"
+    r"allerg|asthma|cancer|oncolog|cardio|diabet|immunolog|virolog|"
+    r"epidemiolog|biomedical|drug|therapeut|nutrition", re.IGNORECASE)
 
 FAMILY_NAMES = [name for name, _ in ROLE_FAMILIES]
 _FAMILY_RES = [(name, re.compile(pat, re.IGNORECASE)) for name, pat in ROLE_FAMILIES]
@@ -264,6 +284,23 @@ def classify(title="", skills="", description=""):
             if v["score"] >= FAMILY_MIN_SCORE.get(k, MIN_SCORE_KEEP)
             and not (k in FAMILY_REQUIRE_TITLE_OR_SKILLS
                      and v["fields"] == ["description"])}
+    generic_only_cr = False
+    if "Clinical Research" in keep:
+        # A win built solely on generic research-role phrases is not
+        # evidence of clinical research (see GENERIC_RESEARCH_RE above).
+        if isinstance(skills, (list, tuple, set)):
+            skills = " , ".join(str(s) for s in skills)
+        cr_pattern = dict(_FAMILY_RES)["Clinical Research"]
+        matched = set()
+        for text in (title or "", skills or "",
+                     (description or "")[:DESCRIPTION_SCAN_CHARS]):
+            matched |= {m.group(0).lower() for m in cr_pattern.finditer(text)}
+        if matched and all(GENERIC_RESEARCH_RE.match(m) for m in matched):
+            if HEALTH_CONTEXT_TITLE_RE.search(title or ""):
+                generic_only_cr = True   # keep, but flag for review
+            else:
+                del keep["Clinical Research"]
+
     if not keep:
         return {"family": "", "score": 0, "confidence": "", "all_families": "",
                 "family_scores": "", "matched_in": "", "needs_review": False}
@@ -279,7 +316,8 @@ def classify(title="", skills="", description=""):
         "family_scores": ";".join("{}={}".format(k, keep[k]["score"])
                                   for k in ordered),
         "matched_in": "|".join(keep[family]["fields"]),
-        "needs_review": bool(OUT_OF_SCOPE_TITLE.search(title or "")),
+        "needs_review": bool(OUT_OF_SCOPE_TITLE.search(title or ""))
+        or (generic_only_cr and family == "Clinical Research"),
     }
 
 

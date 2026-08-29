@@ -309,6 +309,312 @@ JSON, `{}` body):
 
 ---
 
+## Group E — Employer boards on Workday CXS
+
+One employer per scraper, all speaking the same protocol, so these differ from
+each other only in a config block. The sourcing rationale: PharmaBharat's
+"apply" links were harvested from its cached archive and resolved to the
+career sites behind them (`HR_info_extraction/source_companies.csv`), which
+turned out to be ~60 Workday tenants — the upstream of a large share of the
+India clinical/PV/regulatory supply that pharmabharat reposts. Going to the
+tenants directly gets that supply fresher and whole. The per-tenant registry
+(host, site slug, live board size, robots status, quirks) is
+`instructions/workday-tenant-probe.csv`.
+
+**Naming: every Workday CXS scraper directory carries a `_wd` suffix**
+(`syneoshealth_wd/`, `iqvia_wd/`, …) so the platform is visible from the
+directory listing alone. The suffix is on the FOLDER only — each scraper's
+`SITE` constant, its rich CSV (`<site>_jobs.csv`) and its club export
+(`jobs_csv/<date>/<site>.csv`) all keep their original unsuffixed names, so
+nothing downstream of the club import changes.
+
+**The shared shape.** Workday's Candidate Experience Site API is public and
+unauthenticated: `POST /wday/cxs/{tenant}/{site}/jobs` with
+`{"appliedFacets":{},"limit":20,"offset":N,"searchText":""}` for the listing
+(`limit` is hard-capped at 20 — more answers HTTP 400), then one
+`GET /wday/cxs/{tenant}/{site}/job/{externalPath}` per requisition for the
+description, exact `startDate`, `timeType`, ISO country code and canonical
+URL. The listing's *relative* `postedOn` label ("Posted Today" … "Posted 30+
+Days Ago") decides the time window **before** a detail request is spent;
+out-of-window ids go to `seen_old_ids.csv` unfetched. Requests need a
+Mozilla-compatible UA and `Accept-Language` (bare clients get HTTP 406).
+Workday boards never show pay → `salary_raw = "Not Disclosed"`. `scrappers/iqvia_wd/`
+is the reference implementation; every entry below is that file with a changed
+config block, docstring, and the `parse_city` amendments noted next.
+
+**Ordering is not guaranteed — check it per tenant.** The template early-stops
+after 2 consecutive out-of-window pages, which is only sound on a newest-first
+board. Two tenants here are **not** newest-first (**accenture**, **cencora**);
+both disable the early stop and walk the listing to its end instead. Probe
+before trusting it by comparing `postedOn` at offsets 0/100/200.
+
+**A display cap and unsound ordering are two different findings — don't
+conflate them.** An exactly-round `total` (accenture and freseniusmedicalcare
+both report 2000) means the board is larger than it admits and its oldest tail
+is unreachable. That alone says nothing about ordering. accenture has both
+problems and needs the full walk; **freseniusmedicalcare has the cap but is
+strictly newest-first** (verified monotonic from offset 0 through 1980), so the
+cap can only hide rows past ~24 days — outside any window this scraper uses —
+and it correctly keeps the early stop. Test the two properties separately.
+Caps also fail differently: past the cap accenture's offsets end, while
+freseniusmedicalcare's **wrap to page 1**, so always probe one offset beyond a
+round `total`. Distinguish genuine non-monotonicity from the harmless **featured-row
+pinning** several boards do (stryker, elanco, premier_research, pfizer pin a
+few old rows at the top of page 1) — that only matters if page 1 holds no
+in-window rows at all.
+
+**The `myworkdaysite.com` variant needs a different public URL.** A few tenants
+sit on `wdN.myworkdaysite.com` rather than `{tenant}.wdN.myworkdayjobs.com`
+(**hcahealthcare**, **havas**, and parexel's site). The CXS API path is
+unchanged, but the public job URL is `/recruiting/{tenant}/{site}/job/…`, not
+`/{site}/job/…` — probe-verified on hcahealthcare, where the fleet-default shape
+answers **HTTP 500**. The template's default would still *write* those URLs, so
+the failure is silent and lands dead links in the club export. Set
+`PUBLIC_JOB_URL = HOST + "/recruiting/" + TENANT + "/{site}{external_path}"` on
+any tenant on this host and pin it with a test.
+
+> **Open bug — a transient 403 silently loses a job, fleet-wide.**
+> `_request_json` treats every 4xx as permanent (`retry` covers only
+> 429/5xx), but resmed observed 1 detail fetch in 40 returning **403 that
+> succeeded on a manual retry minutes later** — bot-defense, not a real
+> refusal. The posting is dropped, and because failed details are recorded in
+> *no* sidecar, the next run's tighter watermark never revisits it: the job is
+> gone permanently and nothing reports it beyond a `detail_failed` counter.
+> Two fixes, neither applied yet (the line is identical in every scraper, so
+> this wants one pass): add `403` to the retry set, and record failed ids
+> somewhere the next run re-tries. **Unowned as of 2026-08-28** — the second
+> session that had agreed to run the coordinated sweep ended before doing it,
+> so this is still open for whoever picks the fleet up next. A concrete cost
+> of leaving it: accenture's first run lost 12 requisitions to a DNS blip and
+> recorded them nowhere, and the same outage truncated its listing walk at row
+> 920 of 2000 while the run summary still printed as a success. Until then, treat a non-zero
+> `detail_failed` as lost data rather than noise — except on philips, where
+> exactly 1 is the known ghost-stub row.
+
+**`bulletFields[0]` is NOT always the requisition id — and trusting it silently
+merges jobs.** The template's `listing_job_id` takes the first bullet. On
+**solenis** the array is `[location, location, "R0029512"]`, so the dedup key
+would have been a *city name*: probed over 60 postings, 0 of 60 leading bullets
+were requisition-shaped and only 39 distinct values existed across them, which
+would have collapsed roughly a third of the board into duplicate rows **and**
+poisoned `known_ids` so that every later posting in an already-seen city was
+skipped as a duplicate. Nothing would have errored. solenis therefore takes the
+first *requisition-shaped* bullet (a compact token containing a digit) and falls
+through to the externalPath tail otherwise — a provable no-op where
+`bulletFields[0]` is already an id (`R1564910`, `885928` both match), so **this
+is the strongest candidate in this document for promotion into the template**;
+it is a latent landmine on any tenant nobody has probed yet.
+
+**acm hit the identical bug independently, and sharpens the fix.** Its bullets
+are `["ACM - Drugscan", "19044", "REQ_241093", "Horsham"]` — site label, US ZIP,
+requisition id, city — and its 12 postings share only 6 distinct leading
+bullets, so the stock version would have halved that board. Critically,
+**solenis's "contains a digit" predicate picks the ZIP `19044` here**, so the
+correct rule requires *both* a letter and a digit and no spaces: that rejects
+the digits-only ZIP, the space-carrying UK postcode ("YO10 4DZ") and the
+letters-only city, while still matching `R0029512` and `REQ_241093`. Anyone
+promoting this into the template should take **acm's** version, not solenis's.
+Two independent sightings make this a recurring Workday shape, not a quirk.
+
+**Company boilerplate can be lifted as a candidate's required experience.**
+`parse_experience_years` matches "N years of experience" anywhere in the
+description, so an employer blurb like "With 25 years of experience, Trinity is
+committed to…" stored `experience_min_years = 25` on a real row
+(trinitylifesciences JR100036). The second pattern in `_EXPERIENCE_RES` will
+misfire on any employer whose boilerplate states the company's age this way.
+Template-level, present in every scraper, and silent — the value is plausible,
+just about the wrong subject.
+
+**Two paging traps.** `total` is trustworthy only on the offset=0 page — most
+tenants report 0 on deeper offsets (a few, like astrazeneca and clarivate,
+report the real count), so latch the first non-zero value. And an offset *past*
+the end of a board **wraps to page 0 with `total` restored** (probe-verified on
+endo, 98 postings, offset 100): a walk that does not break on
+`offset >= total` first would silently re-ingest page 1 forever.
+
+**Facet-scoped crawls have predictable blind spots.** Narrowing the crawl to a
+tenant's own job-family facets is cheap, but employers file in-scope roles under
+groups nobody would guess: BMS puts safety MDs under its **RayzeBio subsidiary**
+group, HEOR under **Market Access**, regulatory and neuroscience program roles
+under **Project Management**, clinical procurement under **Supply Chain**, and —
+verified live on req R1605041 — a "Sr. Medical Information Communication
+Specialist" under **Sales**. Subsidiary groups and Sales are the magnets. A
+facet-scoped scraper should either include those groups explicitly or run a
+periodic unfaceted audit walk to measure what its facets miss; **accenture**
+takes the belt-and-braces form (a capped unfaceted walk *plus* the country-facet
+walk), which is why the facet there is a coverage guarantee rather than a filter.
+
+**Location parsing is the recurring per-tenant deviation.** Boards prefix
+locations with ISO-2/ISO-3 country codes, US state codes, internal office
+codes or region tiers, all of which otherwise land in `city`. The fleet-standard
+amendment is a skip for bare all-caps tokens (`[A-Z]{2,3}`) in the scraper's own
+`parse_city`; **cencora** widens it to `{2,5}` for region tiers (WEMEA, LATAM,
+NCEE), **clarivate** adds `[A-Z]\d{2,4}` for office codes (R155) plus a trailing
+`(121- …)` strip, **novartis** strips a trailing parenthetical ("Cambridge
+(USA)"), **sandoz** strips *stacked* trailing parentheticals ("Barleben (Salutas
+Pharma GmbH) (Sandoz)" — and without it a hyphen inside the parens truncates the
+city outright, "Rotkreuz (Office-Based) (Sandoz)" → "Rotkreuz (Office"), and
+**msd** and **kenvue** take the *last* surviving segment when three or more
+survive (msd's format is country - state - city, kenvue's is macro-region -
+country - state - city; the first survivor would otherwise be the state, or
+literally "Europe/Middle East/Africa").
+
+The trailing-parenthetical strip has recurred on four tenants and is a safe
+promotion candidate for the template. **The last-segment rule is not** — do not
+generalize it. **haleon** is the counter-example: its hierarchies put the city
+second on some rows and last on others ("China - Shanghai - HuangPu District -
+The Headquarters Building" wants Shanghai; "USA - New Jersey - Warren" wants
+Warren), so no positional rule serves both and haleon is deliberately left
+leaking the state/province. Telling those apart needs a state/province name
+table, which nothing here has; the tenants that got the last-segment fix got it
+because *their* formats are positionally consistent, verified per board.
+**The bare-hyphen splitter truncates hyphenated city names on every scraper in
+the fleet, silently.** `parse_city` splits on `[,\-–]`, so `Villeneuve-Loubet`
+→ `Villeneuve` (gehealthcare) and `Val-de-Reuil` → `Reuil` (kenvue), and by the
+same mechanism `Stratford-upon-Avon` or `Baden-Baden` would truncate anywhere
+they appear. Found independently on two tenants, which makes it a template
+issue rather than a tenant quirk. The tenants that split on `" - "` instead
+(**msd**, **kenvue**) are immune; everyone else is exposed wherever a real
+hyphenated place name occurs. Blast radius is small but the failure is
+invisible — nothing errors, the city is just wrong.
+
+**calyx** strips leading space-separated code tokens, but note *how*: a naive
+`^[A-Z]{2,3}\s+` is wrong, because `LOS`, `NEW` and `SAN` are themselves three
+capitals — it turns "LOS ANGELES" into "ANGELES". The working form strips only
+when a lowercase letter survives (`US MA Needham` → `Needham`, "NEW YORK"
+untouched). One residual to know before copying it anywhere: a genuine place
+name opening with a short all-caps token still shortens — **"MD Anderson Cancer
+Center" → "Anderson Cancer Center"** — so a hospital-operator tenant needs this
+checked rather than assumed.
+
+**illumina** is the same shape as haleon and is left alone for the same reason
+("US - California - San Diego" wants the last segment, but "India - Bengaluru -
+Manyata" and "Singapore - Woodlands - NorthTech" want the middle one, since the
+last is a campus). Two tenants now want the same thing, so **a spelled-out
+US-state drop set is the next amendment worth building** — it fixes both
+without a positional guess, and both boards pin their current wrong output in a
+test so the fix announces itself. Known unfixed leaks: "Remote Based" (philips) and "Teleworker" (elanco)
+are not matched by `_REMOTE_RE`, and "Client" (syneoshealth) is a placeholder
+locality — all cosmetic, with country and `job_type` still correct. **regeneron
+is deliberately left alone**: its locations mix campus codes with genuine
+all-caps place names ("RENSS - TECH VALLEY" beside "TARRYTOWN", "SLEEPY
+HOLLOW"), so the all-caps skip that fixes other tenants would delete real
+cities here. Any fix needs a campus-code mapping, not a pattern.
+
+**Yield varies by employer type, and low is usually correct.** CRO and pharma
+boards keep roughly 10-30% of what they fetch; medtech and device boards
+(medtronic, stryker, baxter, philips) 1-4%; diagnostics (labcorp ~1.3%) and
+distribution (cencora ~3%) lower still, because those boards are dominated by
+bench, manufacturing, field-service and warehouse roles the taxonomy has no
+family for. Do not compensate with scraper-side filters — the drop is the
+shared classifier's verdict and is archived reversibly in `out-of-scope.csv`.
+Two title patterns are worth knowing: "Clinical Specialist" on a device board
+is a field sales/support role (correctly dropped), and journal editorial roles
+(springernature) are dropped wholesale — a taxonomy decision, not a bug.
+
+The tenants, with board size at build time (2026-08-28) and anything peculiar:
+
+- **syneoshealth** — Syneos Health, CRO. 658. Locations are `AAA-City`
+  (alpha-3 prefix); field roles use "Client" as the locality.
+- **accenture** — life-sciences BPO inside a consulting board (its PV and
+  regulatory-services requisitions are the reason it is here). **Ordering
+  unsound**, `total` capped at 2000, so it runs two listing walks — the capped
+  global view plus an India country-facet walk
+  (`locationCountry: bc33aa3152ec42d4995f4791a106ed09`) — with the early stop
+  off. Expect ~98% dropped.
+- **labcorp** — 1,652. Diagnostics; facility-string locations.
+- **novartis** — 959. `City (Country)` locations.
+- **thermofisher** — 3,204, the largest here. robots.txt disallows the
+  *human-facing* `/ThermoFisherCareers/` path but not the `/wday/cxs/` API the
+  scraper uses; the per-URL check passes legitimately. Unique in the fleet.
+- **sanofi** — 790. Alt site `OpellaCareers` 404s and is a separate brand;
+  excluded.
+- **astrazeneca** — 1,234, ~50-65 reqs/day. Sibling `Alexion` board excluded
+  (separate Rare Disease brand — its own scraper if ever wanted).
+- **clarivate** — 160. Sporadic RWE/HEOR supply; zero-row runs are normal.
+- **clarioclinical** — Clario, 77. `hiringOrganization` is empty on this tenant.
+- **jj** — Johnson & Johnson, 1,727, ~100 reqs/day.
+- **medtronic** — 1,141. Sibling `RedeploymentMedtronicCareers` is
+  robots-disallowed and excluded.
+- **alcon** — 393. Posts untranslated JA/ZH text.
+- **elanco** — 371, animal health. "US - Teleworker" leaks as a city.
+- **baxter** — 565. Requisition ids carry spaces (`JR - 197008`), so they do
+  not string-match the `externalPath` spelling — matters only for cross-source
+  id joins.
+- **philips** — 830. A **ghost stub** posting (bulletFields only, no title or
+  path) sits at offset 0 and costs exactly one `detail_failed` per run — a
+  count of 1 here is expected, not a defect.
+- **cencora** — 970. **Ordering unsound** (full walk, cap 54). Region-tier
+  `>`-separated locations. Sibling site `Distribution` (3 postings) excluded.
+- **msd** — 885. `jobs.merck.com` is geo-blocked from India but the CXS tenant
+  answers cleanly, which is the whole reason this route is used.
+- **springernature** — 66. Built for scientific-editor supply, but the taxonomy
+  drops journal editorial roles; see above.
+- **stryker** — 1,186, device. Agency-submission sibling site excluded.
+- **kimberlyclark** — 183. Keeps 0 (mill/plant, engineering, marketing), and a
+  `--since` seed confirmed it. Note an unexploited slice: the sibling slug
+  `Arbex` holds **99 postings that do not overlap GLOBAL** (verified by
+  searchText probes in both directions) — adding it is a config-only change if
+  the coverage is ever wanted. `LinkedIn` (150) is a strict mirror of GLOBAL and
+  must not be added; `XXX_NA` is empty.
+- **solenis** — 567, chemicals. Keeps 0. Carries the `bulletFields` id fix above.
+- **hcahealthcare** — 115, on the `myworkdaysite.com` variant (see above).
+  Note the board is HCA **UK** — London private hospitals plus Sarah Cannon
+  Research Institute UK, uniformly `GB`; the US HCA requisitions, and with them
+  the US SCRI oncology-trial supply, are on a different tenant that is not in
+  the PharmaBharat-derived source list and has not been located. Locations are
+  hospital site names ("The Princess Grace Hospital"), never towns.
+- **alvotech** — 16, biosimilars. Posts Icelandic/English bilingual adverts,
+  invisible to the language sniffer.
+- **vantive** — 277, dialysis. Leanest yield in the fleet (~1.6%).
+- **sandoz** — 344. **calyx** — 28, seeded with `--since` (below).
+- **haleon** — 373, consumer health on the legacy `gsknch` tenant.
+- **regeneron** — 578. **ferring** — 79. **kenvue** — 194, region-prefixed
+  locations. **lonza** — 683, CDMO. **endo** — 98, seeded with `--since`.
+- **elsevier** — 135, on the group-wide `relx` tenant. Eight sibling sites all
+  answer 200 and are all excluded as different brands (LexisNexisLegal,
+  RiskSolutions, ReedExhibitions, ciriumcareers, reedtech, Law360, Knowable) —
+  and critically, the `relx` site itself (719) is a **superset that re-lists
+  Elsevier requisitions under near-identical ids**, so including it would both
+  duplicate every Elsevier row and mis-attribute other brands' jobs. A useful
+  general warning for any group tenant: check whether the parent site re-lists
+  its subsidiaries before adding it.
+
+**No fleet-wide backfill — user decision, 2026-08-28.** Seeding every board's
+older standing inventory was considered and **rejected**: these scrapers are a
+daily incremental feed, not a historical archive, and a 30-60 day seed across
+the fleet is not wanted. The `--since` seeds described next are the narrow
+exception, used only where a board would otherwise yield nothing at all.
+
+**Zero-keep boards need a `--since` seed, or they stay empty forever.**
+`compute_cutoff` falls back to the rolling 7-day `INITIAL_WINDOW_DAYS` whenever
+the store holds no rows, so a board whose in-scope postings are all older than a
+week can never reach them — the window never widens and the watermark never
+starts. **clarivate**, **calyx**, **endo** and **lonza** were seeded with an
+explicit `--since` for exactly this reason. Two lessons from doing it: prefer
+"all live inventory" over a date proxy where the board is small (a listed
+Workday req is an open one — calyx's June-1 seed silently dropped two in-scope
+roles from May that are still open today), and note that the cheap listing gate
+cannot protect you here, because `postedOn` floors at "Posted 30+ Days Ago" —
+only the detail's real `startDate` reveals a months-old posting, after the fetch
+is already paid for. After any taxonomy change, re-run the affected boards with
+`--since` rather than waiting for the daily incremental to surface a backlog it
+structurally cannot see.
+
+Also on this protocol, built separately: **iqvia**, **parexel**, **propharma**,
+**corrohealth**, **fhi360**, **path**, **bms** (job-family-facet scoped),
+**premier_research**. `instructions/workday-tenant-probe.csv` also carries the
+tenants probed but not built, including **piramalpharma** (endpoint healthy but
+a full pull scored 0 of 235 titles in scope — CDMO ops/QA/engineering) and
+three needing a site-slug hunt (**abbott**, **takeda**, **novozymes**).
+
+> **Two sessions build in this tree concurrently.** Before writing into
+> `scrappers/<name>/`, check whether the directory already holds files you did
+> not create and stop if it does — three tenants (gsk, amgen, pfizer) had files
+> overwritten when two builds raced on the same path.
+
+---
+
 ## Known-broken / blocked (do not expect output)
 
 - **apna** — apna.co moved to the Next.js App Router; cards are server-rendered

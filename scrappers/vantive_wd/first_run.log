@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+18:01:32 INFO robots.txt check passed for https://vantive.wd108.myworkdayjobs.com
+18:01:32 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+18:01:35 INFO [Vantive] board lists 278 open postings
+18:03:49 INFO [Vantive] 2 consecutive pages outside the window — stopping at offset 120
+18:03:49 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/vantive/vantive_jobs.csv (1 total rows)
+18:03:49 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/vantive.csv (1 rows, HealthCareers.club schema)
+18:03:49 INFO Moved 60 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/vantive/out-of-scope.csv (60 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                120
+Detail records fetched:           61
+Excluded (out of scope):          60  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 59
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    1
+Duplicates skipped:                0
+Detail failures:                   0

@@ -1,0 +1,20 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+17:59:53 INFO robots.txt check passed for https://endo.wd1.myworkdayjobs.com
+17:59:53 INFO Existing CSV has 0 known jobs (86 known-old, 12 known out-of-scope skipped); keeping jobs posted on/after 2026-06-01 (--since override)
+17:59:56 INFO [External] board lists 98 open postings
+18:03:06 INFO [External] walked the whole board (98 postings)
+18:03:06 INFO No new jobs; /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/endo/endo_jobs.csv left unchanged
+18:03:06 INFO Moved 59 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/endo/out-of-scope.csv (71 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                 98
+Detail records fetched:           86
+Excluded (out of scope):          59  (shared classifier)
+Skipped (known out of scope):     12
+Excluded (older than 2026-06-01): 27
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    0
+Duplicates skipped:                0
+Detail failures:                   0

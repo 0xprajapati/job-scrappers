@@ -1,0 +1,44 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+20:28:33 INFO robots.txt check passed for https://zeissgroup.wd3.myworkdayjobs.com
+20:28:33 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+20:28:36 INFO [External] board lists 814 open postings
+20:32:21 INFO [External] 2 consecutive pages outside the window — stopping at offset 160
+20:32:21 INFO No new jobs; /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/zeiss/zeiss_jobs.csv left unchanged
+20:32:21 INFO Moved 103 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/zeiss/out-of-scope.csv (103 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                160
+Detail records fetched:          103
+Excluded (out of scope):         103  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 57
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    0
+Duplicates skipped:                0
+Detail failures:                   0
+
+===== re-seed run: 7-day window kept 0 rows -> no watermark; re-run with --since 2026-06-01 =====
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+20:32:39 INFO robots.txt check passed for https://zeissgroup.wd3.myworkdayjobs.com
+20:32:39 INFO Existing CSV has 0 known jobs (57 known-old, 103 known out-of-scope skipped); keeping jobs posted on/after 2026-06-01 (--since override)
+20:32:42 INFO [External] board lists 814 open postings
+20:39:48 INFO [External] page cap (15) reached — stopping
+20:39:48 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/zeiss/zeiss_jobs.csv (2 total rows)
+20:39:48 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/zeiss.csv (2 rows, HealthCareers.club schema)
+20:39:48 INFO Moved 195 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/zeiss/out-of-scope.csv (298 total, kept for review)
+20:39:48 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/zeiss/needs_review.csv (1 titles to review)
+
+===== Run summary =====
+Postings scanned:                300
+Detail records fetched:          197
+Excluded (out of scope):         195  (shared classifier)
+Skipped (known out of scope):    103
+Excluded (older than 2026-06-01):  0
+Skipped (known old):               0
+Flagged needs_review:              1
+New jobs added:                    2
+Duplicates skipped:                0
+Detail failures:                   0

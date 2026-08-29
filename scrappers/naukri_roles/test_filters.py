@@ -157,6 +157,103 @@ class TestCutoff(unittest.TestCase):
         self.assertEqual(ns.compute_cutoff(df), "2026-08-06")
 
 
+class TestSameRoleDedup(unittest.TestCase):
+    """dedupe_same_role() collapses (title, company, city) near-duplicates
+    WITHIN one ingest batch — job_id stays the cross-run dedup key."""
+
+    @staticmethod
+    def row(job_id, title, company, city, desc, ms=0):
+        return {"job_id": job_id, "title": title, "company": company,
+                "city": city, "description": desc, "_created_ms": ms}
+
+    def test_longer_description_wins(self):
+        rows = [
+            self.row("1", "Clinical Data Svs Specialist", "IQVIA", "Kochi",
+                     "short teaser"),
+            self.row("2", "Clinical Data Svs Specialist", "IQVIA", "Kochi",
+                     "a much longer, fuller description of the same role"),
+        ]
+        kept, skipped = ns.dedupe_same_role(rows)
+        self.assertEqual([r["job_id"] for r in kept], ["2"])
+        self.assertEqual(skipped, 1)
+
+    def test_key_is_normalised(self):
+        # lowercase + collapsed whitespace: these are the SAME role
+        rows = [
+            self.row("1", "Clinical  Data Specialist", "IQVIA ", "Kochi", "x"),
+            self.row("2", "clinical data specialist", "iqvia", " KOCHI", "xx"),
+        ]
+        kept, skipped = ns.dedupe_same_role(rows)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(skipped, 1)
+
+    def test_different_city_is_kept(self):
+        # one role per city is a legitimate naukri posting pattern
+        rows = [
+            self.row("1", "Medical Coder", "Omega", "Chennai", "desc"),
+            self.row("2", "Medical Coder", "Omega", "Trichy", "desc"),
+        ]
+        kept, skipped = ns.dedupe_same_role(rows)
+        self.assertEqual(len(kept), 2)
+        self.assertEqual(skipped, 0)
+
+    def test_tie_broken_by_newer_created_date(self):
+        rows = [
+            self.row("old", "Pharmacovigilance Associate", "Accenture",
+                     "Bengaluru", "same length!", ms=1756000000000),
+            self.row("new", "Pharmacovigilance Associate", "Accenture",
+                     "Bengaluru", "same length!", ms=1756100000000),
+        ]
+        kept, _ = ns.dedupe_same_role(rows)
+        self.assertEqual(kept[0]["job_id"], "new")
+
+    def test_transient_ms_key_is_stripped(self):
+        kept, _ = ns.dedupe_same_role(
+            [self.row("1", "Medical Coder", "Omega", "Chennai", "desc")])
+        self.assertNotIn("_created_ms", kept[0])
+
+
+class TestJdTooShort(unittest.TestCase):
+    """The rich-CSV trace flag for card-teaser descriptions (NAUKRI-01)."""
+
+    def test_under_threshold_flagged(self):
+        self.assertEqual(ns.flag_jd_too_short("x" * 199), "True")
+        self.assertEqual(ns.flag_jd_too_short(""), "True")
+        self.assertEqual(ns.flag_jd_too_short(None), "True")
+
+    def test_at_and_over_threshold_blank(self):
+        self.assertEqual(ns.flag_jd_too_short("x" * 200), "")
+        self.assertEqual(ns.flag_jd_too_short("x" * 5000), "")
+
+    def test_flag_is_never_a_club_column(self):
+        self.assertNotIn("jd_too_short", ns.CLUB_COLUMNS)
+        # rightmost rich (trace) column
+        self.assertEqual(ns.RICH_COLUMNS[-1], "jd_too_short")
+
+
+class TestCaptureDate(unittest.TestCase):
+    """capture_file_date() reads DD-MM-YYYY from the filename, falling back
+    to the file's mtime (NAUKRI-02 stale-capture warning)."""
+
+    def test_filename_date_wins(self):
+        from datetime import date
+        self.assertEqual(ns.capture_file_date("captures/24-08-2026.json"),
+                         date(2026, 8, 24))
+
+    def test_bad_name_falls_back_to_mtime(self):
+        import os
+        import tempfile
+        from datetime import date
+        with tempfile.NamedTemporaryFile(suffix="undated.json") as fh:
+            mtime = 1756000000  # 2026-08-24 UTC (local date may differ by 1)
+            os.utime(fh.name, (mtime, mtime))
+            self.assertEqual(ns.capture_file_date(fh.name),
+                             date.fromtimestamp(mtime))
+
+    def test_missing_file_returns_none(self):
+        self.assertIsNone(ns.capture_file_date("captures/no-such-file.json"))
+
+
 class TestClubMapping(unittest.TestCase):
     def test_inr_annual_exported(self):
         row = {"salary_currency": "INR", "salary_period": "per_annum",

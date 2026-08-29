@@ -1,0 +1,22 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+23:14:24 INFO No robots.txt on https://wd1.myworkdaysite.com (HTTP 422) — crawling allowed
+23:14:24 INFO robots.txt check passed for https://wd1.myworkdaysite.com
+23:14:24 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-20
+23:14:27 INFO [Parexel_External_Careers] board lists 360 open postings
+23:18:38 INFO [Parexel_External_Careers] 2 consecutive pages outside the window — stopping at offset 160
+23:18:38 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/parexel/parexel_jobs.csv (87 total rows)
+23:18:38 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/27-08-2026/parexel.csv (87 rows, HealthCareers.club schema)
+23:18:38 INFO Moved 14 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/parexel/out-of-scope.csv (14 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                160
+Detail records fetched:          101
+Excluded (out of scope):          14  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-20): 59
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                   87
+Duplicates skipped:                0
+Detail failures:                   0

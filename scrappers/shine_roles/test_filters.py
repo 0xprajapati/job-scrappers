@@ -11,12 +11,17 @@ wiring (jJT/jKwd/jJD -> classify_job) and the parsers.
 import unittest
 
 from shine_scraper import (
+    BULK_POSTER_BLOCKLIST,
+    MAX_PAGES_PER_QUERY,
+    QUERY_MAX_PAGES,
     SEARCH_QUERIES,
     apply_classification,
     classify_company_type,
     club_salary,
     compute_cutoff,
     decode_job_type,
+    is_bulk_poster,
+    max_pages_for_query,
     page_url,
     parse_date,
     parse_experience,
@@ -182,6 +187,60 @@ class TestPublicHealthCoverage(unittest.TestCase):
         self.assertEqual(len(SEARCH_QUERIES), len(set(SEARCH_QUERIES)))
 
 
+class TestBulkPosterBlocklist(unittest.TestCase):
+    """SHINE-01 (2026-08-27 audit): five accounts re-post overseas listings
+    onto shine.com — 439 of 1,111 stored rows. Blocked at source."""
+
+    def test_all_five_names_blocked_case_insensitively(self):
+        # The names as they actually appear in the store, plus case variants.
+        for name in ("FlexBoard", "remote zest jobs", "vacancy global pro",
+                     "vmysmartpros", "remote click jobs",
+                     "FLEXBOARD", "Remote Zest Jobs", "  vMySmartPros  "):
+            self.assertTrue(is_bulk_poster(name), name)
+
+    def test_legit_companies_pass(self):
+        for name in ("IQVIA", "Apollo Hospitals", "Sun Pharma Industries",
+                     "", None):
+            self.assertFalse(is_bulk_poster(name), repr(name))
+
+    def test_no_substring_over_matching(self):
+        # Exact-name matching only: a real company sharing words with a
+        # blocked account must not be swept up.
+        self.assertFalse(is_bulk_poster("Global Pro Services"))
+        self.assertFalse(is_bulk_poster("FlexBoard Technologies Pvt Ltd"))
+
+    def test_blocklist_is_lowercase_frozenset(self):
+        # Matching lowercases the candidate, so entries must be lowercase.
+        self.assertIsInstance(BULK_POSTER_BLOCKLIST, frozenset)
+        for entry in BULK_POSTER_BLOCKLIST:
+            self.assertEqual(entry, entry.lower(), entry)
+
+
+class TestQueryMaxPages(unittest.TestCase):
+    """SHINE-04: per-query page-cap overrides for the three queries that hit
+    the 50-page cap on the 27-08 run."""
+
+    def test_overridden_queries_crawl_deeper(self):
+        for query in ("jobs?ind=13", "clinical-coding", "healthcare"):
+            self.assertIn(query, QUERY_MAX_PAGES, query)
+            self.assertGreater(max_pages_for_query(query),
+                               MAX_PAGES_PER_QUERY, query)
+
+    def test_other_queries_keep_the_default(self):
+        self.assertEqual(max_pages_for_query("public-health"),
+                         MAX_PAGES_PER_QUERY)
+        self.assertEqual(max_pages_for_query("epidemiology"),
+                         MAX_PAGES_PER_QUERY)
+
+    def test_explicit_default_wins_for_unlisted_queries(self):
+        # main() passes an explicit --max-pages as the fallback.
+        self.assertEqual(max_pages_for_query("public-health", default=5), 5)
+
+    def test_overridden_queries_are_real_queries(self):
+        for query in QUERY_MAX_PAGES:
+            self.assertIn(query, SEARCH_QUERIES, query)
+
+
 class TestCompanyType(unittest.TestCase):
     def test_pharma(self):
         self.assertEqual(classify_company_type("Sun Pharma Industries"),
@@ -290,9 +349,27 @@ class TestClubRow(unittest.TestCase):
         self.assertEqual(row["salary_currency"], "INR")
         self.assertEqual(row["posted_at"], "2026-08-07")
 
-    def test_city_falls_back_to_all_india(self):
+    # SHINE-02 (2026-08-27 audit): "All India" is country-level, not a city.
+    # city_name stays empty; the country columns already say India.
+
+    def test_all_india_is_not_a_city(self):
+        for location in ("All India", "all india", "India",
+                         "All India, Delhi"):   # first token decides
+            row = rich_row_to_club_row({"location": location,
+                                        "salary_raw": ""})
+            self.assertEqual(row["city_name"], "", location)
+            self.assertEqual(row["country_name"], "India", location)
+            self.assertEqual(row["country_code"], "IN", location)
+
+    def test_empty_location_leaves_city_empty(self):
         row = rich_row_to_club_row({"location": "", "salary_raw": ""})
-        self.assertEqual(row["city_name"], "All India")
+        self.assertEqual(row["city_name"], "")
+        self.assertEqual(row["country_name"], "India")
+
+    def test_real_city_still_mapped(self):
+        row = rich_row_to_club_row({"location": "Indore, Bhopal",
+                                    "salary_raw": ""})
+        self.assertEqual(row["city_name"], "Indore")   # not caught by "India"
 
 
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+20:38:31 INFO robots.txt check passed for https://evolent.wd1.myworkdayjobs.com
+20:38:31 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+20:38:33 INFO [External] board lists 29 open postings
+20:39:02 INFO [External] walked the whole board (29 postings)
+20:39:02 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/evolent/evolent_jobs.csv (7 total rows)
+20:39:02 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/evolent.csv (7 rows, HealthCareers.club schema)
+20:39:02 INFO Moved 5 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/evolent/out-of-scope.csv (5 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                 29
+Detail records fetched:           12
+Excluded (out of scope):           5  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 17
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    7
+Duplicates skipped:                0
+Detail failures:                   0

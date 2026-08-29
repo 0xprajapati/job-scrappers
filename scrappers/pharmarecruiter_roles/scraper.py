@@ -183,9 +183,10 @@ REQUEST_TIMEOUT_SECONDS = 60
 MAX_RETRIES = 4
 BACKOFF_BASE_SECONDS = 3.0
 MAX_EMPTY_PAGES = 3
-DESCRIPTION_MAX_CHARS = 3_000
 
-RICH_CSV = "pharmarecruiter_roles_jobs.csv"
+SCRAPER_DIR = Path(__file__).resolve().parent
+RICH_CSV = str(SCRAPER_DIR / "pharmarecruiter_roles_jobs.csv")
+NEEDS_REVIEW_CSV = str(SCRAPER_DIR / "needs_review.csv")
 CLUB_CSV_DIR = Path(__file__).resolve().parents[2] / "jobs_csv"
 
 JOBS_CATEGORY_SLUG = "jobs"          # scraped at the source
@@ -226,6 +227,11 @@ RICH_COLUMNS = [
     "role_family", "all_families", "family_scores", "family_confidence",
     "matched_in", "company_type", "needs_review", "posted_date",
     "description", "job_url", "scraped_at",
+    # added 2026-08-27 (rightmost so old rows load cleanly; the store merge
+    # in main() backfills "" for rows written before the columns existed):
+    # title_raw    — the untouched SEO headline; `title` is clean_title()'d
+    # location_raw — the untouched Location bullet; `city` is normalised
+    "title_raw", "location_raw",
 ]
 
 log = logging.getLogger("pharmarecruiter_roles_scraper")
@@ -244,6 +250,122 @@ def clean_text(text):
 
 def strip_html(markup):
     return clean_text(_TAG_RE.sub(" ", markup or ""))
+
+
+_FIRST_HEADING_RE = re.compile(r"<h[23][^>]*>", re.I)
+
+
+def strip_seo_intro(content_html):
+    """Drop the site's generated SEO paragraph(s) that open every post.
+
+    Posts start with boilerplate ("Apply for X role in Y at Z. Explore
+    pharma jobs…") before the first heading (always "About the Company"
+    at the source); the real content runs from that heading. Posts with
+    no heading are kept whole.
+    """
+    match = _FIRST_HEADING_RE.search(content_html or "")
+    return content_html[match.start():] if match else content_html
+
+
+# ---------------------------------------------------------------------------
+# FIX 2026-08-27 (PHARMARECRUITER-02): the site's post headlines are SEO
+# strings, not job titles — "Medical Writer Jobs in Delhi | Insignia Clinical
+# Research Careers", "Piramal Pharma Walk-In Drive 2026 – Senior Research
+# Associate ... Jobs in Ahmedabad". clean_title() de-SEOs them before storing;
+# the untouched headline is preserved in the rich CSV's title_raw column.
+# ---------------------------------------------------------------------------
+
+MIN_CLEAN_TITLE_LEN = 10          # below this, fall back to the "|" cut only
+_TITLE_EDGE_CHARS = " \t-–—:,.|"  # separators stripped off either end
+
+# Leading marketing prefixes (the company is its own column, so losing the
+# name from the title is fine). All are anchored and delimiter-bounded so a
+# real title never matches by accident; the (?i:...) scoped flags keep the
+# capital-letter lookaheads case-sensitive.
+_TITLE_PREFIX_RES = [
+    # "<Company> Walk-In Drive 2026 –", "<Company> Walk-In Drive:"
+    re.compile(r"^[^:|]{2,60}?\b(?i:walk[-\s]?in\s+(?:drive|interview)s?)\s*"
+               r"(?:(?:19|20)\d{2})?\s*[–—:-]+\s*(?=\S)"),
+    # "<Company> [Pharma] Jobs 2026:", "<Company> Recruitment 2026:"
+    re.compile(r"^[^:|]{2,60}?\b(?i:jobs|recruitment|hiring)\s+"
+               r"(?:19|20)\d{2}\s*:\s*(?=\S)"),
+    # "<Company> Hiring [2026][: – -]", "<Company> Hiring for"
+    re.compile(r"^[^:|–—]{2,60}?\s(?i:hiring)\b\s*(?:(?:19|20)\d{2})?\s*"
+               r"(?:[:–—-]+\s*|(?i:for)\s+)?(?=[A-Z0-9])"),
+    # a bare "Hiring " left at the front once the company prefix is gone
+    # ("<Company> Jobs 2026: Hiring Copywriting Associate ...")
+    re.compile(r"^(?i:hiring)\s+(?:[:–—-]+\s*)?(?=[A-Z0-9])"),
+]
+
+# Trailing SEO tails, applied repeatedly until the title stops shrinking.
+_TITLE_TAIL_RES = [
+    # "... Central Monitor Hiring in Bangalore (Hybrid)" — the no-colon
+    # guard keeps "Hiring in Dhaka: Regulatory Affairs ..." intact (the
+    # role lives after the colon there)
+    re.compile(r"\s(?i:hiring)\s+(?i:in)\s+[A-Z(][^:]*$"),
+    # "Jobs in <locations>" and its variants: "Job Opening in Gurgaon",
+    # "Remote Jobs India", "Jobs Mumbai Noida", "Jobs (Remote India)" — the
+    # whole tail after Jobs/Careers must look like locations (capitalised
+    # words, &/and/commas, years, parentheticals), so "Jobs at <Company>"
+    # and "Jobs for M.Pharm Freshers" survive untouched.
+    re.compile(r"\s(?:(?i:remote)\s+)?(?i:jobs?|careers?)\s+(?:(?i:opening)s?\s+)?"
+               r"(?:(?i:in)\s+)?"
+               r"(?:(?:[A-Z][\w.’'&-]*|&|,|(?i:and)|(?:19|20)\d{2}|\([^)]*\)|[–—-])\s*){1,6}$"),
+    # "Recruitment 2026 – Hyderabad", "Jobs 2026 – Thane, Hyderabad & Bengaluru"
+    re.compile(r"\s(?i:recruitment|jobs?|careers?|hiring)\s+(?:19|20)\d{2}\s*[–—:-]\s*.*$"),
+    # bare trailing "Pharma Careers" / "Jobs" / "Recruitment" / year /
+    # "Apply Now (for)" runs
+    re.compile(r"[\s–—:,|-]+(?:(?i:pharma\s+)?(?i:careers?|jobs?|recruitment|hiring)"
+               r"|(?i:apply\s+now(?:\s+for)?)|(?:19|20)\d{2})\s*$"),
+    # a lone "Pharma" left dangling after a delimiter once "Careers" is gone
+    # ("Job at Sun Pharma in Mumbai & Chennai: Pharma [Careers in India]")
+    re.compile(r"\s*[:–—-]\s*(?i:pharma)$"),
+]
+
+
+def clean_title(raw_title):
+    """De-SEO a post headline into a storable job title.
+
+    Cut at the first "|"; strip walk-in-drive / hiring / "Jobs <year>:"
+    prefixes and "Jobs in <locations>" / "Careers <year>" tails; collapse
+    whitespace. If aggressive cleaning leaves fewer than
+    MIN_CLEAN_TITLE_LEN characters ("Intern Jobs in Chennai & Bangalore |
+    ..." -> "Intern"), fall back to the "|" cut alone.
+    """
+    base = clean_text(raw_title)
+    pipe_cut = base.split("|", 1)[0].strip(_TITLE_EDGE_CHARS)
+    text = pipe_cut
+    for pattern in _TITLE_PREFIX_RES:
+        text = pattern.sub("", text)
+    while True:
+        before = text
+        for pattern in _TITLE_TAIL_RES:
+            text = pattern.sub("", text).strip(_TITLE_EDGE_CHARS)
+        if text == before:
+            break
+    text = clean_text(text).strip(_TITLE_EDGE_CHARS)
+    if len(text) < MIN_CLEAN_TITLE_LEN:
+        return pipe_cut or base
+    return text
+
+
+# FIX 2026-08-27 (PHARMARECRUITER-01): when the Company bullet is missing or
+# holds the SEO page title ("Senior PV Scientist Jobs in Mumbai & Noida |
+# Pharmacovigilance Careers in India"), company must be EMPTY — never the
+# headline. Anything with a "|", a "Jobs in", or more than
+# MAX_COMPANY_LEN characters is treated as a failed extraction.
+MAX_COMPANY_LEN = 60
+_BAD_COMPANY_RE = re.compile(r"\||\bjobs\s+in\b", re.IGNORECASE)
+
+
+def clean_company(raw):
+    """Company bullet -> employer name, or "" when extraction failed."""
+    company = clean_text(raw)
+    if not company:
+        return ""
+    if len(company) > MAX_COMPANY_LEN or _BAD_COMPANY_RE.search(company):
+        return ""
+    return company
 
 
 _LI_RE = re.compile(r"<li[^>]*>(.*?)</li>", re.S)
@@ -414,6 +536,32 @@ def classify_company_type(company, title):
 
 _PAREN_RE = re.compile(r"\([^)]*\)")
 
+# FIX 2026-08-27 (PHARMARECRUITER-03): multi-location bullets used to land
+# whole in city ("India – Hyderabad; India – Bengaluru; India –
+# Bengaluru-Remote"). normalize_city() cuts to the FIRST site, drops the
+# "India –" prefix, and empties "Remote"-only and bare-"India" values; the
+# untouched string is kept in the rich CSV's location_raw column.
+_MULTI_SITE_SPLIT_RE = re.compile(r"\s*[;/|]\s*")
+_INDIA_PREFIX_RE = re.compile(r"^india\b[\s–—:,-]*", re.IGNORECASE)
+_NON_CITY_RE = re.compile(r"^(?:remote|work\s+from\s+home|wfh|india)$", re.IGNORECASE)
+
+
+def normalize_city(raw):
+    """First real city out of a (possibly multi-site) location string.
+
+    "India – Hyderabad; India – Bengaluru" -> "Hyderabad";
+    "Gurugram ; Kochi" -> "Gurugram"; "India – Remote" -> "";
+    "Remote" -> ""; bare "India" -> "".
+    """
+    text = clean_text(raw)
+    if not text:
+        return ""
+    text = _MULTI_SITE_SPLIT_RE.split(text)[0].strip(" ,")
+    text = _INDIA_PREFIX_RE.sub("", text).strip(" ,")
+    if not text or _NON_CITY_RE.match(text):
+        return ""
+    return text
+
 
 def parse_location(raw):
     """Location bullet -> (city, country_name, iso, dial).
@@ -421,13 +569,16 @@ def parse_location(raw):
     "Ahmedabad, India" -> Ahmedabad / India; "Dubai, UAE" -> Dubai / UAE;
     "Karakhadi & Ankleshwar, Gujarat" -> Karakhadi & Ankleshwar / India;
     "Not specified (India-based)" -> "" / India. Unrecognised trailing
-    segments (Indian states/cities) stay part of India.
+    segments (Indian states/cities) stay part of India. The city always
+    passes through normalize_city() (PHARMARECRUITER-03), so semicolon
+    lists, "India –" prefixes, "Remote" and bare "India" never reach the
+    city column.
     """
     text = clean_text(_PAREN_RE.sub(" ", clean_text(raw)))
     if not text or re.match(r"not specified|not mentioned|various|pan.india|multiple", text, re.I):
         return "", "India", "IN", "+91"
-    # first alternative wins when slashes/pipes list several sites
-    text = re.split(r"\s*[/|]\s*", text)[0].strip(" ,")
+    # first alternative wins when semicolons/slashes/pipes list several sites
+    text = _MULTI_SITE_SPLIT_RE.split(text)[0].strip(" ,")
     # "Training at Indore", "Based in Hyderabad" -> keep just the place
     text = re.sub(r"^(?:training|based|posting|interviews?)\s+(?:at|in)\s+",
                   "", text, flags=re.IGNORECASE)
@@ -439,8 +590,8 @@ def parse_location(raw):
         code, dial = COUNTRY_META[country_key]
         name = "India" if code == "IN" else parts[-1]
         city = parts[0] if len(parts) > 1 else ("" if code != "IN" else parts[0])
-        return city, name, code, dial
-    return parts[0], "India", "IN", "+91"
+        return normalize_city(city), name, code, dial
+    return normalize_city(parts[0]), "India", "IN", "+91"
 
 
 _WORK_TYPE_MAP = [
@@ -553,16 +704,20 @@ def fetch_posts_page(session, page, jobs_category_id, search=None):
 # ----------------------------------------------------------------------------
 
 def post_to_rich_row(post, category_map):
-    title = clean_text(post["title"]["rendered"])
+    title_raw = clean_text(post["title"]["rendered"])
+    title = clean_title(title_raw)  # PHARMARECRUITER-02: de-SEO'd for storage
     content = post["content"]["rendered"]
     fields = extract_labeled_fields(content)
 
     # local flags only; the taxonomy fields are stamped by apply_classification()
-    needs_review = bool(_NEWSY_TITLE_RE.search(title))
-    company = clean_text(fields.get("company", ""))
+    needs_review = bool(_NEWSY_TITLE_RE.search(title_raw))
+    # PHARMARECRUITER-01: a failed extraction (missing bullet, or an SEO
+    # page title in the bullet) leaves company EMPTY, never the headline
+    company = clean_company(fields.get("company", ""))
     if not company:
         needs_review = True
-    city, country_name, code, dial = parse_location(fields.get("location", ""))
+    location_raw = clean_text(fields.get("location", ""))
+    city, country_name, code, dial = parse_location(location_raw)
     min_exp, max_exp = parse_experience(fields.get("experience", ""))
     slugs = [category_map.get(c, str(c)) for c in post.get("categories", [])]
 
@@ -599,9 +754,11 @@ def post_to_rich_row(post, category_map):
         "company_type": classify_company_type(company, title),
         "needs_review": needs_review,
         "posted_date": clean_text(post.get("date", ""))[:10],
-        "description": strip_html(content)[:DESCRIPTION_MAX_CHARS],
+        "description": strip_html(strip_seo_intro(content)),
         "job_url": clean_text(post.get("link", "")),
         "scraped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "title_raw": title_raw,
+        "location_raw": location_raw,
     }
     row.update(parse_salary(fields.get("salary", "")))
     return row
@@ -632,7 +789,11 @@ def rich_row_to_club_row(r):
         "country_code": _blank(r.get("country_code")) or "IN",
         "country_dial_code": _blank(r.get("country_dial_code")) or "+91",
         "city_name": _blank(r.get("city")),
-        "company_name": _blank(r.get("company")) or _blank(r.get("title")),
+        # PHARMARECRUITER-01 (fixed 2026-08-27): this used to fall back to
+        # the post title, which put SEO headlines ("Senior PV Scientist Jobs
+        # in Mumbai & Noida | ...") into company_name. Unknown employer now
+        # stays EMPTY.
+        "company_name": _blank(r.get("company")),
         "company_type": _blank(r.get("company_type")) or "pharma",
         "company_logo": "",
         "company_about": "",
@@ -791,7 +952,7 @@ def main(argv=None):
         log.info("Wrote %s (%d rows, HealthCareers.club schema)", target, n)
 
     if review_log:
-        pd.DataFrame(review_log).to_csv("needs_review.csv", index=False)
+        pd.DataFrame(review_log).to_csv(NEEDS_REVIEW_CSV, index=False)
 
     print("\n===== Run summary =====")
     print("Excluded (out of scope): {:>4,}".format(counters["excluded_out_of_scope"]))

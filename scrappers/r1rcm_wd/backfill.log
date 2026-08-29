@@ -1,0 +1,22 @@
+16:54:04 INFO robots.txt check passed for https://r1rcm.wd1.myworkdayjobs.com
+16:54:04 INFO Existing CSV has 1 known jobs (48 known-old, 111 known out-of-scope skipped); keeping jobs posted on/after 2026-01-01 (--since override)
+16:54:07 INFO [R1RCM] board lists 505 open postings
+16:56:25 INFO [R1RCM] walked the whole board (505 postings)
+16:56:25 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/r1rcm/r1rcm_jobs.csv (18 total rows)
+16:56:25 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/r1rcm.csv (18 rows, HealthCareers.club schema)
+16:56:25 INFO Moved 368 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/r1rcm/out-of-scope.csv (479 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                505
+Detail records fetched:           35
+Excluded (title pre-screen):     358  (no detail fetch)
+Excluded (out of scope):          10  (shared classifier)
+Skipped (known out of scope):    111
+Excluded (older than 2026-01-01):  8
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                   17
+Duplicates skipped:                1
+Detail failures:                   0
+Veto breakdown:
+     2  title:Revenue Cycle

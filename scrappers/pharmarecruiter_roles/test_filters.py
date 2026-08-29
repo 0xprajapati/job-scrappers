@@ -13,13 +13,19 @@ from scraper import (
     apply_classification,
     classify_company_type,
     classify_job_type,
+    clean_company,
+    clean_title,
     compute_cutoff,
     extract_labeled_fields,
+    normalize_city,
     parse_experience,
     parse_location,
     parse_salary,
+    post_to_rich_row,
+    rich_row_to_club_row,
     INITIAL_WINDOW_DAYS,
     WATERMARK_GRACE_DAYS,
+    RICH_COLUMNS,
     SEARCH_TERMS,
     PAGE_SIZE,
     _NEWSY_TITLE_RE,
@@ -60,6 +66,156 @@ class TestExtractLabeledFields(unittest.TestCase):
     def test_ignores_unlabeled_bullets(self):
         html = "<ul><li>Just a sentence with no colon</li></ul>"
         self.assertEqual(extract_labeled_fields(html), {})
+
+
+class TestCleanTitle(unittest.TestCase):
+    """FIX 2026-08-27 (PHARMARECRUITER-02): SEO headlines -> job titles.
+
+    All examples are real stored headlines from the 2026-08-27 audit.
+    """
+
+    def test_pipe_cut_and_jobs_in_tail(self):
+        self.assertEqual(
+            clean_title("Medical Writer Jobs in Delhi | "
+                        "Insignia Clinical Research Careers"),
+            "Medical Writer")
+
+    def test_multi_city_jobs_in_tail(self):
+        self.assertEqual(
+            clean_title("Health Economics Intern Jobs in Bangalore & Gurugram "
+                        "| IQVIA Pharma Careers"),
+            "Health Economics Intern")
+
+    def test_jobs_location_tail_without_in(self):
+        self.assertEqual(
+            clean_title("Senior PV Scientist & Team Lead Case Processing "
+                        "Jobs Mumbai Noida"),
+            "Senior PV Scientist & Team Lead Case Processing")
+
+    def test_walk_in_drive_prefix(self):
+        self.assertEqual(
+            clean_title("Piramal Pharma Walk-In Drive 2026 – Senior Research "
+                        "Associate Formulation Development Jobs in Ahmedabad"),
+            "Senior Research Associate Formulation Development")
+
+    def test_company_hiring_prefix(self):
+        self.assertEqual(
+            clean_title("Cactus Life Sciences Hiring 2026: Senior Medical "
+                        "Writer – Medical Information Jobs (Remote – India)"),
+            "Senior Medical Writer – Medical Information")
+
+    def test_company_jobs_year_colon_prefix(self):
+        self.assertEqual(
+            clean_title("Novo Nordisk Pharma Jobs 2026: "
+                        "Central Monitor Hiring in Bangalore"),
+            "Central Monitor")
+
+    def test_trailing_careers_year_suffix(self):
+        self.assertEqual(
+            clean_title("TMF Specialist Jobs in Chennai | "
+                        "ICON Clinical Research Careers 2026"),
+            "TMF Specialist")
+
+    def test_recruitment_year_location_tail(self):
+        self.assertEqual(
+            clean_title("GSK Junior Programmer Recruitment 2026 – Bengaluru"),
+            "GSK Junior Programmer")
+
+    def test_short_result_falls_back_to_pipe_cut_only(self):
+        # "Intern" alone is under the ~10-char floor; keep the less
+        # aggressively cleaned pipe cut instead
+        self.assertEqual(
+            clean_title("Intern Jobs in Chennai & Bangalore | "
+                        "ICON Clinical Research Internship 2026"),
+            "Intern Jobs in Chennai & Bangalore")
+
+    def test_never_leaves_a_pipe(self):
+        self.assertNotIn("|", clean_title(
+            "Quality Assurance Coordinator Jobs at Clario | "
+            "Remote Pharma QA Jobs in India | Apply Online"))
+
+    def test_plain_title_is_untouched(self):
+        self.assertEqual(
+            clean_title("Safety Science Specialist Job Opening at Fortrea"),
+            "Safety Science Specialist Job Opening at Fortrea")
+
+    def test_jobs_at_company_is_not_a_location_tail(self):
+        # "Jobs at <Company>" keeps the employer context; only
+        # "Jobs [in] <locations>" tails are stripped
+        self.assertEqual(
+            clean_title("Clinical Research Associate (CRA) Jobs at "
+                        "medONE Pharma Solutions – Gurgaon"),
+            "Clinical Research Associate (CRA) Jobs at "
+            "medONE Pharma Solutions – Gurgaon")
+
+
+class TestCleanCompany(unittest.TestCase):
+    """FIX 2026-08-27 (PHARMARECRUITER-01): a failed company extraction is
+    EMPTY, never the SEO page title. Examples are the audit's real rows."""
+
+    def test_seo_page_title_with_pipe_is_rejected(self):
+        self.assertEqual(clean_company(
+            "Senior PV Scientist Jobs in Mumbai & Noida | "
+            "Pharmacovigilance Careers in India"), "")
+
+    def test_over_60_chars_is_rejected(self):
+        self.assertEqual(clean_company(
+            "Senior PV Scientist & Team Lead Case Processing "
+            "Jobs Mumbai Noida"), "")
+
+    def test_jobs_in_phrase_is_rejected(self):
+        self.assertEqual(
+            clean_company("Medical Writer Jobs in Delhi"), "")
+
+    def test_real_company_passes(self):
+        self.assertEqual(clean_company("Accuprec Research Labs Pvt Ltd"),
+                         "Accuprec Research Labs Pvt Ltd")
+
+    def test_empty_stays_empty(self):
+        self.assertEqual(clean_company(""), "")
+        self.assertEqual(clean_company(None), "")
+
+    def test_club_row_never_falls_back_to_title(self):
+        # the old rich_row_to_club_row fell back to the post title when
+        # company was empty — that is exactly the PHARMARECRUITER-01 leak
+        club = rich_row_to_club_row({"title": "Senior PV Scientist",
+                                     "company": ""})
+        self.assertEqual(club["company_name"], "")
+
+    def test_raw_columns_are_in_rich_schema(self):
+        # added 2026-08-27, rightmost so pre-existing rows load cleanly
+        self.assertEqual(RICH_COLUMNS[-2:], ["title_raw", "location_raw"])
+
+
+class TestPostToRichRow(unittest.TestCase):
+    """Integration: SEO title/company handling inside the row builder."""
+
+    POST = {
+        "id": 99001,
+        "date": "2026-08-27T09:00:00",
+        "link": "https://pharmarecruiter.in/senior-pv-scientist/",
+        "title": {"rendered": "Senior PV Scientist Jobs in Mumbai &amp; Noida "
+                              "| Pharmacovigilance Careers in India"},
+        "content": {"rendered": (
+            "<h2>Job Details</h2><ul>"
+            "<li><strong>Company Name</strong>: Senior PV Scientist Jobs in "
+            "Mumbai &amp; Noida | Pharmacovigilance Careers in India</li>"
+            "<li><strong>Location</strong>: India – Mumbai; India – Noida</li>"
+            "</ul>")},
+        "categories": [1],
+    }
+
+    def test_seo_leak_is_contained(self):
+        row = post_to_rich_row(self.POST, {1: "jobs"})
+        self.assertEqual(row["title"], "Senior PV Scientist")
+        self.assertEqual(row["title_raw"],
+                         "Senior PV Scientist Jobs in Mumbai & Noida "
+                         "| Pharmacovigilance Careers in India")
+        self.assertEqual(row["company"], "")       # guard, not the headline
+        self.assertTrue(row["needs_review"])       # missing company flags it
+        self.assertEqual(row["city"], "Mumbai")    # first site only
+        self.assertEqual(row["location_raw"],
+                         "India – Mumbai; India – Noida")
 
 
 class TestParseSalary(unittest.TestCase):
@@ -315,6 +471,57 @@ class TestParseLocation(unittest.TestCase):
 
     def test_empty(self):
         self.assertEqual(parse_location(""), ("", "India", "IN", "+91"))
+
+    # -- FIX 2026-08-27 (PHARMARECRUITER-03): multi-location strings --------
+
+    def test_semicolon_list_with_india_prefixes(self):
+        # real stored value from the audit
+        city, country, code, _ = parse_location(
+            "India – Hyderabad; India – Bengaluru; India – Bengaluru-Remote")
+        self.assertEqual(city, "Hyderabad")
+        self.assertEqual((country, code), ("India", "IN"))
+
+    def test_semicolon_list_plain(self):
+        self.assertEqual(parse_location("Gurugram ; Kochi")[0], "Gurugram")
+
+    def test_india_dash_remote_is_empty_city(self):
+        self.assertEqual(parse_location("India – Remote")[0], "")
+
+    def test_remote_alone_is_empty_city(self):
+        self.assertEqual(parse_location("Remote"),
+                         ("", "India", "IN", "+91"))
+
+    def test_bare_india_is_empty_city(self):
+        self.assertEqual(parse_location("India"),
+                         ("", "India", "IN", "+91"))
+
+
+class TestNormalizeCity(unittest.TestCase):
+    """normalize_city() alone — the piece the 2026-08-27 store migration
+    ran over the city column of the 201 legacy rows."""
+
+    def test_first_city_of_semicolon_list(self):
+        self.assertEqual(
+            normalize_city("India – Hyderabad; India – Bengaluru; "
+                           "India – Bengaluru-Remote"),
+            "Hyderabad")
+
+    def test_slash_list(self):
+        self.assertEqual(normalize_city("Mumbai / Pune"), "Mumbai")
+
+    def test_india_prefix_stripped(self):
+        self.assertEqual(normalize_city("India – Trivandrum"), "Trivandrum")
+
+    def test_india_space_remote(self):
+        self.assertEqual(normalize_city("India Remote"), "")
+
+    def test_keeps_real_city(self):
+        self.assertEqual(normalize_city("Ahmedabad"), "Ahmedabad")
+        # "Indianapolis"-style names must survive the India-prefix strip
+        self.assertEqual(normalize_city("Indiana"), "Indiana")
+
+    def test_empty(self):
+        self.assertEqual(normalize_city(""), "")
 
 
 class TestComputeCutoff(unittest.TestCase):

@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+11:08:39 INFO robots.txt check passed (sitemap + /jobs/<id>/ detail paths; referral/login/candidate/connect paths are disallowed and never requested)
+11:08:39 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-07-29
+11:08:41 INFO Sitemap lists 64 active postings
+11:11:27 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/jhpiego/jhpiego_jobs.csv (3 total rows)
+11:11:27 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/jhpiego.csv (3 rows, HealthCareers.club schema)
+11:11:27 INFO Moved 35 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/jhpiego/out-of-scope.csv (35 total, kept for review)
+11:11:27 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/jhpiego/needs_review.csv (3 titles to review)
+
+===== Run summary =====
+Sitemap postings scanned:         64
+Detail pages fetched:             64
+Excluded (out of scope):          35  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-07-29): 26
+Skipped (known old):               0
+Flagged needs_review:              3
+New jobs added:                    3
+Duplicates skipped:                0
+Detail parse failures:             0

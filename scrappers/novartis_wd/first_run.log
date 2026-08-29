@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+17:20:59 INFO robots.txt check passed for https://novartis.wd3.myworkdayjobs.com
+17:20:59 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+17:21:02 INFO [Novartis_Careers] board lists 959 open postings
+17:29:43 INFO [Novartis_Careers] 2 consecutive pages outside the window — stopping at offset 280
+17:29:43 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/novartis/novartis_jobs.csv (18 total rows)
+17:29:43 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/novartis.csv (18 rows, HealthCareers.club schema)
+17:29:43 INFO Moved 204 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/novartis/out-of-scope.csv (204 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                280
+Detail records fetched:          222
+Excluded (out of scope):         204  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 58
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                   18
+Duplicates skipped:                0
+Detail failures:                   0

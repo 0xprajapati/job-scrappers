@@ -1,0 +1,23 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+16:36:23 INFO robots.txt check passed for https://lilly.wd115.myworkdayjobs.com
+16:36:23 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+16:36:25 INFO [LLY] board lists 608 open postings; scoping the crawl to 3 jobFamilyGroup value(s): 'Research & Development' (155 postings, id 99c6e09d03e801a7d2687e7ff04aec33); 'Medical Affairs' (13 postings, id 99c6e09d03e801c6f900847ff04a0034); 'Health Outcomes and Real World Evidence' (2 postings, id 99c6e09d03e801faaecc807ff04af433)
+16:36:27 INFO [LLY] facet scope covers 170 of the board's 608 open postings
+16:38:09 INFO [LLY] walked the whole facet scope (170 postings)
+16:38:09 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/lilly/lilly_jobs.csv (11 total rows)
+16:38:09 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/lilly.csv (11 rows, HealthCareers.club schema)
+16:38:09 INFO Moved 20 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/lilly/out-of-scope.csv (20 total, kept for review)
+
+===== Run summary =====
+Crawl scope [LLY]: jobFamilyGroup facet — Research & Development (155); Medical Affairs (13); Health Outcomes and Real World Evidence (2)
+Postings scanned:                170
+Detail records fetched:           31
+Excluded (out of scope):          20  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 139
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                   11
+Duplicates skipped:                0
+Detail failures:                   0

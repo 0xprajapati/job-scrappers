@@ -1,0 +1,22 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+23:18:47 INFO robots.txt check passed for https://iqvia.wd1.myworkdayjobs.com
+23:18:47 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-20
+23:18:50 INFO [IQVIA] board lists 1958 open postings
+23:25:18 INFO [IQVIA] page cap (8) reached — stopping
+23:25:18 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/iqvia/iqvia_jobs.csv (55 total rows)
+23:25:18 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/27-08-2026/iqvia.csv (55 rows, HealthCareers.club schema)
+23:25:18 INFO Moved 105 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/iqvia/out-of-scope.csv (105 total, kept for review)
+23:25:18 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/iqvia/needs_review.csv (1 titles to review)
+
+===== Run summary =====
+Postings scanned:                160
+Detail records fetched:          160
+Excluded (out of scope):         105  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-20):  0
+Skipped (known old):               0
+Flagged needs_review:              1
+New jobs added:                   55
+Duplicates skipped:                0
+Detail failures:                   0

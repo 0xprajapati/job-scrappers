@@ -1,0 +1,23 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+23:09:14 INFO robots.txt check passed
+23:09:14 INFO Existing CSV has 0 known jobs (0 known out-of-scope); keeping jobs posted on/after 2026-08-20
+23:11:33 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/fortrea/fortrea_jobs.csv (55 total rows)
+23:11:33 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/27-08-2026/fortrea.csv (55 rows, HealthCareers.club schema)
+23:11:33 INFO Moved 16 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/fortrea/out-of-scope.csv (16 total, kept for review)
+
+===== Run summary =====
+Cards scanned:                   150
+Excluded (out of scope):          16  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-20): 79
+Flagged needs_review:              0
+New jobs added:                   55
+Duplicates skipped:                0
+Detail fetch failures:             0
+Top sub-categories (this run):
+    41  Non Clinical / Clinical Research
+    10  Non Clinical / Clinical Data Management
+     2  Non Clinical / Pharmacovigilance
+     1  Non Clinical / TMF
+     1  Non Clinical / HEOR

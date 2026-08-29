@@ -96,6 +96,47 @@ alone; both are noted here rather than claimed as verified.
 
 All seven remain on the legacy profession enum — none was ever migrated.
 
+## shine — subset of a sibling, retired 2026-08-26 (1)
+
+| scraper | kept | board |
+|---|---|---|
+| shine | subset of `shine_roles` | shine.com (IN) |
+
+Retired for the same reason as `gulftalent`: **its crawl is a subset of
+`shine_roles`**, which stays in the active fleet. Same site, same parser, same
+`classify_job` gate — the only difference was the query list. `shine` asked
+shine.com for four broad things (`healthcare?ind=13`, `healthcare`, `hospital`,
+`medical`) and discarded ~85% of what came back; `shine_roles` asks for the
+role families by name plus four industry-facet browses, and reaches jobs
+`shine` structurally cannot see — medical coders filed under BPO, clinical
+programmers filed under IT Services.
+
+Measured across the two stores: of the 653 jobs `shine` had that `shine_roles`
+did not, **643 (98.5%) carried `industry = Medical / Healthcare`** — i.e.
+`ind=13`, which `shine_roles` browses wholesale via `jobs?ind=13`, a superset
+of `shine`'s `healthcare?ind=13`. The two stores were scraped in different
+windows (shine 08-08/08-10, shine_roles 08-24/08-25), so the raw overlap of 103
+rows is an artifact of timing, not of coverage.
+
+Of the 10 exclusive rows **outside** `ind=13`, nine were classifier noise —
+"Admin Executives Delhi", "Multilingual Geography and Travel Expert" and
+"Executive Assistant - Admin Operations" all labelled Clinical Data Management.
+One was a genuine catch ("Lead R&D Technologist - Statistical Programming",
+filed under IT Services).
+
+**Nothing was lost.** `shine`'s three broad slugs — `healthcare`, `hospital`,
+`medical` — were added to `shine_roles.SEARCH_QUERIES` (now 55 slugs) before
+the retirement, closing that last gap. Probed live on 2026-08-26 over pages
+1-2: `medical` 19/40 in scope, `healthcare` 11/40, `hospital` 2/40. The keeps
+skew heavily to Medical Coding, which the family slugs already reach, so dedup
+by job id absorbs most of the overlap.
+
+`shine` was also sitting half-migrated to the two-level taxonomy (an open
+PARTIAL item in `instructions/taxonomy-migration-status.md` — a stale
+`classify_category` and a club row defaulting `category` to `non_clinical`).
+Retiring it closed that item rather than spending the migration on a scraper
+whose output was already covered. Its 34 tests still pass where it now sits.
+
 ## pharmabharat — permanently ignored (1)
 
 Retired 2026-08-25 **by explicit user decision**, not by measurement. Recorded

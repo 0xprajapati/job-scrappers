@@ -3,9 +3,53 @@
 > **2026-08-26 update.** Four of the excluded scrapers were migrated at the
 > user's request: `publichealthcareer`, `jobberman`, `michaelpage`,
 > `simplyhired`. The active fleet is now **24 migrated + 3 legacy**
-> (apna, nhm, swaasa), with 22 scrapers retired. Fleet verification after
+> (apna, nhm, swaasa), with 22 scrapers retired.
+> **2026-08-26 later:** a NEW scraper `devnetjobsindia` (India's NGO/development
+> board — Public Health supply) was built directly on the standard —
+> 25 migrated total. `shine` was retired the same day (crawl subset of
+> `shine_roles`), so the migrated count of *distinct* active scrapers is 24.
+> Its first run also surfaced a **shared-engine word-boundary bug, now
+> fixed**: the CDM family pattern's bare `rave` (Medidata Rave) matched
+> inside "travel"/"Paravet", so any title containing "travel" scored
+> CDM=5/high ("Paravet / Goat Expert" was admitted). Fixed to `\brave\b`
+> with a regression test in `_shared/test_role_families.py`;
+> devnetjobsindia's store was reclassified (1 row demoted). **Other
+> scrapers' stored CSVs have not been re-swept for travel-admitted CDM
+> rows yet.**
+> **2026-08-26 later still:** a NEW scraper `reliefweb` (UN OCHA's humanitarian
+> board — pure Public Health supply: M&E, WASH/community programme management,
+> epidemiology) was built directly on the standard. RSS-feed union across
+> facet feeds, 7 requests/run; first run kept 13 of 109 candidates (~12%),
+> all Public Health. 28 unit tests pass. Note its documented deviation:
+> a rolling 30-day window instead of the stored-max watermark (no pagination
+> to early-stop, and transiently-empty facet feeds would otherwise lose
+> their backlog — see `scrappers/reliefweb/README.md`). Fleet verification after
 > the change: everything compiles, **1,421 scraper tests + 56 `_shared`
 > tests pass, zero failures**.
+> **2026-08-26 evening:** a NEW scraper `ngobox` (India's NGO/CSR board, a
+> CSRBOX property) was built directly on the standard — HTML-only parsing
+> (no JSON-LD on the site; the posted date lives only in the `<title>`
+> tag), two-block listing pagination, devnetjobs skip-list idiom. First
+> seed: 269 postings scanned, 117 out of window, 8 of the 152 in-window
+> kept (all Public Health: M&E, PH research, program management), 144 to
+> `out-of-scope.csv`, 0 parse failures. 16 unit tests pass. Known scope
+> edge: NGO programme-speak often omits the classifier's positive keywords
+> (a Piramal Swasthya "District Program Manager" and a WHO "Health Systems
+> Officer" were dropped) — rows are reversible in `out-of-scope.csv` if
+> the ruling changes.
+> **2026-08-26 evening:** a NEW scraper `pharmatutor` (Indian pharma career
+> portal, Drupal SSR) was built directly on the standard — discovery is
+> RSS ∪ the `vacancies` taxonomy-term walk (`/taxonomy/term/1754`),
+> because the obvious `/pharma-jobs?page=N` listing has no pager at all
+> (the param is a page-cache mirage). Article-not-JobPosting JSON-LD for
+> the exact posted date; job facts from labeled `<strong>` runs; company
+> extracted from the title patterns; month-in-URL pre-dating saves detail
+> fetches. First seed: 418 cards scanned, 155 out of window, **81 of the
+> 233 in-window kept (35%)** — Clinical Research 23, Pharmacovigilance 19,
+> Regulatory Affairs 19, Public Health Research 8 — 152 to
+> `out-of-scope.csv` (manufacturing/QC/dispensing/fellowships), 0 parse
+> failures, 7 needs_review (employer-less fellowship notices). 23 unit
+> tests pass.
 >
 > Per-scraper result of the stored-data reclassification:
 >
@@ -24,6 +68,92 @@
 > existing `seen_old_ids.csv`, and reversible because the full row is kept.
 > `publichealthcareer` and `simplyhired` need no such list: their listing
 > payloads already carry everything the classifier reads.
+>
+> **2026-08-28: 18 NEW Workday CXS employer scrapers**, all built directly on
+> the standard (no migration owed) — `syneoshealth`, `accenture`, `labcorp`,
+> `novartis`, `thermofisher`, `sanofi`, `astrazeneca`, `clarivate`,
+> `clarioclinical`, `jj`, `medtronic`, `alcon`, `elanco`, `baxter`, `philips`,
+> `cencora`, `msd`, `springernature`, `stryker`. Sourcing rationale and the
+> shared protocol are documented in `docs/HOW-SCRAPERS-WORK.md` (Group E); the
+> per-tenant registry is `instructions/workday-tenant-probe.csv`. Each runs
+> `classify_job` as the sole keep/drop authority, writes the standard rich +
+> `CLUB_COLUMNS` outputs, and carries per-tenant `parse_city` deviations only.
+> First-run keep counts (7-day window, capped first runs): astrazeneca 82,
+> syneoshealth 82, msd 45, thermofisher 26, sanofi 29, jj 19, novartis 18,
+> clarioclinical 17, medtronic 9, alcon 8, philips 7, elanco 6, cencora 5,
+> baxter 4, labcorp 2, stryker 2, springernature 1, clarivate 0.
+>
+> Two duplicate builds (`bristolmyerssquibb`, `premierresearch`) were retired
+> the same day in favor of the concurrently-built `bms` and `premier_research`.
+>
+> **USER RULING 2026-08-28 — the four proposed scope expansions below are
+> REJECTED. Do not revisit them.** Pharma QC / analytical-lab roles, clinical
+> lab-bench work, medical-device clinical-applications and biomedical-service
+> roles, and journal editorial roles are all **out of scope by decision**. The
+> classifier is therefore CORRECT to drop them, and the low keep rates that
+> follow (labcorp ~1.3%, endo 0, lonza 1.6%, cencora ~3%, the device boards
+> 1-4%) are the intended outcome, not a defect to be tuned away. The evidence
+> is kept below only so nobody re-derives the same "gap" and re-opens it.
+>
+> Two genuine defects were kept open and deferred by the same review as "not
+> that serious" — the keyword-literal misses (1 and 1b) and the three-language
+> limit of `looks_non_english` (3). Neither is a scope question.
+>
+> **Classifier observations from these runs**
+> (nothing was patched — the classifier's verdict was respected everywhere):
+> 1. **Trial-heavy descriptions pull non-clinical titles in.** "Principal
+>    Financial Analyst" (medtronic) and PPD finance/IT titles (thermofisher)
+>    were kept as Clinical Research off their descriptions; a publishing "Data
+>    Manager" (springernature) was kept as Clinical Data Management off the bare
+>    title; an SAP Utilities *billing* consultant (accenture) was kept as
+>    Medical Coding on the word "Billing".
+> 1b. **Regulatory-ops title variants miss.** Verified against the engine on
+>    ferring: "Regulatory Information Management Coordinator" is dropped while
+>    the same description titled "Regulatory Affairs Coordinator" returns
+>    `in_scope: True, Regulatory Affairs` — the family keys on the literal
+>    "Regulatory Affairs" and misses real regulatory-operations titles (RIM,
+>    labelling, publishing, submissions) that carry no such phrase.
+> 2. **Whole role classes have no family**, so entire boards read as near-zero
+>    yield: clinical-lab bench work (phlebotomist, specimen processor,
+>    histotechnician — labcorp ~1.3%) and journal editorial roles (BMC/Nature
+>    associate and chief editors — springernature dropped all 7 in-window).
+>    **Elsevier refines that second one and it is the sharpest single finding
+>    here:** the engine keys on the literal word *scientific*, not the role.
+>    "Scientific Editor" / "Associate Scientific Editor" / "Senior Scientific
+>    Editor, Cell Reports Medicine" are all KEPT as Medical Writer, while
+>    "Associate **Clinical** Editor", "Journal Manager", "Managing Editor",
+>    "Publisher" and "Peer Review Manager" are dropped — so the more clinically
+>    relevant title is the one that fails. springernature's wholesale drop was
+>    a sampling artifact of which titles happened to be in window.
+>    A third candidate, now measured: **GMP quality / QC / analytical-lab roles
+>    at pharma manufacturing sites**. A `--since 2026-06-01` backfill of endo
+>    fetched every live posting and kept **0 of 86**; re-running `classify_job`
+>    over all 71 archived drops confirmed 0 would be kept on re-check. But
+>    **18 of those 71 are pharma QA/QC and analytical roles** — Sr Analyst
+>    Quality Control, Analyst Microbiology (QC), Analyst Global Stability ×2,
+>    QA Senior Associate, Sr Mgr Quality Assurance, Research Associate
+>    Analytical R&D, Quality Tech II/III, Operations Quality Engineer II ×2 —
+>    concentrated at Pudupakkam (India) and Raleigh. **If the taxonomy ever
+>    admits GMP quality/analytical work, that board goes from zero to roughly a
+>    quarter in scope**, and lonza (0 of 112, same shape) with it. All of these
+>    A fourth, from gehealthcare: **medical-device clinical-applications and
+>    biomedical-service roles** — 25 of 188 drops are "Clinical Applications
+>    Specialist - CT", "MRI Applications Specialist", "Nuclear Medicine Clinical
+>    Application Specialist", "Clinical Education Specialist - MRI",
+>    "Biomedical Technician I/II/III", "Radiation Safety Manager". This family
+>    exists only on device-vendor boards, so the CRO-shaped taxonomy has never
+>    had to rule on it. All of these
+>    are scope decisions, not defects; every row is reversible from
+>    `out-of-scope.csv`, so the remedy after any taxonomy change is a `--since`
+>    re-run, not a re-crawl.
+> 3. **`looks_non_english` is FR/ES/DE only — and this one is already live in
+>    published data, not hypothetical.** `lonza_jobs.csv` currently holds a
+>    Tokyo "Regulatory Affairs Specialist" whose description is wholly Japanese
+>    with `needs_review = False`, so it would reach the club untranslated. The
+>    same gap is confirmed on jj and alcon (JA/ZH), accenture (PT), sandoz (PL,
+>    a kept row), and alvotech (Icelandic). A CJK-codepoint check plus PT/PL
+>    stopwords would close it; until then the "nothing publishes untranslated"
+>    guarantee only holds for French, Spanish and German.
 
 
 **All 32 in-scope scrapers were migrated, tested and reclassified.** 13 of
@@ -258,20 +388,25 @@ change, get user confirmation or note it prominently.
 README, and stored-data reclassification)
 
 apollohospitals, carecareers (has out-of-scope.csv), dha, fortis, foundit,
-indeed, naukri, naukri_roles
+indeed, naukri, naukri_roles, shine_roles
+
+`shine_roles` completed 2026-08-26: no old-enum hits, `role_family` in both
+RICH_COLUMNS and the club row, CLUB_COLUMNS imported from `_shared`, 38 tests
+pass.
 
 ## PARTIAL (code half-edited — finish these first)
 
-- **shine** — docstring/imports/queries migrated, but the old
-  `classify_category` (old enum) still exists near line 292 and the club row
-  near line 632 still defaults `category` to `non_clinical`; main-loop gate,
-  RICH_COLUMNS, club columns unverified.
+`shine` was in this list until 2026-08-26. It is **not** being finished — it
+was retired to `retired-scrappers/shine/` instead, because its crawl is a
+subset of `shine_roles` (98.5% of its exclusive rows were `ind=13`, which
+`shine_roles` browses wholesale; the 10 outside it were classifier noise bar
+one). `shine`'s three broad slugs — `healthcare`, `hospital`, `medical` —
+moved into `shine_roles.SEARCH_QUERIES` so nothing is lost. Same reasoning as
+`gulftalent` vs `gulftalent_roles`.
+
 - **gulftalent_roles** — imports migrated; 1 old-enum hit; confirm the
   `_PHARMA_RE` NameError fix landed (classify_company_type must not call an
   undefined regex).
-- **shine_roles** — 1 old-enum hit remains; otherwise close (was already
-  role_families-based); needs family→role_family + sub_category + shared
-  CLUB_COLUMNS.
 
 ## TODO (untouched — full migration per spec)
 

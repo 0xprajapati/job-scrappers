@@ -1,0 +1,20 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+20:26:56 INFO robots.txt check passed for https://trinitylifesciences.wd108.myworkdayjobs.com
+20:26:56 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+20:26:58 INFO [Trinity] board lists 76 open postings
+20:27:19 INFO [Trinity] walked the whole board (76 postings)
+20:27:19 INFO No new jobs; /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/trinitylifesciences/trinitylifesciences_jobs.csv left unchanged
+20:27:19 INFO Moved 7 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/trinitylifesciences/out-of-scope.csv (7 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                 76
+Detail records fetched:            7
+Excluded (out of scope):           7  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 69
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    0
+Duplicates skipped:                0
+Detail failures:                   0

@@ -1,0 +1,630 @@
+{
+ "refineSearch": {
+  "status": 200,
+  "totalHits": 7,
+  "data": {
+   "jobs": [
+    {
+     "ml_skills": [
+      "technical expertise",
+      "high impact communication",
+      "portfolio strategy",
+      "health economics",
+      "enterprise thinking",
+      "outcomes research",
+      "modelling",
+      "cross-functional leadership",
+      "flexible mindset",
+      "digital fluency",
+      "economist",
+      "immunology",
+      "stakeholder engagement",
+      "infectious diseases",
+      "patient journey",
+      "launch excellence",
+      "health technology assessment",
+      "evidence based decision making"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "We are seeking a Lead/Senior Health Economist to drive reimbursement and pricing strategies for GSK’s portfolio. You will develop optimal submissions, partner with stakeholders, and provide technical expertise in health economics. Ideal for experienced professionals with strong market access knowledge in Australia’s pharmaceutical sector.",
+     "state": "Victoria",
+     "siteType": "external",
+     "multi_category": [
+      "Epidemiology and Health Outcomes"
+     ],
+     "reqId": "Job Code: J002464",
+     "city": "Abbotsford",
+     "latitude": "-37.8",
+     "multi_location": [
+      "Abbotsford, Victoria, Australia"
+     ],
+     "address": "Job Posting Location Only Address not applicable Australia, Abbotsford VIC 1234, Australia",
+     "applyUrl": "",
+     "ml_job_parser": {
+      "descriptionTeaser": "We are seeking a Lead/Senior Health Economist to drive reimbursement and pricing strategies for GSK’s portfolio. You will develop optimal submissions, partner with stakeholders, and provide technical expertise in health economics. Ideal for experienced professionals with strong market access knowledge in Australia’s pharmaceutical sector.",
+      "descriptionTeaser_first200": "About GSK . GSK is a global biopharma company with a special purpose – to unite science, technology and talent to get ahead of disease together. Our success absolutely depends on our people. We wan...",
+      "descriptionTeaser_keyword": "About GSK. GSK is a global biopharma company with a special purpose – to unite science, technology and talent to get ahead of disease together. Our success absolutely depends on our people. We want GS...",
+      "descriptionTeaser_ats": "About GSK GSK is a global biopharma company with a special purpose – to unite science, technology and talent to get ahead of disease together. Our success absolutely depends on our people. We want GSK"
+     },
+     "cityState": "Abbotsford, Victoria",
+     "country": "Australia",
+     "timeType": "Full time",
+     "visibilityType": "External",
+     "longitude": "145.0",
+     "jobId": "441227",
+     "remoteType": "Hybrid (Remote & On-site)",
+     "locale": "en_GB",
+     "title": "Lead / Senior Health Economist",
+     "jobSeqNo": "GHVGPAGB441227EXTERNALENGB",
+     "postedDate": "2026-08-28T00:00:00.000+0000",
+     "dateCreated": "2026-05-12T13:55:41.560+0000",
+     "cityStateCountry": "Abbotsford, Victoria, Australia",
+     "jobVisibility": [
+      "external",
+      "internal"
+     ],
+     "location": "Abbotsford, Victoria, Australia",
+     "category": "Epidemiology and Health Outcomes",
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": 145.00000000000003,
+        "lat": -37.8
+       },
+       "location": "Abbotsford, Victoria, Australia"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Epidemiology and Health Outcomes"
+      }
+     ],
+     "badge": "",
+     "externalApply": false
+    },
+    {
+     "ml_skills": [
+      "pharmacology",
+      "pharmacotherapy",
+      "gsk medicine knowledge",
+      "scientific communication",
+      "clinical research",
+      "formulary management",
+      "enterprise thinking",
+      "external stakeholder management",
+      "patient impact",
+      "digital fluency",
+      "high impact communication",
+      "medical presentations",
+      "therapeutic area expertise",
+      "scientific exchange",
+      "investigator sponsored studies",
+      "clinical pharmacy practice",
+      "decision-making authority"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Join us as a Field Based Medical Science Liaison, where you will lead external engagement strategies and implement plans aligned to therapy area strategies. Engage with healthcare professionals, disseminate safety information, and support clinical development. Ideal for candidates with clinical expertise and experience in pharmacology or pharmacotherapy.",
+     "state": "Pennsylvania",
+     "siteType": "external",
+     "multi_category": [
+      "Medical and Clinical"
+     ],
+     "reqId": "Job Code: J005392",
+     "city": "Pittsburgh",
+     "latitude": "40.44062",
+     "multi_location": [
+      "Pittsburgh, Pennsylvania, United States of America",
+      "Charleston , West Virginia, United States of America"
+     ],
+     "address": "484 USA Posting Location, Pittsburgh, PA 18064, United States of America",
+     "applyUrl": "https://gsk.wd5.myworkdayjobs.com/GSKCareers/job/USA---Pennsylvania---Pittsburgh/Medical-Science-Liaison----Pennsylvania---West-Virginia-Territory-_446196/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Join us as a Field Based Medical Science Liaison, where you will lead external engagement strategies and implement plans aligned to therapy area strategies. Engage with healthcare professionals, disseminate safety information, and support clinical development. Ideal for candidates with clinical expertise and experience in pharmacology or pharmacotherapy.",
+      "descriptionTeaser_first200": "Are you energized by leadership, education, and the development of partnerships with key External Experts and Professional Bodies? If so, this Field Based Medical Science Liaison role could be an i...",
+      "descriptionTeaser_keyword": "Are you energized by leadership, education, and the development of partnerships with key External Experts and Professional Bodies? If so, this Field Based Medical Science Liaison role could be an idea...",
+      "descriptionTeaser_ats": "Are you energized by leadership, education, and the development of partnerships with key External Experts and Professional Bodies?  If so, this Field Based Medical Science Liaison role could be an ide"
+     },
+     "cityState": "Pittsburgh, Pennsylvania",
+     "country": "United States of America",
+     "timeType": "Full time",
+     "visibilityType": "External",
+     "longitude": "-79.99589",
+     "jobId": "446196",
+     "remoteType": "Field worker",
+     "locale": "en_GB",
+     "title": "Medical Science Liaison - (Pennsylvania & West Virginia Territory)",
+     "jobSeqNo": "GHVGPAGB446196EXTERNALENGB",
+     "postedDate": "2026-08-27T00:00:00.000+0000",
+     "dateCreated": "2026-08-24T10:00:32.093+0000",
+     "cityStateCountry": "Pittsburgh, Pennsylvania, United States of America",
+     "jobVisibility": [
+      "external",
+      "internal"
+     ],
+     "location": "Pittsburgh, Pennsylvania, United States of America",
+     "category": "Medical and Clinical",
+     "externalApply": false,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": -79.99589,
+        "lat": 40.44062
+       },
+       "location": "Pittsburgh, Pennsylvania, United States of America"
+      },
+      {
+       "latlong": {
+        "lon": -81.10372,
+        "lat": 38.3576
+       },
+       "location": "Charleston , West Virginia, United States of America"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Medical and Clinical"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "type": "Full time",
+     "descriptionTeaser": "Exciting opportunity for an Associate Director, Patient Centered Outcomes to lead the development and implementation of high-quality clinical outcome assessment strategies across GSK's drug development portfolio. Drive scientific excellence and patient-centred measurement science, collaborating with cross-functional teams. Ideal for experienced professionals in measurement science within pharmaceutical or biotechnology environments.",
+     "state": "Pennsylvania",
+     "siteType": "external",
+     "multi_category": [
+      "Epidemiology and Health Outcomes"
+     ],
+     "reqId": "Job Code: J002463",
+     "city": "Collegeville",
+     "latitude": "40.18566",
+     "multi_location": [
+      "Collegeville, Pennsylvania, United States of America",
+      "London, United Kingdom"
+     ],
+     "address": "1250 South Collegeville Road, Collegeville, PA 19426, United States of America",
+     "applyUrl": "https://gsk.wd5.myworkdayjobs.com/GSKCareers/job/USA---Pennsylvania---Upper-Providence/Associate-Director--Patient-Centered-Outcomes_446389/apply",
+     "cityState": "Collegeville, Pennsylvania",
+     "country": "United States of America",
+     "timeType": "Full time",
+     "visibilityType": "External",
+     "longitude": "-75.45157",
+     "jobId": "446389",
+     "remoteType": "Remote",
+     "locale": "en_GB",
+     "title": "Associate Director, Patient Centered Outcomes",
+     "jobSeqNo": "GHVGPAGB446389EXTERNALENGB",
+     "postedDate": "2026-08-27T00:00:00.000+0000",
+     "dateCreated": "2026-08-21T21:26:26.267+0000",
+     "cityStateCountry": "Collegeville, Pennsylvania, United States of America",
+     "jobVisibility": [
+      "external",
+      "internal"
+     ],
+     "location": "Collegeville, Pennsylvania, United States of America",
+     "category": "Epidemiology and Health Outcomes",
+     "ml_skills": [
+      "clinical outcome assessment",
+      "patient centred outcomes",
+      "statistical analysis",
+      "fda pfdd guidances",
+      "psychometric analysis",
+      "mixed effects models",
+      "responder analysis",
+      "high impact communication",
+      "launch excellence",
+      "digital fluency",
+      "cross-functional leadership",
+      "patient journey",
+      "flexible mindset",
+      "enterprise thinking",
+      "evidence based decision making",
+      "digital health",
+      "regulatory submissions",
+      "clinical trial design",
+      "evidence generation",
+      "digital endpoint strategies",
+      "cross-functional collaboration",
+      "stakeholder engagement",
+      "scientific publications",
+      "conference presentations",
+      "knowledge sharing",
+      "capability development"
+     ],
+     "ml_job_parser": {
+      "descriptionTeaser": "Exciting opportunity for an Associate Director, Patient Centered Outcomes to lead the development and implementation of high-quality clinical outcome assessment strategies across GSK's drug development portfolio. Drive scientific excellence and patient-centred measurement science, collaborating with cross-functional teams. Ideal for experienced professionals in measurement science within pharmaceutical or biotechnology environments.",
+      "descriptionTeaser_keyword": "The Associate Director, Measurement Sciences is a scientific role within Measurement Sciences responsible for delivering high-quality endpoint strategies and measurement science support across GSK's d...",
+      "descriptionTeaser_ats": "The Associate Director, Measurement Sciences is a scientific role within Measurement Sciences responsible for delivering high-quality endpoint strategies and measurement science support across GSK's d",
+      "descriptionTeaser_first200": "The Associate Director, Measurement Sciences is a scientific role within Measurement Sciences responsible for delivering high-quality endpoint strategies and measurement science support across GSK'..."
+     },
+     "externalApply": false,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": -75.45157,
+        "lat": 40.18566
+       },
+       "location": "Collegeville, Pennsylvania, United States of America"
+      },
+      {
+       "latlong": {
+        "lon": -0.12574,
+        "lat": 51.50853
+       },
+       "location": "London, United Kingdom"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Epidemiology and Health Outcomes"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "pv関連法規制",
+      "個別症例評価管理",
+      "コミュニケーションスキル",
+      "業務改善能力",
+      "自己管理能力",
+      "チームリード能力",
+      "問題解決能力",
+      "digital fluency",
+      "enterprise leadership",
+      "presentation techniques",
+      "influencing without authority",
+      "pharmacovigilance",
+      "交渉力",
+      "英語コミュニケーション",
+      "自動化技術",
+      "argus使用経験",
+      "規制当局査察対応"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "このポジションでは、GSK製品の安全性情報を収集・評価し、法規制を遵守しながら最適なプロセスを構築する重要な役割を担います。自動化技術を取り入れ、業務改善に取り組む意欲のある方を求めています。",
+     "state": "Tokyo",
+     "siteType": "external",
+     "multi_category": [
+      "Medical and Clinical"
+     ],
+     "reqId": "Job Code: J002346",
+     "city": "Akasaka",
+     "latitude": "35.67135",
+     "multi_location": [
+      "Akasaka, Tokyo, Japan"
+     ],
+     "address": "Job Posting Location Only Address not applicable Japan, Akasaka, Tokyo, 1234, Japan",
+     "applyUrl": "https://gsk.wd5.myworkdayjobs.com/GSKCareers/job/Japan---Tokyo---Akasaka/ICSR-Management-Expert_446761-5/apply",
+     "ml_job_parser": {
+      "descriptionTeaser_keyword": "候補者募集要項に掲載する内容です）. Pharmacovigilance(PV/安全性)業務は、GSK製品を使用する患者さんの安全を守る重要な仕事であり、日本だけでなく世界各国で厳しい法規制が設けられています。我々安全性部門の業務は、これら法規制を守りながら、GSK製品の安全性情報を収集、評価し、適切な対策を実施することです。. このポジションでは、以下のような業務を実施します。昨今は、Auto...",
+      "descriptionTeaser_first200": "（候補者募集要項に掲載する内容です）. Pharmacovigilance(PV/安全性)業務は、GSK製品を使用する患者さんの安全を守る重要な仕事であり、日本だけでなく世界各国で厳しい法規制が設けられています。我々安全性部門の業務は、これら法規制を守りながら、GSK製品の安全性情報を収集、評価し、適切な対策を実施することです。. このポジションでは、以下のような業務を実施します。昨今は、A...",
+      "descriptionTeaser_ats": "（候補者募集要項に掲載する内容です）Pharmacovigilance(PV/安全性)業務は、GSK製品を使用する患者さんの安全を守る重要な仕事であり、日本だけでなく世界各国で厳しい法規制が設けられています。我々安全性部門の業務は、これら法規制を守りながら、GSK製品の安全性情報を収集、評価し、適切な対策を実施することです。このポジションでは、以下のような業務を実施します。昨今は、Automati",
+      "descriptionTeaser": "このポジションでは、GSK製品の安全性情報を収集・評価し、法規制を遵守しながら最適なプロセスを構築する重要な役割を担います。自動化技術を取り入れ、業務改善に取り組む意欲のある方を求めています。"
+     },
+     "cityState": "Akasaka, Tokyo",
+     "country": "Japan",
+     "timeType": "Full time",
+     "visibilityType": "External",
+     "longitude": "139.73442",
+     "jobId": "446761",
+     "remoteType": "Hybrid (Remote & On-site)",
+     "locale": "en_GB",
+     "title": "ICSR Management Expert",
+     "jobSeqNo": "GHVGPAGB446761EXTERNALENGB",
+     "postedDate": "2026-08-24T00:00:00.000+0000",
+     "dateCreated": "2026-08-24T09:04:31.386+0000",
+     "cityStateCountry": "Akasaka, Tokyo, Japan",
+     "jobVisibility": [
+      "external",
+      "internal"
+     ],
+     "location": "Akasaka, Tokyo, Japan",
+     "category": "Medical and Clinical",
+     "externalApply": false,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": 139.73442,
+        "lat": 35.67135
+       },
+       "location": "Akasaka, Tokyo, Japan"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Medical and Clinical"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "scientific communications",
+      "congress planning",
+      "pharmaceutical industry knowledge",
+      "strategic planning",
+      "sponsorship management",
+      "scientific narrative development",
+      "stakeholder management",
+      "enterprise thinking",
+      "cross-functional leadership",
+      "launch excellence",
+      "patient impact",
+      "digital fluency",
+      "high impact communication",
+      "project management",
+      "vendor management",
+      "kpi development",
+      "data analysis",
+      "external stakeholder engagement",
+      "medical leadership",
+      "abpi code of practice",
+      "gsk code",
+      "best practice sharing"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Become part of our team as Global Congress Strategy Director, ID/Early Assets, where you will drive long-term and annual congress planning for Infectious Diseases and Early Pipeline Assets. Lead strategic initiatives, collaborate with medical and commercial teams, and ensure cohesive congress narratives. Ideal for experienced professionals in scientific communications and congress planning within the pharmaceutical sector.",
+     "state": "",
+     "siteType": "external",
+     "multi_category": [
+      "Medical and Clinical"
+     ],
+     "reqId": "Job Code: J002441",
+     "city": "London",
+     "latitude": "51.50853",
+     "multi_location": [
+      "London, United Kingdom",
+      "Durham, North Carolina, United States of America",
+      "Collegeville, Pennsylvania, United States of America"
+     ],
+     "address": "New Oxford Street, London, WC1A 1DG, United Kingdom",
+     "applyUrl": "https://gsk.wd5.myworkdayjobs.com/GSKCareers/job/UK--London--New-Oxford-Street/Global-Congress-Strategy-Director--ID-Early-Assets_446322-1/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Become part of our team as Global Congress Strategy Director, ID/Early Assets, where you will drive long-term and annual congress planning for Infectious Diseases and Early Pipeline Assets. Lead strategic initiatives, collaborate with medical and commercial teams, and ensure cohesive congress narratives. Ideal for experienced professionals in scientific communications and congress planning within the pharmaceutical sector.",
+      "descriptionTeaser_first200": "Global Congress Strategy Director, ID/Early Assets. GSK remains committed to achieving bold commercial ambitions for the future. By 2031, we aim to deliver £40 billion in annual sales, leveraging o...",
+      "descriptionTeaser_keyword": "Global Congress Strategy Director, ID/Early Assets. GSK remains committed to achieving bold commercial ambitions for the future. By 2031, we aim to deliver £40 billion in annual sales, leveraging our...",
+      "descriptionTeaser_ats": "Global Congress Strategy Director, ID/Early AssetsGSK remains committed to achieving bold commercial ambitions for the future. By 2031, we aim to deliver £40 billion in annual sales, leveraging our ex"
+     },
+     "cityState": "London",
+     "country": "United Kingdom",
+     "timeType": "Full time",
+     "visibilityType": "External",
+     "longitude": "-0.12574",
+     "jobId": "446322",
+     "remoteType": "Hybrid (Remote & On-site)",
+     "locale": "en_GB",
+     "title": "Global Congress Strategy Director, ID/Early Assets",
+     "jobSeqNo": "GHVGPAGB446322EXTERNALENGB",
+     "postedDate": "2026-08-19T00:00:00.000+0000",
+     "dateCreated": "2026-08-19T09:07:21.160+0000",
+     "cityStateCountry": "London, United Kingdom",
+     "jobVisibility": [
+      "external",
+      "internal"
+     ],
+     "location": "London, United Kingdom",
+     "category": "Medical and Clinical",
+     "externalApply": false,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": -0.12574,
+        "lat": 51.50853
+       },
+       "location": "London, United Kingdom"
+      },
+      {
+       "latlong": {
+        "lon": -78.89862,
+        "lat": 35.99403
+       },
+       "location": "Durham, North Carolina, United States of America"
+      },
+      {
+       "latlong": {
+        "lon": -75.45157,
+        "lat": 40.18566
+       },
+       "location": "Collegeville, Pennsylvania, United States of America"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Medical and Clinical"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "medical affairs",
+      "clinical research",
+      "respiratory therapeutic experience",
+      "french (fluency)",
+      "english (fluency)",
+      "medical plan development",
+      "stakeholder engagement",
+      "enterprise thinking",
+      "external stakeholder management",
+      "digital fluency",
+      "high impact communication",
+      "patient impact",
+      "scientific communication",
+      "clinical operations",
+      "medical engagement",
+      "peer-to-peer scientific dialogue",
+      "disease state knowledge",
+      "product lifecycle management",
+      "market access",
+      "evidence generation",
+      "clinical trials",
+      "medical resource development",
+      "stakeholder planning",
+      "dutch (fluency)"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Become part of our team as a Respiratory Emerging Therapeutics Medical Advisor, advancing clinical practice and patient outcomes across Belgium. Engage with healthcare providers and scientific experts to support GSK’s respiratory therapies. Ideal for experienced medical professionals with strong clinical and communication skills.",
+     "state": "Walloon Brabant",
+     "siteType": "external",
+     "multi_category": [
+      "Medical and Clinical"
+     ],
+     "reqId": "Job Code: J005373",
+     "city": "Wavre",
+     "latitude": "50.71717",
+     "multi_location": [
+      "Wavre, Walloon Brabant, Belgium"
+     ],
+     "address": "Avenue Fleming 20 1300 Wavre Belgium, 1300 Wavre Walloon Brabant, Belgium",
+     "applyUrl": "https://gsk.wd5.myworkdayjobs.com/GSKCareers/job/Belgium-Wavre/Respiratory-Emerging-Therapeutics-Medical-Advisor-SOUTH_446254-1/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "Become part of our team as a Respiratory Emerging Therapeutics Medical Advisor, advancing clinical practice and patient outcomes across Belgium. Engage with healthcare providers and scientific experts to support GSK’s respiratory therapies. Ideal for experienced medical professionals with strong clinical and communication skills.",
+      "descriptionTeaser_ats": "Job PurposeRespiratory Emerging Therapeutics Medical Advisor North is a pivotal hybrid medical affairs role with an external focus that connects GSK to the healthcare community. This non-promotional,",
+      "descriptionTeaser_first200": "Job Purpose. Respiratory Emerging Therapeutics Medical Advisor North is a pivotal hybrid medical affairs role with an external focus that connects GSK to the healthcare community. This non-promotio...",
+      "descriptionTeaser_keyword": "Job Purpose. Respiratory Emerging Therapeutics Medical Advisor North is a pivotal hybrid medical affairs role with an external focus that connects GSK to the healthcare community. This non-promotional..."
+     },
+     "cityState": "Wavre, Walloon Brabant",
+     "country": "Belgium",
+     "timeType": "Full time",
+     "visibilityType": "External",
+     "longitude": "4.60138",
+     "jobId": "446254",
+     "remoteType": "Remote",
+     "locale": "en_GB",
+     "title": "Respiratory Emerging Therapeutics Medical Advisor SOUTH",
+     "jobSeqNo": "GHVGPAGB446254EXTERNALENGB",
+     "postedDate": "2026-08-13T00:00:00.000+0000",
+     "dateCreated": "2026-08-13T08:08:56.600+0000",
+     "cityStateCountry": "Wavre, Walloon Brabant, Belgium",
+     "jobVisibility": [
+      "external",
+      "internal"
+     ],
+     "location": "Wavre, Walloon Brabant, Belgium",
+     "category": "Medical and Clinical",
+     "externalApply": false,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": 4.60138,
+        "lat": 50.71717
+       },
+       "location": "Wavre, Walloon Brabant, Belgium"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Medical and Clinical"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "ml_skills": [
+      "regulatory strategy",
+      "oncology regulatory affairs",
+      "regulatory compliance",
+      "health authority engagement",
+      "regulatory intelligence",
+      "regulatory precedent assessment",
+      "cross-functional team leadership",
+      "business resilience",
+      "resource management",
+      "communication",
+      "stakeholder management",
+      "digital fluency",
+      "matrix leadership",
+      "pharmaceutical regulatory compliance",
+      "regulatory strategies",
+      "regulatory due diligence",
+      "portfolio assessment",
+      "strategic recommendations",
+      "regulatory matrix management",
+      "business development support",
+      "licensing support",
+      "acquisition support",
+      "regulatory risk assessment",
+      "regulatory strategy development",
+      "regulatory activity management",
+      "regulatory work package management",
+      "regulatory matrix team leadership",
+      "regulatory strategy communication",
+      "regulatory strategy planning",
+      "regulatory strategy assessment"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "We are looking for a Director, Global Regulatory Affairs Lead (Oncology) to develop and execute regulatory strategies for oncology assets. Lead regulatory initiatives, coordinate with cross-functional teams, and ensure compliance with industry standards. Ideal for experienced professionals in regulatory affairs within the pharmaceutical or healthcare sector.",
+     "state": "Pennsylvania",
+     "siteType": "external",
+     "multi_category": [
+      "Regulatory"
+     ],
+     "reqId": "Job Code: J004944",
+     "city": "Collegeville",
+     "latitude": "40.18566",
+     "multi_location": [
+      "Collegeville, Pennsylvania, United States of America"
+     ],
+     "address": "1250 South Collegeville Road, Collegeville, PA 19426, United States of America",
+     "applyUrl": "https://gsk.wd5.myworkdayjobs.com/GSKCareers/job/USA---Pennsylvania---Upper-Providence/Director--Global-Regulatory-Affairs-Lead--Oncology-_445265/apply",
+     "ml_job_parser": {
+      "descriptionTeaser": "We are looking for a Director, Global Regulatory Affairs Lead (Oncology) to develop and execute regulatory strategies for oncology assets. Lead regulatory initiatives, coordinate with cross-functional teams, and ensure compliance with industry standards. Ideal for experienced professionals in regulatory affairs within the pharmaceutical or healthcare sector.",
+      "descriptionTeaser_ats": "Position SummaryThe Director, Global Regulatory Strategy- Oncology is responsible for developing and executing regulatory strategies for assigned assets in alignment with medicine development and inte",
+      "descriptionTeaser_keyword": "Position Summary. The Director, Global Regulatory Strategy- Oncology is responsible for developing and executing regulatory strategies for assigned assets in alignment with medicine development and in...",
+      "descriptionTeaser_first200": "Position Summary. The Director, Global Regulatory Strategy- Oncology is responsible for developing and executing regulatory strategies for assigned assets in alignment with medicine development and..."
+     },
+     "cityState": "Collegeville, Pennsylvania",
+     "country": "United States of America",
+     "timeType": "Full time",
+     "visibilityType": "External",
+     "longitude": "-75.45157",
+     "jobId": "445265",
+     "remoteType": "Hybrid (Remote & On-site)",
+     "locale": "en_GB",
+     "title": "Director, Global Regulatory Affairs Lead (Oncology)",
+     "jobSeqNo": "GHVGPAGB445265EXTERNALENGB",
+     "postedDate": "2026-07-28T00:00:00.000+0000",
+     "dateCreated": "2026-07-22T13:32:11.757+0000",
+     "cityStateCountry": "Collegeville, Pennsylvania, United States of America",
+     "jobVisibility": [
+      "external",
+      "internal"
+     ],
+     "location": "Collegeville, Pennsylvania, United States of America",
+     "category": "Regulatory",
+     "externalApply": false,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "latlong": {
+        "lon": -75.45157,
+        "lat": 40.18566
+       },
+       "location": "Collegeville, Pennsylvania, United States of America"
+      }
+     ],
+     "isMultiCategory": false,
+     "multi_category_array": [
+      {
+       "category": "Regulatory"
+      }
+     ],
+     "badge": ""
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,23 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+16:32:58 INFO robots.txt check passed for https://amgen.wd1.myworkdayjobs.com
+16:32:58 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+16:33:01 INFO [Careers] board lists 1831 open postings; scoping the crawl to 6 jobFamilyGroup value(s): 'Clinical' (151 postings, id 5d5ff483caeb105761523f2e031aa82f); 'Regulatory & Compliance' (36 postings, id 5d5ff483caeb105761529c1cb7fea851); 'Medical Science Liaison' (33 postings, id 428261700d6a012037db1f17d621eee4); 'Medical Scientist' (21 postings, id 5d5ff483caeb10576152872606f9a849); 'Safety' (12 postings, id 5d5ff483caeb10576152a0ef6a34a853); 'Medical Affairs' (5 postings, id 396f2f0ed1c901ca9434b775ff400c88)
+16:33:04 INFO [Careers] facet scope covers 258 of the board's 1831 open postings
+16:33:58 INFO [Careers] 2 consecutive pages outside the window — stopping at offset 80
+16:33:58 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/amgen/amgen_jobs.csv (17 total rows)
+16:33:58 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/amgen.csv (17 rows, HealthCareers.club schema)
+16:33:58 INFO Moved 5 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/amgen/out-of-scope.csv (5 total, kept for review)
+
+===== Run summary =====
+Crawl scope [Careers]: jobFamilyGroup facet — Clinical (151); Regulatory & Compliance (36); Medical Science Liaison (33); Medical Scientist (21); Safety (12); Medical Affairs (5)
+Postings scanned:                 80
+Detail records fetched:           22
+Excluded (out of scope):           5  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 58
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                   17
+Duplicates skipped:                0
+Detail failures:                   0

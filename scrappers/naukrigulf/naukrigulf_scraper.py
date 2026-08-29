@@ -24,7 +24,7 @@ naukrigulf.com is a client-rendered SPA backed by a public JSON API under
    JdURL (absolute detail URL), LatestPostedDate (unix epoch), Vacancies,
    LogoUrl. The listing has NO salary and NO employment-type fields.
 
-2. Detail API (used by --enrich, one call per new job):
+2. Detail API (used by default, one call per new job; --no-enrich skips it):
 
        GET https://www.naukrigulf.com/spapi/jobs/<JobId>
        -> {"Job": {Description (HTML), IndustryType, FunctionalArea,
@@ -43,7 +43,8 @@ RFC-standard From header.
 
 Salary (master spec §3: capture, don't filter)
 ----------------------------------------------
-Salaries are almost always in AED/SAR/QAR and only visible via --enrich.
+Salaries are almost always in AED/SAR/QAR and only visible via the detail
+API (i.e. lost under --no-enrich).
 The rich CSV stores the verbatim string + parsed amounts + currency. The
 club CSV can only represent INR/USD, so its salary columns stay empty for
 other currencies (or when the period is unknown) — nothing is invented.
@@ -152,7 +153,11 @@ REQUEST_TIMEOUT_SECONDS = 60
 MAX_RETRIES = 4
 BACKOFF_BASE_SECONDS = 3.0
 MAX_EMPTY_PAGES = 3            # tolerate transient empty pages
-DESCRIPTION_MAX_CHARS = 3_000
+# Sanity cap only — the detail API serves full descriptions, and rows must
+# not be clipped mid-sentence. (Was 3_000 until 2026-08-26, which silently
+# truncated ~1 in 5 stored descriptions; those old rows are unrecoverable
+# because the jobs expired off the 15-day board.)
+DESCRIPTION_MAX_CHARS = 20_000
 
 RICH_CSV = str(Path(__file__).resolve().parent / "naukrigulf_jobs.csv")
 NEEDS_REVIEW_CSV = str(Path(__file__).resolve().parent / "needs_review.csv")
@@ -313,8 +318,8 @@ def parse_salary(compensation, curr_label=""):
 def map_job_type(employment_type, location_type="", title=""):
     """Map detail-API employmentType/locationType -> club job_type enum.
 
-    Without --enrich only the title is available; the board is overwhelmingly
-    full-time, so that is the default.
+    Without enrichment (--no-enrich) only the title is available; the board
+    is overwhelmingly full-time, so that is the default.
     """
     lt = (location_type or "").strip().lower()
     if "remote" in lt:
@@ -339,7 +344,7 @@ def map_job_type(employment_type, location_type="", title=""):
 
 def classification_skills_signal(industry_type, functional_area):
     """Join the detail API's curated IndustryType/FunctionalArea fields into
-    the `skills` signal for classify_job (empty without --enrich). They stay
+    the `skills` signal for classify_job (empty under --no-enrich). They stay
     raw source columns in the rich CSV and never decide the category."""
     return ", ".join(s for s in ((industry_type or "").strip(),
                                  (functional_area or "").strip()) if s)
@@ -619,7 +624,7 @@ def append_needs_review(entries):
     return len(new_df)
 
 
-def main(argv=None):
+def build_arg_parser():
     parser = argparse.ArgumentParser(
         description="Scrape healthcare jobs from naukrigulf.com.")
     parser.add_argument("--output", default=RICH_CSV,
@@ -628,13 +633,29 @@ def main(argv=None):
                         help="stop after N listing pages (for test runs)")
     parser.add_argument("--limit", type=int, default=None, metavar="N",
                         help="stop after N new jobs (for test runs)")
-    parser.add_argument("--enrich", action="store_true",
+    # Enrichment is ON by default (2026-08-27): without the detail API a run
+    # stores 150-200-char listing snippets as descriptions, no salary and an
+    # empty industry_type/functional_area — which starves classify_job of its
+    # skills signal. --no-enrich remains as a fast probe escape hatch.
+    # (argparse.BooleanOptionalAction needs 3.9-incompatible usage here, so
+    # this is the store_true/store_false pair sharing dest="enrich".)
+    parser.add_argument("--enrich", dest="enrich", action="store_true",
+                        default=True,
                         help="fetch each new job's detail page for description,"
-                             " salary, employment type (1 extra request/job)")
+                             " salary, employment type (1 extra request/job);"
+                             " ON by default — flag kept for backward"
+                             " compatibility")
+    parser.add_argument("--no-enrich", dest="enrich", action="store_false",
+                        help="skip detail calls (fast probe: listing snippets"
+                             " only, no salary/skills signal)")
     parser.add_argument("--run-date", default=date.today().strftime("%d-%m-%Y"),
                         help="jobs_csv/<DD-MM-YYYY>/ folder (default: today)")
     parser.add_argument("--verbose", action="store_true", help="debug logging")
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv=None):
+    args = build_arg_parser().parse_args(argv)
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
