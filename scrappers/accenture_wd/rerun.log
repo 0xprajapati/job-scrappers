@@ -8,3 +8,24 @@
 19:53:12 WARNING HTTP 406 for https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers — skipping
 19:53:12 WARNING [AccentureCareers/global-capped] no detail for job_id=R00353120
 19:56:12 WARNING Retry 1/3 for https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Bengaluru/Recruiting-Specialist_AIOC-S01663119-1 in 3s (HTTPSConnectionPool(host='accenture.wd103.myworkdayjobs.com', port=443): Read timed out. (read timeout=60))
+20:44:41 WARNING HTTP 403 for https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Pune/Customer-Service-Associate_AIOC-S01662864-1 — skipping
+20:44:41 WARNING [AccentureCareers/global-capped] no detail for job_id=AIOC-S01662864
+20:45:56 INFO [AccentureCareers/global-capped] walked the whole listing (2000 postings)
+20:46:00 INFO [AccentureCareers/india-facet] walk lists 661 open postings
+20:50:49 INFO [AccentureCareers/india-facet] walked the whole listing (661 postings)
+20:50:50 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/accenture/accenture_jobs.csv (10 total rows)
+20:50:50 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/accenture.csv (10 rows, HealthCareers.club schema)
+20:50:50 INFO Moved 1194 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/accenture/out-of-scope.csv (1569 total, kept for review)
+20:50:50 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/accenture/needs_review.csv (1 titles to review)
+
+===== Run summary =====
+Postings scanned:              2,680
+Detail records fetched:        1,203
+Excluded (out of scope):       1,194  (shared classifier)
+Skipped (known out of scope):    492
+Excluded (older than 2026-08-21): 482
+Skipped (known old):             499
+Flagged needs_review:              1
+New jobs added:                    6
+Duplicates skipped:                4
+Detail failures:                   3

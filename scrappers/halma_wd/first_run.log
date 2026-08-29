@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+20:45:38 INFO robots.txt check passed for https://halma.wd3.myworkdayjobs.com
+20:45:38 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+20:45:40 INFO [Halma] board lists 156 open postings
+20:46:57 INFO [Halma] walked the whole board (156 postings)
+20:46:57 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/halma/halma_jobs.csv (2 total rows)
+20:46:57 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/halma.csv (2 rows, HealthCareers.club schema)
+20:46:57 INFO Moved 27 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/halma/out-of-scope.csv (27 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                156
+Detail records fetched:           29
+Excluded (out of scope):          27  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 127
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    2
+Duplicates skipped:                0
+Detail failures:                   0

@@ -1,0 +1,19 @@
+20:37:33 INFO robots.txt check passed for https://quantiphi.wd1.myworkdayjobs.com
+20:37:33 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+20:37:36 INFO [Careers_at_Quantiphi] board lists 120 open postings
+20:38:31 INFO [Careers_at_Quantiphi] walked the whole board (120 postings)
+20:38:31 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/quantiphi/quantiphi_jobs.csv (1 total rows)
+20:38:31 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/quantiphi.csv (1 rows, HealthCareers.club schema)
+20:38:31 INFO Moved 16 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/quantiphi/out-of-scope.csv (16 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                120
+Detail records fetched:           17
+Excluded (out of scope):          16  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 103
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    1
+Duplicates skipped:                0
+Detail failures:                   0

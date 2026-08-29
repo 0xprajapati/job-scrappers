@@ -1,0 +1,21 @@
+/Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+20:36:13 INFO robots.txt check passed for https://unilever.wd3.myworkdayjobs.com
+20:36:13 INFO Existing CSV has 0 known jobs (47 known-old, 173 known out-of-scope skipped); keeping jobs posted on/after 2026-06-01 (--since override)
+20:36:16 INFO [Unilever_Experienced_Professionals] board lists 254 open postings
+20:39:40 INFO [Unilever_Experienced_Professionals] walked the whole board (254 postings)
+20:39:40 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/unilever/unilever_jobs.csv (1 total rows)
+20:39:40 INFO Wrote /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/jobs_csv/28-08-2026/unilever.csv (1 rows, HealthCareers.club schema)
+20:39:40 INFO Moved 79 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/unilever/out-of-scope.csv (252 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                254
+Detail records fetched:           81
+Excluded (out of scope):          79  (shared classifier)
+Skipped (known out of scope):    173
+Excluded (older than 2026-06-01):  1
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    1
+Duplicates skipped:                0
+Detail failures:                   0

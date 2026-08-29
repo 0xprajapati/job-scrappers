@@ -86,7 +86,20 @@
 > Two duplicate builds (`bristolmyerssquibb`, `premierresearch`) were retired
 > the same day in favor of the concurrently-built `bms` and `premier_research`.
 >
-> **Three classifier observations from these runs, for a future taxonomy pass**
+> **USER RULING 2026-08-28 — the four proposed scope expansions below are
+> REJECTED. Do not revisit them.** Pharma QC / analytical-lab roles, clinical
+> lab-bench work, medical-device clinical-applications and biomedical-service
+> roles, and journal editorial roles are all **out of scope by decision**. The
+> classifier is therefore CORRECT to drop them, and the low keep rates that
+> follow (labcorp ~1.3%, endo 0, lonza 1.6%, cencora ~3%, the device boards
+> 1-4%) are the intended outcome, not a defect to be tuned away. The evidence
+> is kept below only so nobody re-derives the same "gap" and re-opens it.
+>
+> Two genuine defects were kept open and deferred by the same review as "not
+> that serious" — the keyword-literal misses (1 and 1b) and the three-language
+> limit of `looks_non_english` (3). Neither is a scope question.
+>
+> **Classifier observations from these runs**
 > (nothing was patched — the classifier's verdict was respected everywhere):
 > 1. **Trial-heavy descriptions pull non-clinical titles in.** "Principal
 >    Financial Analyst" (medtronic) and PPD finance/IT titles (thermofisher)

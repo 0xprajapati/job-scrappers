@@ -1,0 +1,36 @@
+20:27:44 INFO robots.txt check passed for https://ntst.wd1.myworkdayjobs.com
+20:27:44 INFO Existing CSV has 0 known jobs (0 known-old, 0 known out-of-scope skipped); keeping jobs posted on/after 2026-08-21
+20:27:46 INFO [Careers] board lists 57 open postings
+20:28:26 INFO [Careers] walked the whole board (57 postings)
+20:28:26 INFO No new jobs; /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/netsmart/netsmart_jobs.csv left unchanged
+20:28:26 INFO Moved 16 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/netsmart/out-of-scope.csv (16 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                 57
+Detail records fetched:           16
+Excluded (out of scope):          16  (shared classifier)
+Skipped (known out of scope):      0
+Excluded (older than 2026-08-21): 41
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    0
+Duplicates skipped:                0
+Detail failures:                   0
+20:28:46 INFO robots.txt check passed for https://ntst.wd1.myworkdayjobs.com
+20:28:46 INFO Existing CSV has 0 known jobs (41 known-old, 16 known out-of-scope skipped); keeping jobs posted on/after 2026-06-01 (--since override)
+20:28:48 INFO [Careers] board lists 57 open postings
+20:30:26 INFO [Careers] walked the whole board (57 postings)
+20:30:26 INFO No new jobs; /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/netsmart/netsmart_jobs.csv left unchanged
+20:30:26 INFO Moved 41 rows to /Users/gaganakki/Documents/SahiLabs/HealthCareers/job-scrappers/scrappers/netsmart/out-of-scope.csv (57 total, kept for review)
+
+===== Run summary =====
+Postings scanned:                 57
+Detail records fetched:           41
+Excluded (out of scope):          41  (shared classifier)
+Skipped (known out of scope):     16
+Excluded (older than 2026-06-01):  0
+Skipped (known old):               0
+Flagged needs_review:              0
+New jobs added:                    0
+Duplicates skipped:                0
+Detail failures:                   0

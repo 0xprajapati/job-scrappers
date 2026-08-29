@@ -321,6 +321,13 @@ tenants directly gets that supply fresher and whole. The per-tenant registry
 (host, site slug, live board size, robots status, quirks) is
 `instructions/workday-tenant-probe.csv`.
 
+**Naming: every Workday CXS scraper directory carries a `_wd` suffix**
+(`syneoshealth_wd/`, `iqvia_wd/`, …) so the platform is visible from the
+directory listing alone. The suffix is on the FOLDER only — each scraper's
+`SITE` constant, its rich CSV (`<site>_jobs.csv`) and its club export
+(`jobs_csv/<date>/<site>.csv`) all keep their original unsuffixed names, so
+nothing downstream of the club import changes.
+
 **The shared shape.** Workday's Candidate Experience Site API is public and
 unauthenticated: `POST /wday/cxs/{tenant}/{site}/jobs` with
 `{"appliedFacets":{},"limit":20,"offset":N,"searchText":""}` for the listing
@@ -331,7 +338,7 @@ URL. The listing's *relative* `postedOn` label ("Posted Today" … "Posted 30+
 Days Ago") decides the time window **before** a detail request is spent;
 out-of-window ids go to `seen_old_ids.csv` unfetched. Requests need a
 Mozilla-compatible UA and `Accept-Language` (bare clients get HTTP 406).
-Workday boards never show pay → `salary_raw = "Not Disclosed"`. `scrappers/iqvia/`
+Workday boards never show pay → `salary_raw = "Not Disclosed"`. `scrappers/iqvia_wd/`
 is the reference implementation; every entry below is that file with a changed
 config block, docstring, and the `parse_city` amendments noted next.
 
@@ -374,10 +381,49 @@ any tenant on this host and pin it with a test.
 > *no* sidecar, the next run's tighter watermark never revisits it: the job is
 > gone permanently and nothing reports it beyond a `detail_failed` counter.
 > Two fixes, neither applied yet (the line is identical in every scraper, so
-> this wants one coordinated pass): add `403` to the retry set, and record
-> failed ids somewhere the next run re-tries. Until then, treat a non-zero
+> this wants one pass): add `403` to the retry set, and record failed ids
+> somewhere the next run re-tries. **Unowned as of 2026-08-28** — the second
+> session that had agreed to run the coordinated sweep ended before doing it,
+> so this is still open for whoever picks the fleet up next. A concrete cost
+> of leaving it: accenture's first run lost 12 requisitions to a DNS blip and
+> recorded them nowhere, and the same outage truncated its listing walk at row
+> 920 of 2000 while the run summary still printed as a success. Until then, treat a non-zero
 > `detail_failed` as lost data rather than noise — except on philips, where
 > exactly 1 is the known ghost-stub row.
+
+**`bulletFields[0]` is NOT always the requisition id — and trusting it silently
+merges jobs.** The template's `listing_job_id` takes the first bullet. On
+**solenis** the array is `[location, location, "R0029512"]`, so the dedup key
+would have been a *city name*: probed over 60 postings, 0 of 60 leading bullets
+were requisition-shaped and only 39 distinct values existed across them, which
+would have collapsed roughly a third of the board into duplicate rows **and**
+poisoned `known_ids` so that every later posting in an already-seen city was
+skipped as a duplicate. Nothing would have errored. solenis therefore takes the
+first *requisition-shaped* bullet (a compact token containing a digit) and falls
+through to the externalPath tail otherwise — a provable no-op where
+`bulletFields[0]` is already an id (`R1564910`, `885928` both match), so **this
+is the strongest candidate in this document for promotion into the template**;
+it is a latent landmine on any tenant nobody has probed yet.
+
+**acm hit the identical bug independently, and sharpens the fix.** Its bullets
+are `["ACM - Drugscan", "19044", "REQ_241093", "Horsham"]` — site label, US ZIP,
+requisition id, city — and its 12 postings share only 6 distinct leading
+bullets, so the stock version would have halved that board. Critically,
+**solenis's "contains a digit" predicate picks the ZIP `19044` here**, so the
+correct rule requires *both* a letter and a digit and no spaces: that rejects
+the digits-only ZIP, the space-carrying UK postcode ("YO10 4DZ") and the
+letters-only city, while still matching `R0029512` and `REQ_241093`. Anyone
+promoting this into the template should take **acm's** version, not solenis's.
+Two independent sightings make this a recurring Workday shape, not a quirk.
+
+**Company boilerplate can be lifted as a candidate's required experience.**
+`parse_experience_years` matches "N years of experience" anywhere in the
+description, so an employer blurb like "With 25 years of experience, Trinity is
+committed to…" stored `experience_min_years = 25` on a real row
+(trinitylifesciences JR100036). The second pattern in `_EXPERIENCE_RES` will
+misfire on any employer whose boilerplate states the company's age this way.
+Template-level, present in every scraper, and silent — the value is plausible,
+just about the wrong subject.
 
 **Two paging traps.** `total` is trustworthy only on the offset=0 page — most
 tenants report 0 on deeper offsets (a few, like astrazeneca and clarivate,
@@ -505,6 +551,13 @@ The tenants, with board size at build time (2026-08-28) and anything peculiar:
 - **springernature** — 66. Built for scientific-editor supply, but the taxonomy
   drops journal editorial roles; see above.
 - **stryker** — 1,186, device. Agency-submission sibling site excluded.
+- **kimberlyclark** — 183. Keeps 0 (mill/plant, engineering, marketing), and a
+  `--since` seed confirmed it. Note an unexploited slice: the sibling slug
+  `Arbex` holds **99 postings that do not overlap GLOBAL** (verified by
+  searchText probes in both directions) — adding it is a config-only change if
+  the coverage is ever wanted. `LinkedIn` (150) is a strict mirror of GLOBAL and
+  must not be added; `XXX_NA` is empty.
+- **solenis** — 567, chemicals. Keeps 0. Carries the `bulletFields` id fix above.
 - **hcahealthcare** — 115, on the `myworkdaysite.com` variant (see above).
   Note the board is HCA **UK** — London private hospitals plus Sarah Cannon
   Research Institute UK, uniformly `GB`; the US HCA requisitions, and with them
@@ -526,6 +579,12 @@ The tenants, with board size at build time (2026-08-28) and anything peculiar:
   duplicate every Elsevier row and mis-attribute other brands' jobs. A useful
   general warning for any group tenant: check whether the parent site re-lists
   its subsidiaries before adding it.
+
+**No fleet-wide backfill — user decision, 2026-08-28.** Seeding every board's
+older standing inventory was considered and **rejected**: these scrapers are a
+daily incremental feed, not a historical archive, and a 30-60 day seed across
+the fleet is not wanted. The `--since` seeds described next are the narrow
+exception, used only where a board would otherwise yield nothing at all.
 
 **Zero-keep boards need a `--since` seed, or they stay empty forever.**
 `compute_cutoff` falls back to the rolling 7-day `INITIAL_WINDOW_DAYS` whenever
